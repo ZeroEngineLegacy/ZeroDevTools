@@ -2,11 +2,8 @@
 
 #include "WikiOperations.hpp"
 
-
 #define CURL_STATICLIB
 
-//extern "C"
-//{
 #include <curl/curl.h>
 #include "Serialization/CharacterTraits.hpp"
 #include "Support/StringMap.hpp"
@@ -14,14 +11,14 @@
 #include "Utility/FilePath.hpp"
 #include "Serialization/Text.hpp"
 #include "../TinyXml/tinyxml.h"
-//};
 
-
+/*
 #if _DEBUG
 #pragma comment(lib, "libcurld.lib") 
 #else
 #pragma comment(lib, "libcurl.lib") 
 #endif
+*/
 
 #pragma comment(lib, "ws2_32.lib") 
 #pragma comment(lib, "Wldap32.lib") 

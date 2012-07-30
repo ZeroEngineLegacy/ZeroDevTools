@@ -128,6 +128,9 @@
     <ProjectReference Include="$(ZERO_SOURCE)\Libraries\Geometrics\Geometrics.vcxproj">
       <Project>{787f598d-f96e-48f5-8075-25d31fc7ed60}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\curl\lib\vc6libcurl.vcxproj">
+      <Project>{ceff3501-192f-d4e1-26e6-073c783da0b0}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\TinyXml\TinyXml.vcxproj">
       <Project>{81266cb3-406e-4f01-9daa-b99b6e1b0ddc}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>

@@ -1,0 +1,14 @@
+# use glob syntax.
+syntax: glob
+
+# visual studio files
+*.ncb
+*.suo
+*.user
+*.orig
+*.db
+*.sdf
+*.opensdf
+*.ipch
+
+ZeroDoc/LocalBuildEnvironment.cmd

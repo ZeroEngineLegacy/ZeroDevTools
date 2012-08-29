@@ -43,7 +43,7 @@ rangeType lowerBound(rangeType r, const type& value, predicate pred)
     auto newValue = newRange[step];
     if( pred(newValue, value) )
     {
-      newRange.begin = newRange.begin + step + 1;
+      newRange.mBegin = newRange.mBegin + step + 1;
       count -= step+1;
     }
     else
@@ -63,7 +63,7 @@ rangeType upperBound(rangeType r, const type& value, predicate pred)
     auto newValue = newRange[step];
     if( !pred(value, newValue) )
     {
-      newRange.begin = newRange.begin + step + 1;
+      newRange.mBegin = newRange.mBegin + step + 1;
       count -= step+1;
     }
     else
@@ -183,7 +183,7 @@ void Replace(StringBuilder& output, Replacments& replacements, String source)
       rrange lower = lowerBound(possibleMatches, currentLetter, CompareIndex(letterIndex) );
       rrange upper = upperBound(possibleMatches, currentLetter, CompareIndex(letterIndex) );
 
-      rrange refinedMatches = rrange(lower.begin, upper.begin);
+      rrange refinedMatches = rrange(lower.begin(), upper.begin());
 
 
       if(refinedMatches.empty())

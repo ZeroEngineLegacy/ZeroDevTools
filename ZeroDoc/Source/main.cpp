@@ -16,6 +16,25 @@
 namespace Zero
 {
 
+struct WikiUpdatePage
+{
+  WikiUpdatePage() {}
+  WikiUpdatePage(StringParam page, StringParam parent)
+  {
+    mPageToUpdate = page;
+    mParentPage = parent;
+  }
+
+  void Serialize(Serializer& stream)
+  {
+    SerializeName(mPageToUpdate);
+    SerializeName(mParentPage);
+  }
+
+  String mPageToUpdate;
+  String mParentPage;
+};
+
 void PushToWiki(StringMap& params)
 {
   String sourcePath = GetStringValue<String>(params,"sourcePath","C:\\Zero\\");
@@ -24,7 +43,7 @@ void PushToWiki(StringMap& params)
   bool verbose = GetStringValue<bool>(params,"verbose",false);
 
   //there's a set list of classes we want to push to the wiki, load this list from a data file
-  Array<String> pagesToUpdate;
+  Array<WikiUpdatePage> pagesToUpdate;
   TextLoader stream;
   String pagesToUpdatePath = BuildString(sourcePath.c_str(),"DevTools\\PagesToUpdate.txt");
   if(!FileExists(pagesToUpdatePath))
@@ -49,11 +68,25 @@ void PushToWiki(StringMap& params)
   WikiMap WikiIndex;
   for(uint i = 0; i < pagesToUpdate.size(); ++i)
   {
-    String index = wikiIndices.findValue(pagesToUpdate[i],"");
+    String pageName = pagesToUpdate[i].mPageToUpdate;
+    String parentPageName = pagesToUpdate[i].mParentPage;
+    String index = wikiIndices.findValue(pageName,"");
     if(!index.empty())
-      WikiIndex[pagesToUpdate[i]] = index;
+      WikiIndex[pageName] = index;
     else
-      printf("Failed to find wiki article for %s",pagesToUpdate[i].c_str());
+    {
+      String parentIndex = wikiIndices.findValue(parentPageName,"");
+      if(!parentIndex.empty())
+      {
+        bool success = CreateWikiPage(token,pageName,parentIndex,WikiIndex,verbose);
+        if(!success)
+          printf("Failed to find wiki article for \"%s\" with parent \"%s\"\n",pageName.c_str(),parentPageName.c_str());
+        else
+          printf("Creating wiki page for article \"%s\"\n",pageName.c_str());
+      }
+      else
+        printf("Failed to find wiki parent article \"%s\" for child page \"%s\"\n",parentPageName.c_str(),pageName.c_str());
+    }
   }
 
   //set up a replacement for class names to replace in the wiki, this will set

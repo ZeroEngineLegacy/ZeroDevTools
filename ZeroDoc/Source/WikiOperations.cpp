@@ -210,6 +210,69 @@ void GetWikiArticleIds(StringParam token, StringMap& wikiIndices, bool verbose)
   curl_easy_cleanup(curl);
 }
 
+bool CreateWikiPage(StringParam token, StringParam pageName, StringParam parentPageIndex, StringMap& wikiIndices, bool verbose)
+{
+  CURL *curl;
+  CURLcode res;
+
+  curl_global_init(CURL_GLOBAL_DEFAULT);
+
+  curl = curl_easy_init();
+
+  String url = String::Format("http://zeroengine0.digipen.edu/api.asp?cmd=newArticle&ixWiki=1&sHeadline=%s&token=%s", pageName.c_str(), token.c_str());
+
+  curl_easy_setopt(curl, CURLOPT_URL,url.c_str());
+  curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
+  if(verbose)
+    curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
+
+  BufferedData parser;
+  parser.mVerbose = false;
+  curl_easy_setopt(curl, CURLOPT_WRITEDATA, &parser);
+
+  res = curl_easy_perform(curl);
+
+  String str = parser.mBuilder.ToString();
+
+  TiXmlDocument doc;
+  doc.Parse(str.c_str());
+
+  TiXmlElement* response = doc.FirstChildElement("response");
+  if(response == NULL)
+  {
+    printf("Failed to find response tag for page %s\n",pageName.c_str());
+    return false;
+  }
+
+  TiXmlElement* wikipage = response->FirstChildElement("wikipage");
+  if(wikipage == NULL)
+  {
+    printf("Failed to find wikipage tag for page %s\n",pageName.c_str());
+    return false;
+  }
+  TiXmlElement* wikiPageIndex = wikipage->FirstChildElement("ixWikiPage");
+  if(wikiPageIndex == NULL)
+  {
+    printf("Failed to find ixWikiPage tag for page %s\n",pageName.c_str());
+    return false;
+  }
+
+  TiXmlText* wikiIdData = (TiXmlText*)wikiPageIndex->FirstChild();
+  if(wikiIdData == NULL)
+  {
+    printf("Failed to find wiki page id for new page %s\n",pageName.c_str());
+    return false;
+  }
+
+  String id = wikiIdData->Value();
+  wikiIndices[pageName] = id;
+
+  /* always cleanup */ 
+  curl_easy_cleanup(curl);
+
+  return true;
+}
+
 void UploadClassDoc(StringParam index, ClassDoc& classDoc, Replacments& replacements, StringParam token, bool verbose)
 {
   CURL *curl;

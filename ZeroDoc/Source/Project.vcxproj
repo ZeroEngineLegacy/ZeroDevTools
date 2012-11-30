@@ -83,6 +83,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="DebugPrint.hpp" />
+    <ClInclude Include="Logging.hpp" />
     <ClInclude Include="Parsing.hpp" />
     <ClInclude Include="Precompiled.hpp" />
     <ClInclude Include="Replacement.hpp" />
@@ -90,6 +91,7 @@
     <ClInclude Include="WikiOperations.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Logging.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Parsing.cpp" />
     <ClCompile Include="Precompiled.cpp">

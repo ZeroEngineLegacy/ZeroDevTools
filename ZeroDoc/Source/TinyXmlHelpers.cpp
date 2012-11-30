@@ -109,7 +109,7 @@ String GetElementValue(TiXmlElement* parent, cstr name, cstr second)
 
 void ExtractMethodDocs(ClassDoc& classDoc, DocumentationLibrary& library, ClassDoc& currentClass, StringParam doxyPath, Array<Replacement>& replacements)
 {
-  //if(classDoc.Name != "KeyboardEvent")
+  //if(classDoc.Name != "Shadow")
   //  return;
 
   if(!currentClass.BaseClass.empty())
@@ -120,101 +120,104 @@ void ExtractMethodDocs(ClassDoc& classDoc, DocumentationLibrary& library, ClassD
     }
   }
 
+  //try to open the class file
   String fileName = BuildString(doxyPath.c_str(),"\\xml\\class_zero_1_1", GetDoxygenName(currentClass.Name).c_str(), ".xml");
   TiXmlDocument doc(fileName.c_str());
   bool loadOkay = doc.LoadFile();
+  //if loading the class file failed, search for a struct file
   if(!loadOkay)
   {
     String fileName = BuildString(doxyPath.c_str(),"\\xml\\struct_zero_1_1", GetDoxygenName(currentClass.Name).c_str(), ".xml");
     loadOkay = doc.LoadFile(fileName.c_str());
   }
 
-  if (loadOkay)
+  if(!loadOkay)
   {
-    TiXmlElement* doxygenElement = doc.FirstChildElement("doxygen");
-    TiXmlElement* compounddef = doxygenElement->FirstChildElement("compounddef");
+    //__debugbreak();
+    return;
+  }
+  
+  TiXmlElement* doxygenElement = doc.FirstChildElement("doxygen");
+  TiXmlElement* compounddef = doxygenElement->FirstChildElement("compounddef");
 
-    if( &classDoc == &currentClass )
-    {
-      String classDesc = DoxyToString(compounddef, "briefdescription");
-      classDoc.Description = classDesc;
-    }
+  if(&classDoc == &currentClass)
+  {
+    String classDesc = DoxyToString(compounddef, "briefdescription");
+    classDoc.Description = classDesc;
+  }
 
-    TiXmlNode* pSection;
-    for ( pSection = compounddef->FirstChild(); pSection != 0; pSection = pSection->NextSibling()) 
+  TiXmlNode* pSection;
+  for(pSection = compounddef->FirstChild(); pSection != 0; pSection = pSection->NextSibling()) 
+  {
+    TiXmlNode* pMemberDef;
+    for(pMemberDef = pSection->FirstChild(); pMemberDef != 0; pMemberDef = pMemberDef->NextSibling()) 
     {
-      TiXmlNode* pMemberDef;
-      for ( pMemberDef = pSection->FirstChild(); pMemberDef != 0; pMemberDef = pMemberDef->NextSibling()) 
+      TiXmlElement* memberElement = pMemberDef->ToElement();
+      if(!memberElement)
+        continue;
+  
+      //only parse member definitions (both members and methods in doxy)
+      if(strcmp(memberElement->Value(),"memberdef") != 0)
+        continue;
+
+      String name = GetElementValue(memberElement, "name");
+      String argsstring = GetElementValue(memberElement, "argsstring");
+      String briefdescription = DoxyToString(memberElement, "briefdescription");
+      String returnValue  = ToTypeName(memberElement, "type");
+
+      name = Replace(replacements,name);
+      argsstring = Replace(replacements,argsstring);
+      briefdescription = Replace(replacements,briefdescription);
+      returnValue = Replace(replacements,returnValue);
+
+
+      //See if this is a Get 'Property' function.
+      if(name[0] == 'G')
       {
-        if(TiXmlElement* memberElement = pMemberDef->ToElement())        
+        //strip the 'Get' off of the name
+        String getName = name.size() > 3 ? name.sub_string(3, name.size() - 3) : String();
+
+        if(PropertyDoc* propertyDoc = classDoc.PropertyMap.findValue(getName, NULL))
         {
-          if( strcmp(memberElement->Value(),"memberdef") == 0)
+          propertyDoc->Description = briefdescription;
+          propertyDoc->Type = returnValue;
+        }
+      }
+
+      //See if this is an m'VarName' member variable.
+      if(name[0] == 'm')
+      {
+        //strip the 'm' off of the name
+        String mName = name.size() > 1 ? name.sub_string(1, name.size() - 1) : String();
+
+        if(PropertyDoc* propertyDoc = classDoc.PropertyMap.findValue(mName, NULL))
+        {
+          if(propertyDoc->Description.empty())
           {
-            String name = GetElementValue(memberElement, "name");
-            String argsstring = GetElementValue(memberElement, "argsstring");
-            String briefdescription = DoxyToString(memberElement, "briefdescription");
-            String returnValue  = ToTypeName(memberElement, "type");
-
-            name = Replace(replacements,name);
-            argsstring = Replace(replacements,argsstring);
-            briefdescription = Replace(replacements,briefdescription);
-            returnValue = Replace(replacements,returnValue);
-
-
-            //std::cout << name << " " << returnValue << argsstring << " " << briefdescription << "\n";
-
-            ///Check for Get'Property' function.
-            if(name[0] == 'G')
-            {
-              String getName = name.size() > 3 ? name.sub_string(3, name.size() - 3) : String();
-
-              if(PropertyDoc* propertyDoc = classDoc.PropertyMap.findValue(getName, NULL) )
-              {
-                propertyDoc->Description = briefdescription;
-                propertyDoc->Type = returnValue;
-              }
-            }
-
-            ///Check for m'Property' member variable.
-            if(name[0] == 'm')
-            {
-              String mName = name.size() > 1 ? name.sub_string(1, name.size() - 1) : String();
-
-              if(PropertyDoc* propertyDoc = classDoc.PropertyMap.findValue(mName, NULL) )
-              {
-                if(propertyDoc->Description.empty())
-                {
-                  propertyDoc->Description = briefdescription;
-                  propertyDoc->Type = returnValue;
-                }
-              }
-
-
-            }
-
-            if(PropertyDoc* propertyDoc = classDoc.PropertyMap.findValue(name, NULL) )
-            {
-              if(propertyDoc->Description.empty())
-              {
-                propertyDoc->Description = briefdescription;
-                propertyDoc->Type = returnValue;
-              }
-            }
-
-            if(MethodDoc* methodDoc = classDoc.MethodMap.findValue(name, NULL) )
-            {
-              methodDoc->Description = briefdescription;
-              methodDoc->Arugments = argsstring;
-              methodDoc->ReturnValue = returnValue;
-            }
+            propertyDoc->Description = briefdescription;
+            propertyDoc->Type = returnValue;
           }
         }
       }
+
+      //See if this is a property that is not a Getter and doesn't start with m, such as Translation.
+      if(PropertyDoc* propertyDoc = classDoc.PropertyMap.findValue(name, NULL))
+      {
+        if(propertyDoc->Description.empty())
+        {
+          propertyDoc->Description = briefdescription;
+          propertyDoc->Type = returnValue;
+        }
+      }
+
+      //See if this was a method.
+      if(MethodDoc* methodDoc = classDoc.MethodMap.findValue(name, NULL))
+      {
+        methodDoc->Description = briefdescription;
+        methodDoc->Arugments = argsstring;
+        methodDoc->ReturnValue = returnValue;
+      }
     }
-  }
-  else
-  {
-    // __debugbreak();
   }
 }
 

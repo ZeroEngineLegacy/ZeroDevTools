@@ -12,6 +12,7 @@
 #include "WikiOperations.hpp"
 #include "TinyXmlHelpers.hpp"
 #include "Platform/FileSystem.hpp"
+#include "Logging.hpp"
 
 namespace Zero
 {
@@ -132,6 +133,9 @@ void PushToWiki(StringMap& params)
 
 void ParseAndSaveDocumentation(StringMap& params)
 {
+  bool verbose = GetStringValue<bool>(params,"verbose",false);
+  String log = GetStringValue<String>(params,"log","");
+
   //get the path to the source and to the documentation
   String sourcePath = GetStringValue<String>(params,"sourcePath","C:\\Zero\\");
   sourcePath = NormalizePath(sourcePath);
@@ -174,9 +178,11 @@ void ParseAndSaveDocumentation(StringMap& params)
 
   //save the merged file back into the output file
   SaveToDataFile(doc, output);
+
+  WarnAndLogUndocumentedProperties(doc.Classes,verbose,log);
 }
 
-}
+}//namespace Zero
 
 int main(int argc, char* argv[])
 {

@@ -15,6 +15,8 @@ TiXmlElement* FindElementWithAttribute(TiXmlElement* element, cstr attribute, cs
 void RecursiveExtract(StringBuilder& builder, TiXmlNode* node);
 String DoxyToString(TiXmlElement* parent, cstr name);
 String GetElementValue(TiXmlElement* parent, cstr name, cstr second=NULL);
+void FindClassesWithBase(StringParam doxyPath, HashSet<String>& classes, HashSet<String>& baseClassesToInclude,
+                         HashSet<String>& baseClassesToIgnore, HashSet<String>& classesToIgnore);
 void ExtractMethodDocs(ClassDoc& classDoc, DocumentationLibrary& library, ClassDoc& currentClass, StringParam doxyPath, Array<Replacement>& replacements);
 void ExtractMethodDocs(ClassDoc& classDoc, DocumentationLibrary& library, StringParam doxyPath, Array<Replacement>& replacements);
 

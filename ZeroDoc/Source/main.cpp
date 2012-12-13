@@ -13,6 +13,7 @@
 #include "TinyXmlHelpers.hpp"
 #include "Platform/FileSystem.hpp"
 #include "Logging.hpp"
+#include "ExtraDocumentation.hpp"
 
 namespace Zero
 {
@@ -144,6 +145,8 @@ void ParseAndSaveDocumentation(StringMap& params)
   //get the path to the doxygen file
   String doxygenPath = GetStringValue<String>(params,"doxyPath","C:\\ZeroDoxygen\\");
   doxygenPath = NormalizePath(doxygenPath);
+
+  String documentationRoot = BuildString(sourcePath.c_str(),"DevTools\\Documentation\\");
   
   //load the raw documentation (before merging with doxy) and load into a document
   String datafile = BuildString(documentationPath.c_str(),"DocumentationRaw.data");
@@ -176,10 +179,13 @@ void ParseAndSaveDocumentation(StringMap& params)
     ExtractMethodDocs( classDoc , doc, doxygenPath, symbolReplacements);
   }
 
+  String extraDocPath = BuildString(documentationRoot.c_str(),"ExtraDocumentation.txt");
+  LoadAndReplaceDocumentation(extraDocPath,doc,symbolReplacements);
+
   //save the merged file back into the output file
   SaveToDataFile(doc, output);
 
-  WarnAndLogUndocumentedProperties(doc.Classes,verbose,log);
+  WarnAndLogUndocumented(doc.Classes,doxygenPath,documentationRoot,verbose,log);
 }
 
 }//namespace Zero

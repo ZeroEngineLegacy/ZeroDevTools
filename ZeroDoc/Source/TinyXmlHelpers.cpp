@@ -296,7 +296,7 @@ void FindClassesWithBase(StringParam doxyPath, HashSet<String>& classes, HashSet
 
 void ExtractMethodDocs(ClassDoc& classDoc, DocumentationLibrary& library, ClassDoc& currentClass, StringParam doxyPath, Array<Replacement>& replacements)
 {
-  //if(currentClass.Name != "Transform")
+  //if(currentClass.Name != "JointConfigOverride")
   //  return;
 
   //extract methods and properties from the base classes
@@ -360,15 +360,30 @@ void ExtractMethodDocs(ClassDoc& classDoc, DocumentationLibrary& library, ClassD
       if(strcmp(memberElement->Value(),"memberdef") != 0)
         continue;
 
+      //variables have the mutable attribute while methods don't, use this to differentiate the two
+      const char* isVariable = memberElement->Attribute("mutable");
       String name = GetElementValue(memberElement, "name");
       String argsstring = GetElementValue(memberElement, "argsstring");
       String briefdescription = DoxyToString(memberElement, "briefdescription");
+      uint i = 0;
+      while(briefdescription[i] == ' ')
+        ++i;
+      briefdescription = briefdescription.sub_string(i,briefdescription.size() - i);
+
       String returnValue  = ToTypeName(memberElement, "type");
 
       name = Replace(replacements,name);
       argsstring = Replace(replacements,argsstring);
       briefdescription = Replace(replacements,briefdescription);
       returnValue = Replace(replacements,returnValue);
+
+      PropertyDoc propDoc;
+      propDoc.Name = name;
+      propDoc.Description = briefdescription;
+      MethodDoc metDoc;
+      metDoc.Name = name;
+      metDoc.Description = briefdescription;
+      metDoc.ReturnValue = returnValue;
 
 
       //See if this is a Get 'Property' function.
@@ -378,10 +393,7 @@ void ExtractMethodDocs(ClassDoc& classDoc, DocumentationLibrary& library, ClassD
         String getName = name.size() > 3 ? name.sub_string(3, name.size() - 3) : String();
 
         if(PropertyDoc* propertyDoc = classDoc.PropertyMap.findValue(getName, NULL))
-        {
-          propertyDoc->Description = briefdescription;
-          propertyDoc->Type = returnValue;
-        }
+          *propertyDoc = propDoc;
       }
 
       //See if this is an m'VarName' member variable.
@@ -393,10 +405,7 @@ void ExtractMethodDocs(ClassDoc& classDoc, DocumentationLibrary& library, ClassD
         if(PropertyDoc* propertyDoc = classDoc.PropertyMap.findValue(mName, NULL))
         {
           if(propertyDoc->Description.empty())
-          {
-            propertyDoc->Description = briefdescription;
-            propertyDoc->Type = returnValue;
-          }
+            *propertyDoc = propDoc;
         }
       }
 
@@ -404,19 +413,12 @@ void ExtractMethodDocs(ClassDoc& classDoc, DocumentationLibrary& library, ClassD
       if(PropertyDoc* propertyDoc = classDoc.PropertyMap.findValue(name, NULL))
       {
         if(propertyDoc->Description.empty())
-        {
-          propertyDoc->Description = briefdescription;
-          propertyDoc->Type = returnValue;
-        }
+          *propertyDoc = propDoc;
       }
 
       //See if this was a method.
       if(MethodDoc* methodDoc = classDoc.MethodMap.findValue(name, NULL))
-      {
-        methodDoc->Description = briefdescription;
-        methodDoc->Arugments = argsstring;
-        methodDoc->ReturnValue = returnValue;
-      }
+        *methodDoc = metDoc;
     }
   }
 }

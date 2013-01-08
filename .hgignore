@@ -12,3 +12,4 @@ syntax: glob
 *.ipch
 
 ZeroDoc/LocalBuildEnvironment.cmd
+BuildMaker/LocalBuildEnvironment.cmd

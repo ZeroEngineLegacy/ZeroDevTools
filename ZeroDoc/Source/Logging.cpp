@@ -141,4 +141,60 @@ void WarnUndocumentedClasses(Array<ClassDoc>& classes, StringParam doxyPath,
     builder.Append(BuildString("Warning: Class ",undocumentedClasses[i]," is undocumented.\n"));
 }
 
+void WarnNeedsWikiPage(Array<WikiUpdatePage>& pagesToUpdate, Array<ClassDoc>& documentedClasses,
+                       StringParam doxyPath, StringParam docPath, 
+                       bool verbose, StringParam log)
+{
+  //if we are not marked as verbose and there is no log to write to then there's nothing to do
+  if(!verbose && log.empty())
+    return;
+
+  //build up both undocumented classes and properties into one builder
+  StringBuilder builder;
+
+  HashSet<String> docClasses;
+  for(uint i = 0; i < documentedClasses.size(); ++i)
+    docClasses.insert(documentedClasses[i].Name);
+
+  for(uint i = 0; i < pagesToUpdate.size(); ++i)
+  {
+    String className = pagesToUpdate[i].mPageToUpdate;
+    String findVal = docClasses.findValue(className,"");
+    if(findVal.empty() == false)
+    {
+      docClasses.erase(className);
+    }
+  }
+  
+  //in order to display the undocumented classes in a reasonable way, sort the
+  //classes. To do this first convert them to an array then sort them.
+  Array<String> noWikiClasses;
+  for(HashSet<String>::range r = docClasses.all(); !r.empty(); r.popFront())
+    noWikiClasses.push_back(r.front());
+  sort(noWikiClasses.all());
+
+  //now build up the string that is all of the undocumented classes.
+  for(uint i = 0; i < noWikiClasses.size(); ++i)
+    builder.Append(BuildString("Warning: Class ",noWikiClasses[i]," has no wiki page.\n"));
+
+  //if there is no warnings then there is nothing to do
+  String outStr = builder.ToString();
+  if(outStr.empty())
+    return;
+
+  //verbose means we should print the warnings
+  if(verbose)
+    printf("%s",outStr.c_str());
+
+  //if there is a log then we need to write the file
+  if(!log.empty())
+  {
+    //if we aren't verbose then tell the user that there were warnings
+    //put out to the log file that they should go and check.
+    if(!verbose)
+      printf("Warning: Classes that were documented did not have their wiki pages updated.Check log file %s.\n",log.c_str());
+    WriteStringRangeToFile(log, outStr);
+  }
+}
+
 }//namespace Zero

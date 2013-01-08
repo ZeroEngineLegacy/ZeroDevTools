@@ -18,36 +18,51 @@
 namespace Zero
 {
 
-struct WikiUpdatePage
+struct Configurations
 {
-  WikiUpdatePage() {}
-  WikiUpdatePage(StringParam page, StringParam parent)
-  {
-    mPageToUpdate = page;
-    mParentPage = parent;
-  }
-
-  void Serialize(Serializer& stream)
-  {
-    SerializeName(mPageToUpdate);
-    SerializeName(mParentPage);
-  }
-
-  String mPageToUpdate;
-  String mParentPage;
+  String SourcePath;
+  String DocumentationPath;
+  String DocumentationRoot;
+  String DoxygenPath;
+  String DocumentationRawFile;
+  String DocumentationFile;
+  
+  bool Verbose;
+  String Log;
 };
+
+Configurations LoadConfigurations(StringMap& params)
+{
+  Configurations config;
+  config.Verbose = GetStringValue<bool>(params,"verbose",false);
+  config.Log = GetStringValue<String>(params,"log","");
+
+  //get the path to the source
+  config.SourcePath = GetStringValue<String>(params,"sourcePath","C:\\Zero\\");
+  config.SourcePath = NormalizePath(config.SourcePath);
+  //get the path to the documentation
+  config.DocumentationPath = BuildString(config.SourcePath.all(),"\\Projects\\Editor\\");
+  config.DocumentationPath = NormalizePath(config.DocumentationPath);
+  //load the raw documentation (before merging with doxy) and the documentation file
+  config.DocumentationRawFile = BuildString(config.DocumentationPath.c_str(),"DocumentationRaw.data");
+  config.DocumentationFile  = BuildString(config.DocumentationPath.c_str(),"Documentation.data");
+  //get the path to the doxygen file
+  config.DoxygenPath = GetStringValue<String>(params,"doxyPath","C:\\ZeroDoxygen\\");
+  config.DoxygenPath = NormalizePath(config.DoxygenPath);
+  //get the path to the documentation folder (where the data files for documentation are)
+  config.DocumentationRoot = BuildString(config.SourcePath.c_str(),"DevTools\\Documentation\\");
+  
+  return config;
+}
 
 void PushToWiki(StringMap& params)
 {
-  String sourcePath = GetStringValue<String>(params,"sourcePath","C:\\Zero\\");
-  sourcePath = NormalizePath(sourcePath);
-
-  bool verbose = GetStringValue<bool>(params,"verbose",false);
+  Configurations config = LoadConfigurations(params);
 
   //there's a set list of classes we want to push to the wiki, load this list from a data file
   Array<WikiUpdatePage> pagesToUpdate;
   TextLoader stream;
-  String pagesToUpdatePath = BuildString(sourcePath.c_str(),"DevTools\\PagesToUpdate.txt");
+  String pagesToUpdatePath = BuildString(config.SourcePath.c_str(),"DevTools\\PagesToUpdate.txt");
   if(!FileExists(pagesToUpdatePath))
   {
     printf("%s does not exist.",pagesToUpdatePath.c_str());
@@ -57,13 +72,25 @@ void PushToWiki(StringMap& params)
   SerializeName(pagesToUpdate);
   stream.Close();
 
+  //now load the documentation file (the documentation for all the classes)
+  if(!FileExists(config.DocumentationFile.c_str()))
+  {
+    printf("%s does not exist.",config.DocumentationFile.c_str());
+    return;
+  }
+  Zero::DocumentationLibrary doc;
+  Zero::LoadFromDataFile(doc, config.DocumentationFile);
+  doc.Build();
+  //warn for classes that have documentation but are not parked to push to the wiki
+  WarnNeedsWikiPage(pagesToUpdate,doc.Classes,config.DoxygenPath,config.DocumentationRoot,config.Verbose,config.Log);
+
   //log onto the wiki and get our token to use for further operations
   Zero::String token;
-  LogOn(token,verbose);
+  LogOn(token,config.Verbose);
 
   //extract the wiki article names and their indices from the wiki
   StringMap wikiIndices;
-  GetWikiArticleIds(token,wikiIndices,verbose);
+  GetWikiArticleIds(token,wikiIndices,config.Verbose);
 
   //create a map of the wiki names and ids for only what we want to push to the wiki
   typedef StringMap WikiMap;
@@ -80,7 +107,7 @@ void PushToWiki(StringMap& params)
       String parentIndex = wikiIndices.findValue(parentPageName,"");
       if(!parentIndex.empty())
       {
-        bool success = CreateWikiPage(token,pageName,parentIndex,WikiIndex,verbose);
+        bool success = CreateWikiPage(token,pageName,parentIndex,WikiIndex,config.Verbose);
         if(!success)
           printf("Failed to find wiki article for \"%s\" with parent \"%s\"\n",pageName.c_str(),parentPageName.c_str());
         else
@@ -103,15 +130,6 @@ void PushToWiki(StringMap& params)
   }
   sort(classReplaceMents.all());
 
-  
-  //load the documentation file
-  String documentationPath = BuildString(sourcePath.all(),"\\Projects\\Editor\\");
-  documentationPath = NormalizePath(documentationPath);
-  String datafile = BuildString(documentationPath.c_str(),"Documentation.data");
-  Zero::DocumentationLibrary doc;
-  Zero::LoadFromDataFile(doc, datafile);
-  doc.Build();
-
   ///upload the class' page to the wiki, making sure to perform the link replacements
   forRange(ClassDoc& classDoc, doc.Classes.all())
   {
@@ -119,8 +137,8 @@ void PushToWiki(StringMap& params)
     if(!index.empty())
     {
       //should uncomment when testing (so we don't accidentally destroy the whole wiki)
-      //if(classDoc.Name == "DynamicController")
-      UploadClassDoc(index, classDoc, classReplaceMents, token, verbose);
+      //if(classDoc.Name == "PhysicsEffect")
+      UploadClassDoc(index, classDoc, classReplaceMents, token, config.Verbose);
     }
     else
     {
@@ -129,28 +147,16 @@ void PushToWiki(StringMap& params)
     }
   }
 
-  LogOff(token,verbose);
+  LogOff(token,config.Verbose);
 }
 
 void ParseAndSaveDocumentation(StringMap& params)
 {
-  bool verbose = GetStringValue<bool>(params,"verbose",false);
-  String log = GetStringValue<String>(params,"log","");
+  Configurations config = LoadConfigurations(params);
 
-  //get the path to the source and to the documentation
-  String sourcePath = GetStringValue<String>(params,"sourcePath","C:\\Zero\\");
-  sourcePath = NormalizePath(sourcePath);
-  String documentationPath = BuildString(sourcePath.all(),"\\Projects\\Editor\\");
-  documentationPath = NormalizePath(documentationPath);
-  //get the path to the doxygen file
-  String doxygenPath = GetStringValue<String>(params,"doxyPath","C:\\ZeroDoxygen\\");
-  doxygenPath = NormalizePath(doxygenPath);
-
-  String documentationRoot = BuildString(sourcePath.c_str(),"DevTools\\Documentation\\");
-  
   //load the raw documentation (before merging with doxy) and load into a document
-  String datafile = BuildString(documentationPath.c_str(),"DocumentationRaw.data");
-  String output = BuildString(documentationPath.c_str(),"Documentation.data");
+  String datafile = config.DocumentationRawFile;
+  String output = config.DocumentationFile;
 
   if(!FileExists(datafile.c_str()) || !FileExists(output.c_str()))
   {
@@ -176,16 +182,16 @@ void ParseAndSaveDocumentation(StringMap& params)
   //now extract the doxygen data into the document
   forRange(ClassDoc& classDoc, doc.Classes.all())
   {
-    ExtractMethodDocs( classDoc , doc, doxygenPath, symbolReplacements);
+    ExtractMethodDocs( classDoc , doc, config.DoxygenPath, symbolReplacements);
   }
 
-  String extraDocPath = BuildString(documentationRoot.c_str(),"ExtraDocumentation.txt");
+  String extraDocPath = BuildString(config.DocumentationRoot.c_str(),"ExtraDocumentation.txt");
   LoadAndReplaceDocumentation(extraDocPath,doc,symbolReplacements);
 
   //save the merged file back into the output file
   SaveToDataFile(doc, output);
 
-  WarnAndLogUndocumented(doc.Classes,doxygenPath,documentationRoot,verbose,log);
+  WarnAndLogUndocumented(doc.Classes,config.DoxygenPath,config.DocumentationRoot,config.Verbose,config.Log);
 }
 
 }//namespace Zero

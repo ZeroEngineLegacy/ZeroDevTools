@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Engine\Documentation.hpp"
+#include "WikiOperations.hpp"
 
 namespace Zero
 {
@@ -12,5 +13,9 @@ void WarnAndLogUndocumented(Array<ClassDoc>& classes, StringParam doxyPath,
 void WarnAndLogUndocumentedProperties(Array<ClassDoc>& classes, StringBuilder& builder);
 void WarnUndocumentedClasses(Array<ClassDoc>& classes, StringParam doxyPath,
                              StringParam docPath, StringBuilder& builder);
+
+void WarnNeedsWikiPage(Array<WikiUpdatePage>& pagesToUpdate, Array<ClassDoc>& documentedClasses,
+                       StringParam doxyPath, StringParam docPath, 
+                       bool verbose, StringParam log);
 
 }//namespace Zero

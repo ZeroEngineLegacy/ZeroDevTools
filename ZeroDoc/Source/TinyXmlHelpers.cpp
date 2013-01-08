@@ -296,7 +296,7 @@ void FindClassesWithBase(StringParam doxyPath, HashSet<String>& classes, HashSet
 
 void ExtractMethodDocs(ClassDoc& classDoc, DocumentationLibrary& library, ClassDoc& currentClass, StringParam doxyPath, Array<Replacement>& replacements)
 {
-  //if(currentClass.Name != "JointConfigOverride")
+  //if(currentClass.Name != "PhysicsEffect")
   //  return;
 
   //extract methods and properties from the base classes
@@ -393,7 +393,10 @@ void ExtractMethodDocs(ClassDoc& classDoc, DocumentationLibrary& library, ClassD
         String getName = name.size() > 3 ? name.sub_string(3, name.size() - 3) : String();
 
         if(PropertyDoc* propertyDoc = classDoc.PropertyMap.findValue(getName, NULL))
+        {
           *propertyDoc = propDoc;
+          propertyDoc->Name = getName;
+        }
       }
 
       //See if this is an m'VarName' member variable.
@@ -405,7 +408,10 @@ void ExtractMethodDocs(ClassDoc& classDoc, DocumentationLibrary& library, ClassD
         if(PropertyDoc* propertyDoc = classDoc.PropertyMap.findValue(mName, NULL))
         {
           if(propertyDoc->Description.empty())
+          {
             *propertyDoc = propDoc;
+            propertyDoc->Name = mName;
+          }
         }
       }
 

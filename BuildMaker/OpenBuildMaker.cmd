@@ -1,2 +1,2 @@
 call SetUpBuildEnvironment
-BuildInstall.sln
+BuildMaker.sln

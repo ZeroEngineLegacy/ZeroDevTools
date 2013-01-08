@@ -23,36 +23,9 @@ namespace BuildMaker
 
     bool LoginToFogBugz(bool useMyCredentials)
     {
-      if (useMyCredentials)
-      {
-        //Get the path of the source folder.
-        String zeroPath = Environment.ExpandEnvironmentVariables("%ZERO_SOURCE%");
-
-        //Go up one level to get to the dev tools.
-        zeroPath = Path.GetDirectoryName(zeroPath);
-
-        //Build the path of the login information.
-        String[] paths = new String[] { zeroPath, "DevTools", "BuildInstall", "login.xml" };
-        String loginPath = Path.Combine(paths);
-
-        //Get login information.
-        XDocument loginDoc = XDocument.Load(loginPath);
-        XElement loginInfo = loginDoc.Element("login_info");
-        String username = loginInfo.Element("username").Value;
-        String password = loginInfo.Element("password").Value;
-
-        Console.WriteLine("Logging in to the FogBugz database.");
-        //Login to FogBugz.
-        FogBugzClient.LogOn("http://zeroengine0.digipen.edu/api.asp",
-                            username, password);
-      }
-      else
-      {
-        //Use the LevelDesigner2D account.
-        FogBugzClient.LogOn("http://zeroengine0.digipen.edu/api.asp",
-                            "LevelDesigner2D", "letmein");
-      }
-
+      //Use the LevelDesigner2D account.
+      FogBugzClient.LogOn("http://zeroengine0.digipen.edu/api.asp",
+                          "LevelDesigner2D", "letmein");
       Console.WriteLine("Logged in!");
 
       return true;
@@ -98,10 +71,12 @@ namespace BuildMaker
       {
         Console.WriteLine("wikipage could not be found.");
       }
-      //pageBody.AddFirst(new6XCData("<p>Butts.</p>"));
+      String pageBodyContent = pageBody.Value;
+      pageBodyContent.First()
       Console.WriteLine(pageBody.Value);
-      Console.WriteLine(installerPage.FirstNode.ToString());
+      //Console.WriteLine(installerPage.FirstNode.ToString());
       installerPage.Save("temp.xml");
+
     }
 
     String FindTheInsidePage()

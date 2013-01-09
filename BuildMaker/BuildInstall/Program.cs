@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using BuildMaker;
+using System.IO;
 
 namespace BuildInstall
 {
@@ -9,10 +10,10 @@ namespace BuildInstall
   {
     static void Main(string[] args)
     {
-      //InstallBuilder ib = new InstallBuilder();
-      //ib.Run();
+      InstallBuilder ib = new InstallBuilder();
+      String installerDirectory = ib.Run();
       ReleaseNoteBuilder rnb = new ReleaseNoteBuilder();
-      rnb.Run();
+      rnb.Run(installerDirectory);
     }
   }
 }

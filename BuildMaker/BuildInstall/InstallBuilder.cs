@@ -10,10 +10,10 @@ namespace BuildMaker
 {
   class InstallBuilder
   {
-    public void Run()
+    public String Run()
     {
-      string cZeroSource = Environment.ExpandEnvironmentVariables("%ZERO_SOURCE%");
-      string cBuildOutput = Path.Combine(cZeroSource, "Build");
+      String cZeroSource = Environment.ExpandEnvironmentVariables("%ZERO_SOURCE%");
+      String cBuildOutput = Path.Combine(cZeroSource, "Build");
 
       //Print a nice message signifying the start of the install build.
       Console.WriteLine("Building the latest Zero Engine installer...");
@@ -33,7 +33,7 @@ namespace BuildMaker
                           "the build install maker.");
         Console.WriteLine("Press any key to continue...");
         Console.ReadKey();
-        return;
+        return null;
       }
       innoSetup.WaitForExit();
 
@@ -45,16 +45,16 @@ namespace BuildMaker
       revisionNumberInfo.RedirectStandardOutput = true;
       revisionNumberInfo.UseShellExecute = false;
       Process revisionNumber = Process.Start(revisionNumberInfo);
-      string revNum = revisionNumber.StandardOutput.ReadToEnd();
-      string buildNumber = (revNum.Split(':'))[0];
+      String revNum = revisionNumber.StandardOutput.ReadToEnd();
+      String buildNumber = (revNum.Split(':'))[0];
       revisionNumber.WaitForExit();
 
       //Get the date.
       DateTime theDate = DateTime.Now;
-      string date = theDate.ToString(".yyyy.MM.dd.");
+      String date = theDate.ToString(".yyyy.MM.dd.");
 
       //Rename the install executable.
-      string newFileName = "ZeroEngineSetup" + date + buildNumber + ".exe";
+      String newFileName = "ZeroEngineSetup" + date + buildNumber + ".exe";
       File.Copy(Path.Combine(cBuildOutput, "Output", "ZeroEngineSetup.exe"),
                 Path.Combine(cBuildOutput, "Output", newFileName), true);
       File.Delete(Path.Combine(cBuildOutput, "Output", "ZeroEngineSetup.exe"));
@@ -62,6 +62,7 @@ namespace BuildMaker
       //Open the folder
       Process.Start("explorer.exe", 
                     "/select, " + Path.Combine(cBuildOutput, "Output", newFileName));
+      return Path.Combine(cBuildOutput, "Output");
     }
   }
 }

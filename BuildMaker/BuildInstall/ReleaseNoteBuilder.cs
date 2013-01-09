@@ -13,15 +13,16 @@ namespace BuildMaker
 {
   class ReleaseNoteBuilder
   {
-    public void Run()
+    public void Run(String installerDirectory)
     {
+      //Token's used for wiki info, the FogBugzClient login is used to get the
+      //cases from the bug database. Could be done with one "login" but it works.
       GetLoginToken();
-      UpdateTheInstallPage();
-      GetFogBugzCases();
-      Console.ReadKey();
+      GetInstallPage();
+      GetFogBugzCases(installerDirectory);
     }
 
-    bool LoginToFogBugz(bool useMyCredentials)
+    bool LoginToFogBugz()
     {
       //Use the LevelDesigner2D account.
       FogBugzClient.LogOn("http://zeroengine0.digipen.edu/api.asp",
@@ -31,21 +32,46 @@ namespace BuildMaker
       return true;
     }
 
-    void GetFogBugzCases()
+    void GetFogBugzCases(String installerDirectory)
     {
       //Login as LevelDesigner2D to get a list of cases. This account has the 
       //"every case resolved in the last 2 months" filter.
-      LoginToFogBugz(false);
-
-      IEnumerable<Filter> filters = FogBugzClient.GetFilters();
+      LoginToFogBugz();
 
       //Find the ID of the "Release Notes" filter so we can get all the cases
       //that matter to us.
-      //Filter releaseNotes = filters.FirstOrDefault(filter => filter.Name == "Release Notes");
-      Filter testFilter = filters.FirstOrDefault(filter => filter.Name == "TestFilter");
-      FogBugzClient.SetFilter(testFilter.Content);
+      IEnumerable<Filter> filters = FogBugzClient.GetFilters();
+      Filter currentFilter = filters.FirstOrDefault(filter => filter.Name == "Release Notes");
+      FogBugzClient.SetFilter(currentFilter.Content);
 
+      //Get all the resolved bugs since the last posted build of the Zero Engine
+      //and build the HTML to paste into the wiki article.
+      String htmlForCases = "<ul>";
+      DateTime lastBuildDate = GetLastBuildDate();
       IEnumerable<Case> cases = FogBugzClient.GetAllCases();
+      foreach(var bugCase in cases)
+      {
+        if (bugCase.DateResolved > lastBuildDate)
+        {
+          htmlForCases += CaseToHtmlEntry(bugCase);
+        }
+      }
+      htmlForCases += "</ul>";
+      System.IO.File.WriteAllText(Path.Combine(installerDirectory, "release_notes.txt"),
+                                               htmlForCases);
+    }
+
+    String CaseToHtmlEntry(Case bugCase)
+    {
+      //Builds the following HTML, where "42" is the case number example and
+      //"Title" is the case title. Allows for cool listing of the bugs in the wiki page.
+      //<li><a href="default.asp?42" onmouseover="b1(42, this);" rel="nofollow">42: Title</a></li>
+      String caseNumber = bugCase.Index.ToString();
+      String htmlEntry = "<li><a href=\"default.asp?";
+      htmlEntry += caseNumber + "\" onmouseover=\"b1(" + caseNumber;
+      htmlEntry += ", this);\" rel=\"nofollow\">" + caseNumber + ": ";
+      htmlEntry += bugCase.Title + "</a></li>";
+      return htmlEntry;
     }
 
     void GetLoginToken()
@@ -58,25 +84,31 @@ namespace BuildMaker
       Console.WriteLine("Login token is: " + mLoginToken);
     }
 
-    void UpdateTheInstallPage()
+    void GetInstallPage()
     {
-      //const String pageToFind = "TestArticle";
       const String pageToFind = "Installer";
       String installUrl = FindTheInstallerPage(pageToFind);
-      XDocument installerPage = XmlFromUrl(installUrl);
-      XElement pageBody = installerPage.Element("response")
-                                       .Element("wikipage")
-                                       .Element("sBody");
-      if (pageBody == null)
-      {
-        Console.WriteLine("wikipage could not be found.");
-      }
-      String pageBodyContent = pageBody.Value;
-      pageBodyContent.First()
-      Console.WriteLine(pageBody.Value);
-      //Console.WriteLine(installerPage.FirstNode.ToString());
-      installerPage.Save("temp.xml");
+      mInstallPage = XmlFromUrl(installUrl);
+    }
 
+    DateTime GetLastBuildDate()
+    {
+      const int cMonthStart = 5;
+      const int cDayStart = 8;
+      const String cZeroEngineDate = @"ZeroEngineSetup";
+      int dateOffset = cZeroEngineDate.Length;
+
+      //Get the date for all the bug comparisons
+      String pageBody = mInstallPage.Element("response")
+                                    .Element("wikipage")
+                                    .Element("sBody")
+                                    .Value;
+
+      int date = pageBody.IndexOf(cZeroEngineDate) + dateOffset;
+      int year = Convert.ToInt32(pageBody.Substring(date, 4));
+      int month = Convert.ToInt32(pageBody.Substring(date + cMonthStart, 2));
+      int day = Convert.ToInt32(pageBody.Substring(date + cDayStart, 2));
+      return new DateTime(year, month, day);
     }
 
     String FindTheInsidePage()
@@ -156,5 +188,6 @@ namespace BuildMaker
     }
 
     String mLoginToken;
+    XDocument mInstallPage;
   }
 }

@@ -13,4 +13,23 @@ void GetWikiArticleIds(StringParam token, StringMap& wikiIndices, bool verbose);
 bool CreateWikiPage(StringParam token, StringParam pageName, StringParam parentPageIndex, StringMap& wikiIndices, bool verbose);
 void UploadClassDoc(StringParam index, ClassDoc& classDoc, Replacments& replacements, StringParam token, bool verbose);
 
+struct WikiUpdatePage
+{
+  WikiUpdatePage() {}
+  WikiUpdatePage(StringParam page, StringParam parent)
+  {
+    mPageToUpdate = page;
+    mParentPage = parent;
+  }
+
+  void Serialize(Serializer& stream)
+  {
+    SerializeName(mPageToUpdate);
+    SerializeName(mParentPage);
+  }
+
+  String mPageToUpdate;
+  String mParentPage;
+};
+
 }//namespace Zero

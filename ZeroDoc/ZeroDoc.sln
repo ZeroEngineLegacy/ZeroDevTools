@@ -30,7 +30,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Content", "%ZERO_SOURCE%\Sy
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Geometrics", "%ZERO_SOURCE%\Libraries\Geometrics\Geometrics.vcxproj", "{787F598D-F96E-48F5-8075-25D31FC7ED60}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libcurl", "curl\lib\vc6libcurl.vcxproj", "{1770267E-9499-589E-6047-987CB1536A04}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libcurl", "curl\lib\vc6libcurl.vcxproj", "{85B0B755-7D68-A3EA-37AE-E39B2C3E55C4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -82,10 +82,10 @@ Global
 		{787F598D-F96E-48F5-8075-25D31FC7ED60}.Debug|Win32.Build.0 = Debug|Win32
 		{787F598D-F96E-48F5-8075-25D31FC7ED60}.Release|Win32.ActiveCfg = Release|Win32
 		{787F598D-F96E-48F5-8075-25D31FC7ED60}.Release|Win32.Build.0 = Release|Win32
-		{1770267E-9499-589E-6047-987CB1536A04}.Debug|Win32.ActiveCfg = Debug|Win32
-		{1770267E-9499-589E-6047-987CB1536A04}.Debug|Win32.Build.0 = Debug|Win32
-		{1770267E-9499-589E-6047-987CB1536A04}.Release|Win32.ActiveCfg = Release|Win32
-		{1770267E-9499-589E-6047-987CB1536A04}.Release|Win32.Build.0 = Release|Win32
+		{85B0B755-7D68-A3EA-37AE-E39B2C3E55C4}.Debug|Win32.ActiveCfg = Debug|Win32
+		{85B0B755-7D68-A3EA-37AE-E39B2C3E55C4}.Debug|Win32.Build.0 = Debug|Win32
+		{85B0B755-7D68-A3EA-37AE-E39B2C3E55C4}.Release|Win32.ActiveCfg = Release|Win32
+		{85B0B755-7D68-A3EA-37AE-E39B2C3E55C4}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

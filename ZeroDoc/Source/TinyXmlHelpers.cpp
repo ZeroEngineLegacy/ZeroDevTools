@@ -296,8 +296,8 @@ void FindClassesWithBase(StringParam doxyPath, HashSet<String>& classes, HashSet
 
 void ExtractMethodDocs(ClassDoc& classDoc, DocumentationLibrary& library, ClassDoc& currentClass, StringParam doxyPath, Array<Replacement>& replacements)
 {
-  //if(currentClass.Name != "PhysicsEffect")
-  //  return;
+  //if(currentClass.Name == "Space")
+  //  __debugbreak();
 
   //extract methods and properties from the base classes
   if(!currentClass.BaseClass.empty())
@@ -380,8 +380,10 @@ void ExtractMethodDocs(ClassDoc& classDoc, DocumentationLibrary& library, ClassD
       PropertyDoc propDoc;
       propDoc.Name = name;
       propDoc.Description = briefdescription;
+      propDoc.Type = returnValue;
       MethodDoc metDoc;
       metDoc.Name = name;
+      metDoc.Arugments = argsstring;
       metDoc.Description = briefdescription;
       metDoc.ReturnValue = returnValue;
 

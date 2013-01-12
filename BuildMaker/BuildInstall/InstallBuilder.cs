@@ -1,4 +1,13 @@
-﻿using System;
+﻿///////////////////////////////////////////////////////////////////////////////
+///
+/// \file InstallBuilder.cs
+/// The entirety of the InstallBuilder tool.
+/// 
+/// Authors: Benjamin Strukus
+/// Copyright 2010-2013, DigiPen Institute of Technology
+///
+///////////////////////////////////////////////////////////////////////////////
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;

@@ -25,8 +25,8 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-        <OutputPath>$(ZERO_OUTPUT)\Out\Win32\Debug\BuildMaker\</OutputPath>
-	<IntermediateOutputPath>$(ZERO_OUTPUT)\Int\Win32\Debug\BuildMaker\</IntermediateOutputPath>
+    <OutputPath>$(ZERO_OUTPUT)\Out\Win32\Debug\BuildMaker\</OutputPath>
+    <IntermediateOutputPath>$(ZERO_OUTPUT)\Int\Win32\Debug\BuildMaker\</IntermediateOutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -37,7 +37,7 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>$(ZERO_OUTPUT)\Out\Win32\Release\BuildMaker\</OutputPath>
-	<IntermediateOutputPath>$(ZERO_OUTPUT)\Int\Win32\Release\BuildMaker\</IntermediateOutputPath>
+    <IntermediateOutputPath>$(ZERO_OUTPUT)\Int\Win32\Release\BuildMaker\</IntermediateOutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -118,36 +118,6 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\arrow-round.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\connected.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\connections.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\email.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\fire.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\lab.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\none.gif" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\search.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\unlock.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\wrench.png" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />

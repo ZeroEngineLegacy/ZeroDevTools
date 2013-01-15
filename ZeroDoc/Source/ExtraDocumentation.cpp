@@ -70,7 +70,7 @@ void LoadAndReplaceDocumentation(StringParam path, DocumentationLibrary& libary,
       if(metDoc != NULL)
       {
         metDoc->Description = method.mDescription;
-        metDoc->Arugments = method.mArguments;
+        metDoc->Arguments = method.mArguments;
         metDoc->ReturnValue = method.mReturnValue;
       }
     }

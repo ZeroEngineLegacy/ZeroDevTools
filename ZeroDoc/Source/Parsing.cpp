@@ -144,7 +144,7 @@ String BuildDoc(ClassDoc& classDoc, Replacments& replacements)
       Replace(builder, replacements, methodDoc.ReturnValue);
 
       builder << " " << methodDoc.Name << " ";
-      Replace(builder, replacements, methodDoc.Arugments);
+      Replace(builder, replacements, methodDoc.Arguments);
       builder << "</h4>";
 
       builder << "<p>";

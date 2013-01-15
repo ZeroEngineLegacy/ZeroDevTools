@@ -383,7 +383,7 @@ void ExtractMethodDocs(ClassDoc& classDoc, DocumentationLibrary& library, ClassD
       propDoc.Type = returnValue;
       MethodDoc metDoc;
       metDoc.Name = name;
-      metDoc.Arugments = argsstring;
+      metDoc.Arguments = argsstring;
       metDoc.Description = briefdescription;
       metDoc.ReturnValue = returnValue;
 

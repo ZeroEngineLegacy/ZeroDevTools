@@ -41,7 +41,7 @@ rangeType lowerBound(rangeType r, const type& value, predicate pred)
   {
     int step = count / 2;
     auto newValue = newRange[step];
-    if( pred(newValue, value) )
+    if( pred(newValue, value))
     {
       newRange.mBegin = newRange.mBegin + step + 1;
       count -= step+1;
@@ -61,7 +61,7 @@ rangeType upperBound(rangeType r, const type& value, predicate pred)
   {
     int step = count / 2;
     auto newValue = newRange[step];
-    if( !pred(value, newValue) )
+    if( !pred(value, newValue))
     {
       newRange.mBegin = newRange.mBegin + step + 1;
       count -= step+1;
@@ -72,7 +72,7 @@ rangeType upperBound(rangeType r, const type& value, predicate pred)
   return newRange;
 }
 
-String BuildDoc(ClassDoc& classDoc, Replacments& replacements)
+String BuildDoc(ClassDoc& classDoc, Replacements& replacements)
 {
   StringBuilder builder;
 
@@ -161,7 +161,7 @@ String BuildDoc(ClassDoc& classDoc, Replacments& replacements)
   return builder.ToString();
 }
 
-void Replace(StringBuilder& output, Replacments& replacements, String source)
+void Replace(StringBuilder& output, Replacements& replacements, String source)
 {
   StringRange sourceText = source.all();
   while(!sourceText.empty())
@@ -180,8 +180,8 @@ void Replace(StringBuilder& output, Replacments& replacements, String source)
       }
 
       char currentLetter = sourceText[letterIndex];
-      rrange lower = lowerBound(possibleMatches, currentLetter, CompareIndex(letterIndex) );
-      rrange upper = upperBound(possibleMatches, currentLetter, CompareIndex(letterIndex) );
+      rrange lower = lowerBound(possibleMatches, currentLetter, CompareIndex(letterIndex));
+      rrange upper = upperBound(possibleMatches, currentLetter, CompareIndex(letterIndex));
 
       rrange refinedMatches = rrange(lower.begin(), upper.begin());
 
@@ -211,7 +211,7 @@ void Replace(StringBuilder& output, Replacments& replacements, String source)
           //Only one possible match
           String& match = refinedMatches.front().Value;
           if(sourceText.size() >= match.size() && 
-            match == StringRange(sourceText.begin, sourceText.begin + match.size()))
+             match == StringRange(sourceText.begin, sourceText.begin + match.size()))
           {
             output << refinedMatches.front().Replace ;
             sourceText = StringRange(sourceText.begin + match.size(), sourceText.end);
@@ -235,7 +235,7 @@ void Replace(StringBuilder& output, Replacments& replacements, String source)
   }
 }
 
-String Replace(Replacments& replacements, String source)
+String Replace(Replacements& replacements, String source)
 {
   StringBuilder output;
   Replace(output, replacements, source);

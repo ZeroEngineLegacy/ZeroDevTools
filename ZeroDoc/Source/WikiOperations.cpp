@@ -26,6 +26,7 @@
 namespace Zero
 {
 
+//------------------------------------------------------------------- Write Data
 struct WriteData
 {
   virtual void Start() {};
@@ -40,6 +41,7 @@ struct WriteData
   bool mVerbose;
 };
 
+//---------------------------------------------------------------- Buffered Data
 struct BufferedData : public WriteData
 {
   void Start() override{};
@@ -56,6 +58,7 @@ struct BufferedData : public WriteData
   Zero::StringBuilder mBuilder;
 };
 
+//----------------------------------------------------------------- Token Parser
 struct TokenParser : public WriteData
 {
   void Start() override
@@ -109,7 +112,8 @@ void LogOn(String& token, bool verbose)
   TokenParser tokenParser;
   tokenParser.mVerbose = verbose;
 
-  String loginUrl = "http://zeroengine0.digipen.edu/api.asp?cmd=logon&email=LevelDesigner2D&password=letmein";
+  String loginUrl = "http://zeroengine0.digipen.edu/api.asp?"
+                    "cmd=logon&email=LevelDesigner2D&password=letmein";
   if(verbose)
     curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
 
@@ -140,7 +144,8 @@ void LogOff(StringParam token, bool verbose)
 
   curl = curl_easy_init();
 
-  String logoffUrl = Zero::BuildString("http://zeroengine0.digipen.edu/api.asp?cmd=logoff&token=",token.c_str());
+  String logoffUrl = Zero::BuildString("http://zeroengine0.digipen.edu/api.asp?"
+                                       "cmd=logoff&token=", token.c_str());
 
   WriteData parser;
   parser.mVerbose = verbose;
@@ -170,9 +175,11 @@ void GetWikiArticleIds(StringParam token, StringMap& wikiIndices, bool verbose)
 
   curl = curl_easy_init();
 
-  String url = String::Format("http://zeroengine0.digipen.edu/api.asp?cmd=listArticles&ixWiki=1&token=%s", token.c_str());
+  String url = String::Format("http://zeroengine0.digipen.edu/api.asp?"
+                              "cmd=listArticles&ixWiki=1&token=%s", 
+                              token.c_str());
 
-  curl_easy_setopt(curl, CURLOPT_URL,url.c_str());
+  curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
   curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
   if(verbose)
     curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
@@ -210,7 +217,8 @@ void GetWikiArticleIds(StringParam token, StringMap& wikiIndices, bool verbose)
   curl_easy_cleanup(curl);
 }
 
-bool CreateWikiPage(StringParam token, StringParam pageName, StringParam parentPageIndex, StringMap& wikiIndices, bool verbose)
+bool CreateWikiPage(StringParam token, StringParam pageName, 
+                    StringParam parentPageIndex, StringMap& wikiIndices, bool verbose)
 {
   CURL *curl;
   CURLcode res;
@@ -219,7 +227,9 @@ bool CreateWikiPage(StringParam token, StringParam pageName, StringParam parentP
 
   curl = curl_easy_init();
 
-  String url = String::Format("http://zeroengine0.digipen.edu/api.asp?cmd=newArticle&ixWiki=1&sHeadline=%s&token=%s", pageName.c_str(), token.c_str());
+  String url = String::Format("http://zeroengine0.digipen.edu/api.asp?"
+                              "cmd=newArticle&ixWiki=1&sHeadline=%s&token=%s", 
+                              pageName.c_str(), token.c_str());
 
   curl_easy_setopt(curl, CURLOPT_URL,url.c_str());
   curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
@@ -273,7 +283,8 @@ bool CreateWikiPage(StringParam token, StringParam pageName, StringParam parentP
   return true;
 }
 
-void UploadClassDoc(StringParam index, ClassDoc& classDoc, Replacments& replacements, StringParam token, bool verbose)
+void UploadClassDoc(StringParam index, ClassDoc& classDoc, Replacements& replacements, 
+                    StringParam token, bool verbose)
 {
   CURL *curl;
   CURLcode res;
@@ -282,7 +293,9 @@ void UploadClassDoc(StringParam index, ClassDoc& classDoc, Replacments& replacem
 
   curl = curl_easy_init();
 
-  String url = String::Format("http://zeroengine0.digipen.edu/api.asp?cmd=editArticle&ixWikiPage=%s&token=%s", index.c_str(), token.c_str());
+  String url = String::Format("http://zeroengine0.digipen.edu/api.asp?"
+                              "cmd=editArticle&ixWikiPage=%s&token=%s", 
+                              index.c_str(), token.c_str());
 
   curl_easy_setopt(curl, CURLOPT_URL,url.c_str());
 
@@ -291,13 +304,13 @@ void UploadClassDoc(StringParam index, ClassDoc& classDoc, Replacments& replacem
 
   String doc = BuildDoc(classDoc, replacements);
 
-  curl_formadd(&post, &last, CURLFORM_COPYNAME, "sHeadline",
-    CURLFORM_COPYCONTENTS, classDoc.Name.c_str(), CURLFORM_END);
+  curl_formadd(&post, &last, CURLFORM_COPYNAME, "sHeadline", 
+               CURLFORM_COPYCONTENTS, classDoc.Name.c_str(), CURLFORM_END);
 
-  curl_formadd(&post, &last, CURLFORM_COPYNAME, "sBody",
-    CURLFORM_PTRCONTENTS, doc.c_str(),
-    CURLFORM_CONTENTSLENGTH, doc.size(),
-    CURLFORM_CONTENTTYPE, "text/html", CURLFORM_END);
+  curl_formadd(&post, &last, CURLFORM_COPYNAME, "sBody", 
+               CURLFORM_PTRCONTENTS, doc.c_str(),
+               CURLFORM_CONTENTSLENGTH, doc.size(),
+               CURLFORM_CONTENTTYPE, "text/html", CURLFORM_END);
 
   /* Set the form info */
   curl_easy_setopt(curl, CURLOPT_HTTPPOST, post);
@@ -314,7 +327,58 @@ void UploadClassDoc(StringParam index, ClassDoc& classDoc, Replacments& replacem
   res = curl_easy_perform(curl);
 
   if(res != CURLE_OK)
-    printf("Failed to upload class doc %s.\n",classDoc.Name);
+    printf("Failed to upload class doc %s.\n",classDoc.Name.c_str());
+
+  /* always cleanup */ 
+  curl_easy_cleanup(curl);
+}
+
+void UploadPageContent(StringParam pageIndex, StringParam pageTitle, 
+                       StringParam pageContent, StringParam token, bool verbose)
+{
+  CURL *curl;
+  CURLcode res;
+
+  curl_global_init(CURL_GLOBAL_DEFAULT);
+
+  curl = curl_easy_init();
+
+  String url = String::Format("http://zeroengine0.digipen.edu/api.asp?"
+                              "cmd=editArticle&ixWikiPage=%s&token=%s", 
+                              pageIndex.c_str(), token.c_str());
+
+  curl_easy_setopt(curl, CURLOPT_URL,url.c_str());
+
+  curl_httppost* post = NULL;
+  curl_httppost* last = NULL;
+
+  //String doc = BuildDoc(classDoc, replacements);
+
+
+  curl_formadd(&post, &last, CURLFORM_COPYNAME, "sHeadline", 
+               CURLFORM_COPYCONTENTS, pageTitle.c_str(), CURLFORM_END);
+
+  curl_formadd(&post, &last, CURLFORM_COPYNAME, "sBody", 
+               CURLFORM_PTRCONTENTS, pageContent.c_str(),
+               CURLFORM_CONTENTSLENGTH, pageContent.size(),
+               CURLFORM_CONTENTTYPE, "text/html", CURLFORM_END);
+
+  /* Set the form info */
+  curl_easy_setopt(curl, CURLOPT_HTTPPOST, post);
+
+  curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
+
+  WriteData parser;
+  parser.mVerbose = verbose;
+  curl_easy_setopt(curl, CURLOPT_WRITEDATA, &parser);
+
+  if(verbose)
+    curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
+
+  res = curl_easy_perform(curl);
+
+  if(res != CURLE_OK)
+    printf("Failed to upload class doc %s.\n", pageTitle.c_str());
 
   /* always cleanup */ 
   curl_easy_cleanup(curl);

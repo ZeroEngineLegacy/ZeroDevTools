@@ -26,6 +26,7 @@ struct Configurations
   String DoxygenPath;
   String DocumentationRawFile;
   String DocumentationFile;
+  String EventsFile;
   
   bool Verbose;
   String Log;
@@ -46,6 +47,8 @@ Configurations LoadConfigurations(StringMap& params)
   //load the raw documentation (before merging with doxy) and the documentation file
   config.DocumentationRawFile = BuildString(config.DocumentationPath.c_str(),"DocumentationRaw.data");
   config.DocumentationFile  = BuildString(config.DocumentationPath.c_str(),"Documentation.data");
+  //Load the list of events
+  config.EventsFile = BuildString(config.DocumentationPath.c_str(), "EventList.data");
   //get the path to the doxygen file
   config.DoxygenPath = GetStringValue<String>(params,"doxyPath","C:\\ZeroDoxygen\\");
   config.DoxygenPath = NormalizePath(config.DoxygenPath);
@@ -55,14 +58,57 @@ Configurations LoadConfigurations(StringMap& params)
   return config;
 }
 
+void UpdateEventList(StringMap& params, Replacements& replacements, 
+                     StringBuilder* outputString)
+{
+  Configurations config = LoadConfigurations(params);
+
+  Array<EventEntry> eventsToUpdate;
+  TextLoader stream;
+  String eventsToUpdatePath = config.EventsFile;
+  if(!FileExists(eventsToUpdatePath.c_str()))
+  {
+    printf("%s does not exist.", eventsToUpdatePath.c_str());
+    return;
+  }
+  stream.Open(eventsToUpdatePath.c_str());
+  SerializeName(eventsToUpdate);
+  stream.Close();
+
+  //Create the HTML for page that hosts the list of events.
+  String eventHeader("");
+  StringBuilder eventListHtml;
+  outputString->Append("<p>");
+  forRange(Array<EventEntry>::value_type& e, eventsToUpdate.all())
+  {
+    if(eventHeader != e.mEventType)
+    {
+      if(eventHeader != "") outputString->Append("</ul>");
+      eventHeader = e.mEventType;
+      outputString->Append("<h3>");
+      Replace(*outputString, replacements, e.mEventType);
+      outputString->Append("</h3>");
+      outputString->Append("<ul>");
+    }
+    outputString->Append("<li>");
+    Replace(*outputString, replacements, e.mEventName);
+    outputString->Append("</li>");
+
+  }
+  eventListHtml.Append("</p>");
+
+  
+}
+
 void PushToWiki(StringMap& params)
 {
   Configurations config = LoadConfigurations(params);
 
-  //there's a set list of classes we want to push to the wiki, load this list from a data file
+  //There's a set list of classes we want to push to the wiki, load this list from a data file
   Array<WikiUpdatePage> pagesToUpdate;
   TextLoader stream;
-  String pagesToUpdatePath = BuildString(config.SourcePath.c_str(),"DevTools\\PagesToUpdate.txt");
+  String pagesToUpdatePath = BuildString(config.SourcePath.c_str(), 
+                                         "DevTools\\PagesToUpdate.txt");
   if(!FileExists(pagesToUpdatePath))
   {
     printf("%s does not exist.",pagesToUpdatePath.c_str());
@@ -72,7 +118,7 @@ void PushToWiki(StringMap& params)
   SerializeName(pagesToUpdate);
   stream.Close();
 
-  //now load the documentation file (the documentation for all the classes)
+  //Now load the documentation file (the documentation for all the classes)
   if(!FileExists(config.DocumentationFile.c_str()))
   {
     printf("%s does not exist.",config.DocumentationFile.c_str());
@@ -81,64 +127,77 @@ void PushToWiki(StringMap& params)
   Zero::DocumentationLibrary doc;
   Zero::LoadFromDataFile(doc, config.DocumentationFile);
   doc.Build();
-  //warn for classes that have documentation but are not parked to push to the wiki
-  WarnNeedsWikiPage(pagesToUpdate,doc.Classes,config.DoxygenPath,config.DocumentationRoot,config.Verbose,config.Log);
 
-  //log onto the wiki and get our token to use for further operations
+  //Warn for classes that have documentation but are not parked to push to the wiki
+  WarnNeedsWikiPage(pagesToUpdate, doc.Classes, config.DoxygenPath, 
+                    config.DocumentationRoot, config.Verbose, config.Log);
+
+  //Log onto the wiki and get our token to use for further operations
   Zero::String token;
   LogOn(token,config.Verbose);
 
-  //extract the wiki article names and their indices from the wiki
+  //Extract the wiki article names and their indices from the wiki
   StringMap wikiIndices;
-  GetWikiArticleIds(token,wikiIndices,config.Verbose);
+  GetWikiArticleIds(token, wikiIndices, config.Verbose);
 
-  //create a map of the wiki names and ids for only what we want to push to the wiki
+  //Create a map of the wiki names and ids for only what we want to push to the wiki.
   typedef StringMap WikiMap;
-  WikiMap WikiIndex;
+  WikiMap wikiIndex;
   for(uint i = 0; i < pagesToUpdate.size(); ++i)
   {
     String pageName = pagesToUpdate[i].mPageToUpdate;
     String parentPageName = pagesToUpdate[i].mParentPage;
     String index = wikiIndices.findValue(pageName,"");
     if(!index.empty())
-      WikiIndex[pageName] = index;
+      wikiIndex[pageName] = index;
     else
     {
       String parentIndex = wikiIndices.findValue(parentPageName,"");
       if(!parentIndex.empty())
       {
-        bool success = CreateWikiPage(token,pageName,parentIndex,WikiIndex,config.Verbose);
+        bool success = CreateWikiPage(token,pageName,parentIndex,wikiIndex,config.Verbose);
         if(!success)
-          printf("Failed to find wiki article for \"%s\" with parent \"%s\"\n",pageName.c_str(),parentPageName.c_str());
+          printf("Failed to find wiki article for \"%s\" with parent \"%s\"\n",
+                 pageName.c_str(), parentPageName.c_str());
         else
           printf("Creating wiki page for article \"%s\"\n",pageName.c_str());
       }
       else
-        printf("Failed to find wiki parent article \"%s\" for child page \"%s\"\n",parentPageName.c_str(),pageName.c_str());
+        printf("Failed to find wiki parent article \"%s\" for child page \"%s\"\n",
+               parentPageName.c_str(), pageName.c_str());
     }
   }
 
   //set up a replacement for class names to replace in the wiki, this will set
   //up links on the page to other classes when they are referenced
-  Array<Replacement> classReplaceMents;
-  WikiMap::range r = WikiIndex.all();
+  Array<Replacement> classReplacements;
+  WikiMap::range r = wikiIndex.all();
   forRange(WikiMap::value_type& v, r)
   {
     String name = BuildString(v.first, "");
-    String link = String::Format( "<a class=\"uvb\" href=\"default.asp?W%s\">%s</a>", v.second.c_str(), v.first.c_str());
-    classReplaceMents.push_back(Replacement(name, link));
+    String link = String::Format("<a class=\"uvb\" href=\"default.asp?W%s\">%s</a>", 
+                                 v.second.c_str(), v.first.c_str());
+    classReplacements.push_back(Replacement(name, link));
   }
-  sort(classReplaceMents.all());
+  sort(classReplacements.all());
 
-  ///upload the class' page to the wiki, making sure to perform the link replacements
+  //Update all of the events on the event page, link relevant pages to them.
+  StringBuilder eventList;
+  UpdateEventList(params, classReplacements, &eventList);
+  String eventListPageTitle("Event List");
+  String eventListPage = wikiIndices[eventListPageTitle.c_str()];
+  UploadPageContent(eventListPage, eventListPageTitle, eventList.ToString(), 
+                    token, config.Verbose);
+
+  //Upload the class' page to the wiki, making sure to perform the link replacements
   forRange(ClassDoc& classDoc, doc.Classes.all())
   {
-    String index = WikiIndex.findValue(classDoc.Name, "");
+    String index = wikiIndex.findValue(classDoc.Name, "");
     if(!index.empty())
     {
       //should uncomment when testing (so we don't accidentally destroy the whole wiki)
       //if(classDoc.Name == "PhysicsEffect")
-      UploadClassDoc(index, classDoc, classReplaceMents, token, config.Verbose);
+        UploadClassDoc(index, classDoc, classReplacements, token, config.Verbose);
     }
     else
     {
@@ -182,7 +241,7 @@ void ParseAndSaveDocumentation(StringMap& params)
   //now extract the doxygen data into the document
   forRange(ClassDoc& classDoc, doc.Classes.all())
   {
-    ExtractMethodDocs( classDoc , doc, config.DoxygenPath, symbolReplacements);
+    ExtractMethodDocs(classDoc, doc, config.DoxygenPath, symbolReplacements);
   }
 
   String extraDocPath = BuildString(config.DocumentationRoot.c_str(),"ExtraDocumentation.txt");
@@ -191,7 +250,8 @@ void ParseAndSaveDocumentation(StringMap& params)
   //save the merged file back into the output file
   SaveToDataFile(doc, output);
 
-  WarnAndLogUndocumented(doc.Classes,config.DoxygenPath,config.DocumentationRoot,config.Verbose,config.Log);
+  WarnAndLogUndocumented(doc.Classes, config.DoxygenPath, config.DocumentationRoot,
+                         config.Verbose, config.Log);
 }
 
 }//namespace Zero
@@ -199,10 +259,10 @@ void ParseAndSaveDocumentation(StringMap& params)
 int main(int argc, char* argv[])
 {
   Zero::StringMap params;
-  Zero::ParseCommandLine(params,(Zero::cstr*)argv,argc);
+  Zero::ParseCommandLine(params, (Zero::cstr*)argv, argc);
 
-  if(Zero::GetStringValue<bool>(params,"parse",false))
+  if(Zero::GetStringValue<bool>(params, "parse", false))
     Zero::ParseAndSaveDocumentation(params);
-  if(Zero::GetStringValue<bool>(params,"wiki",false))
+  if(Zero::GetStringValue<bool>(params, "wiki", false))
     Zero::PushToWiki(params);
 }

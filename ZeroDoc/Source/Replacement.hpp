@@ -21,7 +21,7 @@ struct Replacement
   bool operator<(const Replacement& right)const{return Value < right.Value;}
 };
 
-typedef Array<Replacement> Replacments;
-typedef Replacments::range rrange;
+typedef Array<Replacement> Replacements;
+typedef Replacements::range rrange;
 
 }//namespace

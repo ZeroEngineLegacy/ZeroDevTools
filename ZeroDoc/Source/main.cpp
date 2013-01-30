@@ -184,8 +184,8 @@ void PushToWiki(StringMap& params)
   //Update all of the events on the event page, link relevant pages to them.
   StringBuilder eventList;
   UpdateEventList(params, classReplacements, &eventList);
-  String eventListPageTitle("Event List");
-  String eventListPage = wikiIndices[eventListPageTitle.c_str()];
+  const String eventListPageTitle("Event List");
+  const String eventListPage = wikiIndices[eventListPageTitle.c_str()];
   UploadPageContent(eventListPage, eventListPageTitle, eventList.ToString(), 
                     token, config.Verbose);
 

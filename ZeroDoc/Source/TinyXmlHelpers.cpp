@@ -294,6 +294,166 @@ void FindClassesWithBase(StringParam doxyPath, HashSet<String>& classes, HashSet
   }
 }
 
+
+void ExtractMethodDocs(ClassDoc& classDocT, HashMap<String, ClassDoc>& dataBase, DocumentationLibrary& library, ClassDoc& currentClass, StringParam doxyPath, Array<Replacement>& replacements)
+{
+  ClassDoc* baseClassDoc = dataBase.findPointer(currentClass.Name);
+  //if this class already exists then don't re-read it
+  if(baseClassDoc != NULL)
+    return;
+
+  //extract methods and properties from the base classes
+  if(!currentClass.BaseClass.empty())
+  {
+    if(ClassDoc* parentClass = library.ClassMap.findValue(currentClass.BaseClass, NULL))
+    {
+      ExtractMethodDocs(classDocT, dataBase, library, *parentClass, doxyPath, replacements);
+      //add all of the parent's properties to this class
+      currentClass.Add(*parentClass);
+    }
+  }
+
+  //try to open the class file
+  String fileName = BuildString(doxyPath.c_str(),"\\xml\\class_zero_1_1", GetDoxygenName(currentClass.Name).c_str(), ".xml");
+  TiXmlDocument doc(fileName.c_str());
+  bool loadOkay = doc.LoadFile();
+  //if loading the class file failed, search for a struct file
+  if(!loadOkay)
+  {
+    String fileName = BuildString(doxyPath.c_str(),"\\xml\\struct_zero_1_1", GetDoxygenName(currentClass.Name).c_str(), ".xml");
+    loadOkay = doc.LoadFile(fileName.c_str());
+
+    if(!loadOkay)
+    {
+      String fileName = BuildString(doxyPath.c_str(),"\\xml\\struct_zero_1_1_physics_1_1", GetDoxygenName(currentClass.Name).c_str(), ".xml");
+      loadOkay = doc.LoadFile(fileName.c_str());
+    }
+  }
+
+  if(!loadOkay)
+  {
+    //__debugbreak();
+    return;
+  }
+
+  TiXmlElement* doxygenElement = doc.FirstChildElement("doxygen");
+  TiXmlElement* compounddef = doxygenElement->FirstChildElement("compounddef");
+
+  TiXmlElement* baseClassElement = compounddef->FirstChildElement("basecompoundref");
+  if(baseClassElement != NULL)
+  {
+    const char* baseClass = baseClassElement->GetText();
+
+    if(String(baseClass) != currentClass.BaseClass)
+    {
+      ClassDoc baseDoc = currentClass;
+      baseDoc.Name = baseClass;
+      ExtractMethodDocs(classDocT, dataBase, library, baseDoc, doxyPath, replacements);
+      //add all of the parent's properties to this class
+      currentClass.Add(baseDoc);
+    }
+  }
+
+  if(&classDocT == &currentClass)
+  {
+    String classDesc = DoxyToString(compounddef, "briefdescription");
+    currentClass.Description = classDesc;
+  }
+
+  TiXmlNode* pSection;
+  for(pSection = compounddef->FirstChild(); pSection != 0; pSection = pSection->NextSibling()) 
+  {
+    //if this is the bried description for the class then pull out the class's description
+    if(strcmp(pSection->Value(),"briefdescription") == 0)
+    {
+      currentClass.Description = DoxyToString(pSection->ToElement(), "para");
+    }
+
+    TiXmlNode* pMemberDef;
+    for(pMemberDef = pSection->FirstChild(); pMemberDef != 0; pMemberDef = pMemberDef->NextSibling()) 
+    {
+      TiXmlElement* memberElement = pMemberDef->ToElement();
+      if(!memberElement)
+        continue;
+
+      //only parse member definitions (both members and methods in doxy)
+      if(strcmp(memberElement->Value(),"memberdef") != 0)
+        continue;
+
+      //variables have the mutable attribute while methods don't, use this to differentiate the two
+      const char* isVariable = memberElement->Attribute("mutable");
+      String name = GetElementValue(memberElement, "name");
+      String argsstring = GetElementValue(memberElement, "argsstring");
+      String briefdescription = DoxyToString(memberElement, "briefdescription");
+      uint i = 0;
+      while(briefdescription[i] == ' ')
+        ++i;
+      briefdescription = briefdescription.sub_string(i,briefdescription.size() - i);
+
+      String returnValue  = ToTypeName(memberElement, "type");
+
+      name = Replace(replacements,name);
+      argsstring = Replace(replacements,argsstring);
+      briefdescription = Replace(replacements,briefdescription);
+      returnValue = Replace(replacements,returnValue);
+
+      PropertyDoc propDoc;
+      propDoc.Name = name;
+      propDoc.Description = briefdescription;
+      propDoc.Type = returnValue;
+      MethodDoc metDoc;
+      metDoc.Name = name;
+      metDoc.Arguments = argsstring;
+      metDoc.Description = briefdescription;
+      metDoc.ReturnValue = returnValue;
+
+
+      //See if this is a Get 'Property' function.
+      if(name[0] == 'G')
+      {
+        //strip the 'Get' off of the name
+        String getName = name.size() > 3 ? name.sub_string(3, name.size() - 3) : String();
+
+        if(PropertyDoc* propertyDoc = currentClass.PropertyMap.findValue(getName, NULL))
+        {
+          *propertyDoc = propDoc;
+          propertyDoc->Name = getName;
+        }
+      }
+
+      //See if this is an m'VarName' member variable.
+      if(name[0] == 'm')
+      {
+        //strip the 'm' off of the name
+        String mName = name.size() > 1 ? name.sub_string(1, name.size() - 1) : String();
+
+        if(PropertyDoc* propertyDoc = currentClass.PropertyMap.findValue(mName, NULL))
+        {
+          if(propertyDoc->Description.empty())
+          {
+            *propertyDoc = propDoc;
+            propertyDoc->Name = mName;
+          }
+        }
+      }
+
+      //See if this is a property that is not a Getter and doesn't start with m, such as Translation.
+      if(PropertyDoc* propertyDoc = currentClass.PropertyMap.findValue(name, NULL))
+      {
+        if(propertyDoc->Description.empty())
+          *propertyDoc = propDoc;
+      }
+
+      //See if this was a method.
+      if(MethodDoc* methodDoc = currentClass.MethodMap.findValue(name, NULL))
+        *methodDoc = metDoc;
+    }
+  }
+
+  currentClass.Build();
+  dataBase.insert(currentClass.Name, currentClass);
+}
+
 void ExtractMethodDocs(ClassDoc& classDoc, DocumentationLibrary& library, ClassDoc& currentClass, StringParam doxyPath, Array<Replacement>& replacements)
 {
   //extract methods and properties from the base classes
@@ -439,6 +599,11 @@ void ExtractMethodDocs(ClassDoc& classDoc, DocumentationLibrary& library, ClassD
         *methodDoc = metDoc;
     }
   }
+}
+
+void ExtractMethodDocs(ClassDoc& classDoc, HashMap<String, ClassDoc>& dataBase, DocumentationLibrary& library, StringParam doxyPath, Array<Replacement>& replacements)
+{
+  ExtractMethodDocs(classDoc, dataBase, library, classDoc, doxyPath, replacements);
 }
 
 void ExtractMethodDocs(ClassDoc& classDoc, DocumentationLibrary& library, StringParam doxyPath, Array<Replacement>& replacements)

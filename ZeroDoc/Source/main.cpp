@@ -53,10 +53,11 @@ void ParseAndSaveDocumentation(StringMap& params)
   symbolReplacements.push_back(Replacement("override", ""));
   sort(symbolReplacements.all());
 
+  HashMap<String, ClassDoc> dataBase;
   //now extract the doxygen data into the document
   forRange(ClassDoc& classDoc, doc.Classes.all())
   {
-    ExtractMethodDocs(classDoc, doc, config.DoxygenPath, symbolReplacements);
+    ExtractMethodDocs(classDoc, dataBase, doc, config.DoxygenPath, symbolReplacements);
   }
 
   String extraDocPath = BuildString(config.DocumentationRoot.c_str(),"ExtraDocumentation.txt");

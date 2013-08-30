@@ -17,7 +17,11 @@ String DoxyToString(TiXmlElement* parent, cstr name);
 String GetElementValue(TiXmlElement* parent, cstr name, cstr second=NULL);
 void FindClassesWithBase(StringParam doxyPath, HashSet<String>& classes, HashSet<String>& baseClassesToInclude,
                          HashSet<String>& baseClassesToIgnore, HashSet<String>& classesToIgnore);
+
+void ExtractMethodDocs(ClassDoc& classDoc, HashMap<String, ClassDoc>& dataBase, DocumentationLibrary& library, ClassDoc& currentClass, StringParam doxyPath, Array<Replacement>& replacements);
 void ExtractMethodDocs(ClassDoc& classDoc, DocumentationLibrary& library, ClassDoc& currentClass, StringParam doxyPath, Array<Replacement>& replacements);
+
+void ExtractMethodDocs(ClassDoc& classDoc, HashMap<String, ClassDoc>& dataBase, DocumentationLibrary& library, StringParam doxyPath, Array<Replacement>& replacements);
 void ExtractMethodDocs(ClassDoc& classDoc, DocumentationLibrary& library, StringParam doxyPath, Array<Replacement>& replacements);
 
 }//namespace Zero

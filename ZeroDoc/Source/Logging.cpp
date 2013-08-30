@@ -30,8 +30,11 @@ void WarnAndLogUndocumented(Array<ClassDoc>& classes, StringParam doxyPath,
 
   //build up both undocumented classes and properties into one builder
   StringBuilder builder;
-  WarnUndocumentedClasses(classes,doxyPath,docPath,builder);
-  WarnAndLogUndocumentedProperties(classes,builder);
+  HashSet<String> classesToDocument;
+  Array<String> undocumentedClasses;
+  FilterIgnoredClasses(classes, classesToDocument, undocumentedClasses, doxyPath, docPath);
+  WarnUndocumentedClasses(classes, classesToDocument, builder);
+  WarnAndLogUndocumentedProperties(classes, builder);
 
   //if there is no warnings then there is nothing to do
   String outStr = builder.ToString();
@@ -50,6 +53,48 @@ void WarnAndLogUndocumented(Array<ClassDoc>& classes, StringParam doxyPath,
     if(!verbose)
       printf("Warning: Properties are not documented. Check log file %s.\n",log.c_str());
     WriteStringRangeToFile(log, outStr);
+  }
+}
+
+void LoadSet(StringParam fileName, HashSet<String>& data)
+{
+  TextLoader stream;
+  if(FileExists(fileName))
+  {
+    Status status;
+    stream.Open(status, fileName.c_str());
+    SerializeName(data);
+    stream.Close();
+  }
+}
+
+void FilterIgnoredClasses(Array<ClassDoc>& classes, HashSet<String>& classesToDocument, Array<String>& undocumentedClasses,
+                          StringParam doxyPath, StringParam docPath)
+{
+  HashSet<String> basesToInclude;
+  HashSet<String> basesToIgnore;
+  HashSet<String> classesToIgnore;
+
+  //load all of the ignore/include data
+  LoadSet(BuildString(docPath.c_str(),"BasesToInclude.txt"),basesToInclude);
+  LoadSet(BuildString(docPath.c_str(),"BasesToIgnore.txt"),basesToIgnore);
+  LoadSet(BuildString(docPath.c_str(),"ClassesToIgnore.txt"),classesToIgnore);
+
+  FindClassesWithBase(doxyPath,classesToDocument,basesToInclude,basesToIgnore,classesToIgnore);
+
+  uint index = 0;
+  while(index != classes.size())
+  {
+    ClassDoc& classDoc = classes[index];
+    String findVal = classesToDocument.findValue(classDoc.Name,"");
+    if(findVal.empty() == true)
+    {
+      //undocumentedClasses.push_back(classDoc.Name);
+      classes[index] = classes[classes.size() - 1];
+      classes.pop_back();
+    }
+    
+    ++index;
   }
 }
 
@@ -88,60 +133,45 @@ void WarnAndLogUndocumentedProperties(Array<ClassDoc>& classes, StringBuilder& b
   }
 }
 
-void LoadSet(StringParam fileName, HashSet<String>& data)
+void WarnUndocumentedClasses(Array<ClassDoc>& classes, HashSet<String>& classesToDocument, StringBuilder& builder)
 {
-  TextLoader stream;
-  if(FileExists(fileName))
-  {
-    Status status;
-    stream.Open(status, fileName.c_str());
-    SerializeName(data);
-    stream.Close();
-  }
-}
+  //HashSet<String> classToDocument;
+  //HashSet<String> basesToInclude;
+  //HashSet<String> basesToIgnore;
+  //HashSet<String> classesToIgnore;
+  //
+  ////load all of the ignore/include data
+  //LoadSet(BuildString(docPath.c_str(),"BasesToInclude.txt"),basesToInclude);
+  //LoadSet(BuildString(docPath.c_str(),"BasesToIgnore.txt"),basesToIgnore);
+  //LoadSet(BuildString(docPath.c_str(),"ClassesToIgnore.txt"),classesToIgnore);
+  //
+  //FindClassesWithBase(doxyPath,classToDocument,basesToInclude,basesToIgnore,classesToIgnore);
 
-void WarnUndocumentedClasses(Array<ClassDoc>& classes, StringParam doxyPath,
-                             StringParam docPath, StringBuilder& builder)
-{
-  HashSet<String> classToDocument;
-  HashSet<String> basesToInclude;
-  HashSet<String> basesToIgnore;
-  HashSet<String> classesToIgnore;
-
-  //load all of the ignore/include data
-  LoadSet(BuildString(docPath.c_str(),"BasesToInclude.txt"),basesToInclude);
-  LoadSet(BuildString(docPath.c_str(),"BasesToIgnore.txt"),basesToIgnore);
-  LoadSet(BuildString(docPath.c_str(),"ClassesToIgnore.txt"),classesToIgnore);
-
-  FindClassesWithBase(doxyPath,classToDocument,basesToInclude,basesToIgnore,classesToIgnore);
-
-  //go through all of the classes that are marked as documented and remove that
+  //go through all of the classes that are marked as documented and remove them
   //from the set of what should be documented. What's left is what should be documented but isn't.
   forRange(ClassDoc& classDoc, classes.all())
   {
-    String findVal = classToDocument.findValue(classDoc.Name,"");
+    String findVal = classesToDocument.findValue(classDoc.Name,"");
     if(findVal.empty() == false)
     {
-      classToDocument.erase(classDoc.Name);
+      classesToDocument.erase(classDoc.Name);
     }
   }
 
   //if there is nothing that isn't documented that should be then there's nothing to do
-  if(classToDocument.empty())
+  if(classesToDocument.empty())
     return;
 
   //in order to display the undocumented classes in a reasonable way, sort the
   //classes. To do this first convert them to an array then sort them.
   Array<String> undocumentedClasses;
-  for(HashSet<String>::range r = classToDocument.all(); !r.empty(); r.popFront())
+  for(HashSet<String>::range r = classesToDocument.all(); !r.empty(); r.popFront())
     undocumentedClasses.push_back(r.front());
   sort(undocumentedClasses.all());
 
-  /*
   //now build up the string that is all of the undocumented classes.
   for(uint i = 0; i < undocumentedClasses.size(); ++i)
     builder.Append(BuildString("Warning: Class ",undocumentedClasses[i]," is undocumented.\n"));\
-  */
 }
 
 void WarnNeedsWikiPage(Array<WikiUpdatePage>& pagesToUpdate, Array<ClassDoc>& documentedClasses,

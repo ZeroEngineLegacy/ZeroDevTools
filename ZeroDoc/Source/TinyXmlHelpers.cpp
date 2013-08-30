@@ -296,9 +296,6 @@ void FindClassesWithBase(StringParam doxyPath, HashSet<String>& classes, HashSet
 
 void ExtractMethodDocs(ClassDoc& classDoc, DocumentationLibrary& library, ClassDoc& currentClass, StringParam doxyPath, Array<Replacement>& replacements)
 {
-  //if(currentClass.Name == "Space")
-  //  __debugbreak();
-
   //extract methods and properties from the base classes
   if(!currentClass.BaseClass.empty())
   {
@@ -333,6 +330,19 @@ void ExtractMethodDocs(ClassDoc& classDoc, DocumentationLibrary& library, ClassD
   
   TiXmlElement* doxygenElement = doc.FirstChildElement("doxygen");
   TiXmlElement* compounddef = doxygenElement->FirstChildElement("compounddef");
+
+  TiXmlElement* baseClassElement = compounddef->FirstChildElement("basecompoundref");
+  if(baseClassElement != NULL)
+  {
+    const char* baseClass = baseClassElement->GetText();
+
+    if(String(baseClass) != currentClass.BaseClass)
+    {
+      ClassDoc baseDoc = currentClass;
+      baseDoc.Name = baseClass;
+      ExtractMethodDocs(classDoc, library, baseDoc, doxyPath, replacements);
+    }
+  }
 
   if(&classDoc == &currentClass)
   {

@@ -89,7 +89,6 @@ void FilterIgnoredClasses(Array<ClassDoc>& classes, HashSet<String>& classesToDo
     String findVal = classesToDocument.findValue(classDoc.Name,"");
     if(findVal.empty() == true)
     {
-      //undocumentedClasses.push_back(classDoc.Name);
       classes[index] = classes[classes.size() - 1];
       classes.pop_back();
     }
@@ -135,18 +134,6 @@ void WarnAndLogUndocumentedProperties(Array<ClassDoc>& classes, StringBuilder& b
 
 void WarnUndocumentedClasses(Array<ClassDoc>& classes, HashSet<String>& classesToDocument, StringBuilder& builder)
 {
-  //HashSet<String> classToDocument;
-  //HashSet<String> basesToInclude;
-  //HashSet<String> basesToIgnore;
-  //HashSet<String> classesToIgnore;
-  //
-  ////load all of the ignore/include data
-  //LoadSet(BuildString(docPath.c_str(),"BasesToInclude.txt"),basesToInclude);
-  //LoadSet(BuildString(docPath.c_str(),"BasesToIgnore.txt"),basesToIgnore);
-  //LoadSet(BuildString(docPath.c_str(),"ClassesToIgnore.txt"),classesToIgnore);
-  //
-  //FindClassesWithBase(doxyPath,classToDocument,basesToInclude,basesToIgnore,classesToIgnore);
-
   //go through all of the classes that are marked as documented and remove them
   //from the set of what should be documented. What's left is what should be documented but isn't.
   forRange(ClassDoc& classDoc, classes.all())

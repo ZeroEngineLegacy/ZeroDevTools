@@ -58,6 +58,7 @@
       <SubSystem>Console</SubSystem>
       <TargetMachine>MachineX86</TargetMachine>
       <AdditionalLibraryDirectories>..\curl\lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>Winmm.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>COPY $(TargetPath) "%ZERO_SOURCE%\DevTools" /Y</Command>
@@ -76,33 +77,37 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <TargetMachine>MachineX86</TargetMachine>
       <AdditionalLibraryDirectories>..\curl\lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>Winmm.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>COPY $(TargetPath) "%ZERO_SOURCE%\DevTools" /Y</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Configuration.hpp" />
     <ClInclude Include="DebugPrint.hpp" />
     <ClInclude Include="ExtraDocumentation.hpp" />
     <ClInclude Include="Logging.hpp" />
+    <ClInclude Include="MarkupWriter.hpp" />
     <ClInclude Include="Parsing.hpp" />
     <ClInclude Include="Precompiled.hpp" />
-    <ClInclude Include="Replacement.hpp" />
     <ClInclude Include="TinyXmlHelpers.hpp" />
     <ClInclude Include="WikiOperations.hpp" />
+    <ClInclude Include="Pages.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ExtraDocumentation.cpp" />
     <ClCompile Include="Logging.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="MarkupWriter.cpp" />
     <ClCompile Include="Parsing.cpp" />
     <ClCompile Include="Precompiled.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="ScriptStub.cpp" />
     <ClCompile Include="TinyXmlHelpers.cpp" />
     <ClCompile Include="WikiOperations.cpp" />
+    <ClCompile Include="Pages.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(ZERO_SOURCE)\Libraries\Common\Common.vcxproj">

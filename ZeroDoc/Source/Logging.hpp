@@ -2,6 +2,7 @@
 
 #include "Engine\Documentation.hpp"
 #include "WikiOperations.hpp"
+#include "Pages.hpp"
 
 namespace Zero
 {

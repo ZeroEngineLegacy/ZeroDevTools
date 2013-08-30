@@ -11,14 +11,11 @@
 #include "Utility/FilePath.hpp"
 #include "Serialization/Text.hpp"
 #include "../TinyXml/tinyxml.h"
-
-/*
-#if _DEBUG
-#pragma comment(lib, "libcurld.lib") 
-#else
-#pragma comment(lib, "libcurl.lib") 
-#endif
-*/
+#include "Configuration.hpp"
+#include "Pages.hpp"
+#include "Platform/FileSystem.hpp"
+#include "Serialization/Simple.hpp"
+#include "Logging.hpp"
 
 #pragma comment(lib, "ws2_32.lib") 
 #pragma comment(lib, "Wldap32.lib") 
@@ -382,6 +379,163 @@ void UploadPageContent(StringParam pageIndex, StringParam pageTitle,
 
   /* always cleanup */ 
   curl_easy_cleanup(curl);
+}
+
+
+
+void UpdateEventList(StringMap& params, Replacements& replacements, 
+  StringBuilder* outputString)
+{
+  Configurations config = LoadConfigurations(params);
+
+  Array<EventEntry> eventsToUpdate;
+  TextLoader stream;
+  String eventsToUpdatePath = config.EventsFile;
+  if(!FileExists(eventsToUpdatePath.c_str()))
+  {
+    printf("%s does not exist.", eventsToUpdatePath.c_str());
+    return;
+  }
+  Status status;
+  stream.Open(status, eventsToUpdatePath.c_str());
+  SerializeName(eventsToUpdate);
+  stream.Close();
+
+  //Create the HTML for page that hosts the list of events.
+  String eventHeader("");
+  StringBuilder eventListHtml;
+  outputString->Append("<p>");
+  forRange(Array<EventEntry>::value_type& e, eventsToUpdate.all())
+  {
+    if(eventHeader != e.mEventType)
+    {
+      if(eventHeader != "") outputString->Append("</ul>");
+      eventHeader = e.mEventType;
+      outputString->Append("<h3>");
+      Replace(*outputString, replacements, e.mEventType);
+      outputString->Append("</h3>");
+      outputString->Append("<ul>");
+    }
+    outputString->Append("<li>");
+    Replace(*outputString, replacements, e.mEventName);
+    outputString->Append("</li>");
+
+  }
+  eventListHtml.Append("</p>");
+
+
+}
+
+void PushToWiki(StringMap& params)
+{
+  Configurations config = LoadConfigurations(params);
+
+  //There's a set list of classes we want to push to the wiki, load this list from a data file
+  Array<WikiUpdatePage> pagesToUpdate;
+  TextLoader stream;
+  String pagesToUpdatePath = BuildString(config.SourcePath.c_str(), 
+    "DevTools\\PagesToUpdate.txt");
+  if(!FileExists(pagesToUpdatePath))
+  {
+    printf("%s does not exist.",pagesToUpdatePath.c_str());
+    return;
+  }
+
+  Status status;
+  stream.Open(status, pagesToUpdatePath.c_str());
+  SerializeName(pagesToUpdate);
+  stream.Close();
+
+  //Now load the documentation file (the documentation for all the classes)
+  if(!FileExists(config.DocumentationFile.c_str()))
+  {
+    printf("%s does not exist.",config.DocumentationFile.c_str());
+    return;
+  }
+
+  DocumentationLibrary doc;
+  LoadFromDataFile(doc, config.DocumentationFile);
+  doc.Build();
+
+  //Warn for classes that have documentation but are not parked to push to the wiki
+  WarnNeedsWikiPage(pagesToUpdate, doc.Classes, config.DoxygenPath, 
+    config.DocumentationRoot, config.Verbose, config.Log);
+
+  //Log onto the wiki and get our token to use for further operations
+  String token;
+  LogOn(token,config.Verbose);
+
+  //Extract the wiki article names and their indices from the wiki
+  StringMap wikiIndices;
+  GetWikiArticleIds(token, wikiIndices, config.Verbose);
+
+  //Create a map of the wiki names and ids for only what we want to push to the wiki.
+  typedef StringMap WikiMap;
+  WikiMap wikiIndex;
+  for(uint i = 0; i < pagesToUpdate.size(); ++i)
+  {
+    String pageName = pagesToUpdate[i].mPageToUpdate;
+    String parentPageName = pagesToUpdate[i].mParentPage;
+    String index = wikiIndices.findValue(pageName,"");
+    if(!index.empty())
+      wikiIndex[pageName] = index;
+    else
+    {
+      String parentIndex = wikiIndices.findValue(parentPageName,"");
+      if(!parentIndex.empty())
+      {
+        bool success = CreateWikiPage(token,pageName,parentIndex,wikiIndex,config.Verbose);
+        if(!success)
+          printf("Failed to find wiki article for \"%s\" with parent \"%s\"\n",
+          pageName.c_str(), parentPageName.c_str());
+        else
+          printf("Creating wiki page for article \"%s\"\n",pageName.c_str());
+      }
+      else
+        printf("Failed to find wiki parent article \"%s\" for child page \"%s\"\n",
+        parentPageName.c_str(), pageName.c_str());
+    }
+  }
+
+  //set up a replacement for class names to replace in the wiki, this will set
+  //up links on the page to other classes when they are referenced
+  Array<Replacement> classReplacements;
+  WikiMap::range r = wikiIndex.all();
+  forRange(WikiMap::value_type& v, r)
+  {
+    String name = BuildString(v.first, "");
+    String link = String::Format("<a class=\"uvb\" href=\"default.asp?W%s\">%s</a>", 
+      v.second.c_str(), v.first.c_str());
+    classReplacements.push_back(Replacement(name, link));
+  }
+  sort(classReplacements.all());
+
+  //Update all of the events on the event page, link relevant pages to them.
+  StringBuilder eventList;
+  UpdateEventList(params, classReplacements, &eventList);
+  const String eventListPageTitle("Event List");
+  const String eventListPage = wikiIndices[eventListPageTitle.c_str()];
+  UploadPageContent(eventListPage, eventListPageTitle, eventList.ToString(), 
+    token, config.Verbose);
+
+  //Upload the class' page to the wiki, making sure to perform the link replacements
+  forRange(ClassDoc& classDoc, doc.Classes.all())
+  {
+    String index = wikiIndex.findValue(classDoc.Name, "");
+    if(!index.empty())
+    {
+      //should uncomment when testing (so we don't accidentally destroy the whole wiki)
+      //if(classDoc.Name == "PhysicsEffect")
+      UploadClassDoc(index, classDoc, classReplacements, token, config.Verbose);
+    }
+    else
+    {
+      //fprintf(f,"need page %s\r\n", classDoc.Name.c_str() );
+      //printf("need page %s\n", classDoc.Name.c_str());
+    }
+  }
+
+  LogOff(token,config.Verbose);
 }
 
 }//namespace Zero

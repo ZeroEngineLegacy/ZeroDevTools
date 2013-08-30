@@ -14,6 +14,7 @@
 
 namespace Zero
 {
+  /*
   /// Bind a global object to script.
   void BindObjectToScriptModule(StringRef name, const MetaObjectInstance& i)
   {
@@ -40,5 +41,6 @@ namespace Zero
   {
     return NULL;
   }
+  */
 
 }

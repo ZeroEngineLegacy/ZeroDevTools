@@ -1,7 +1,7 @@
 #pragma once
 #include "String\StringBuilder.hpp"
 #include "Engine\Documentation.hpp"
-#include "Replacement.hpp"
+#include "Support\StringReplacement.hpp"
 
 class TiXmlElement;
 class TiXmlNode;

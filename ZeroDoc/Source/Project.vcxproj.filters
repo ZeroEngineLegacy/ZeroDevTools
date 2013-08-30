@@ -22,13 +22,19 @@
     <ClInclude Include="TinyXmlHelpers.hpp">
       <Filter>Source</Filter>
     </ClInclude>
-    <ClInclude Include="Replacement.hpp">
-      <Filter>Source</Filter>
-    </ClInclude>
     <ClInclude Include="Logging.hpp">
       <Filter>Source</Filter>
     </ClInclude>
     <ClInclude Include="ExtraDocumentation.hpp">
+      <Filter>Source</Filter>
+    </ClInclude>
+    <ClInclude Include="MarkupWriter.hpp">
+      <Filter>Source</Filter>
+    </ClInclude>
+    <ClInclude Include="Configuration.hpp">
+      <Filter>Source</Filter>
+    </ClInclude>
+    <ClInclude Include="Pages.hpp">
       <Filter>Source</Filter>
     </ClInclude>
   </ItemGroup>
@@ -48,13 +54,16 @@
     <ClCompile Include="TinyXmlHelpers.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="ScriptStub.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
     <ClCompile Include="Logging.cpp">
       <Filter>Source</Filter>
     </ClCompile>
     <ClCompile Include="ExtraDocumentation.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="MarkupWriter.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Pages.cpp">
       <Filter>Source</Filter>
     </ClCompile>
   </ItemGroup>

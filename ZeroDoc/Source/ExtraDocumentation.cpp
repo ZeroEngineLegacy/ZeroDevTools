@@ -11,11 +11,13 @@ namespace Zero
 void LoadAndReplaceDocumentation(StringParam path, DocumentationLibrary& libary, Array<Replacement>& replacements)
 {
   //read all of the extra documentation
+
   Array<ExtraDocumentation> extraDoc;
   TextLoader stream;
   if(FileExists(path))
   {
-    stream.Open(path.c_str());
+    Status status;
+    stream.Open(status, path.c_str());
     SerializeName(extraDoc);
     stream.Close();
   }

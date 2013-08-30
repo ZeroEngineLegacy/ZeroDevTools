@@ -3,7 +3,7 @@
 #include "String\String.hpp"
 #include "Containers\Array.hpp"
 #include "Engine\Documentation.hpp"
-#include "Replacement.hpp"
+#include "Support\StringReplacement.hpp"
 
 namespace Zero
 {

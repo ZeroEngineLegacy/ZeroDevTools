@@ -93,7 +93,8 @@ void LoadSet(StringParam fileName, HashSet<String>& data)
   TextLoader stream;
   if(FileExists(fileName))
   {
-    stream.Open(fileName.c_str());
+    Status status;
+    stream.Open(status, fileName.c_str());
     SerializeName(data);
     stream.Close();
   }
@@ -136,9 +137,11 @@ void WarnUndocumentedClasses(Array<ClassDoc>& classes, StringParam doxyPath,
     undocumentedClasses.push_back(r.front());
   sort(undocumentedClasses.all());
 
+  /*
   //now build up the string that is all of the undocumented classes.
   for(uint i = 0; i < undocumentedClasses.size(); ++i)
-    builder.Append(BuildString("Warning: Class ",undocumentedClasses[i]," is undocumented.\n"));
+    builder.Append(BuildString("Warning: Class ",undocumentedClasses[i]," is undocumented.\n"));\
+  */
 }
 
 void WarnNeedsWikiPage(Array<WikiUpdatePage>& pagesToUpdate, Array<ClassDoc>& documentedClasses,

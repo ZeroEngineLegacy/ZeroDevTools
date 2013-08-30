@@ -7,6 +7,8 @@
 namespace Zero
 {
 
+void PushToWiki(StringMap& params);
+
 void LogOn(String& token, bool verbose);
 void LogOff(StringParam token, bool verbose);
 void GetWikiArticleIds(StringParam token, StringMap& wikiIndices, bool verbose);
@@ -16,43 +18,5 @@ void UploadClassDoc(StringParam index, ClassDoc& classDoc, Replacements& replace
                     StringParam token, bool verbose);
 void UploadPageContent(StringParam pageIndex, StringParam pageTitle, 
                        StringParam pageContent, StringParam token, bool verbose);
-
-struct WikiUpdatePage
-{
-  WikiUpdatePage() {}
-  WikiUpdatePage(StringParam page, StringParam parent)
-  {
-    mPageToUpdate = page;
-    mParentPage = parent;
-  }
-
-  void Serialize(Serializer& stream)
-  {
-    SerializeName(mPageToUpdate);
-    SerializeName(mParentPage);
-  }
-
-  String mPageToUpdate;
-  String mParentPage;
-};
-
-struct EventEntry
-{
-  EventEntry() {}
-  EventEntry(StringParam eventType, StringParam eventName)
-  {
-    mEventType = eventType;
-    mEventName = eventName;
-  }
-
-  void Serialize(Serializer& stream)
-  {
-    SerializeName(mEventType);
-    SerializeName(mEventName);
-  }
-
-  String mEventType;
-  String mEventName;
-};
 
 }//namespace Zero

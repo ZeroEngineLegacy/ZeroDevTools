@@ -294,20 +294,82 @@ void FindClassesWithBase(StringParam doxyPath, HashSet<String>& classes, HashSet
   }
 }
 
+namespace AddedType
+{
+enum DataType {None, Property, Method};
+}
 
-void ExtractMethodDocs(ClassDoc& classDocT, HashMap<String, ClassDoc>& dataBase, DocumentationLibrary& library, ClassDoc& currentClass, StringParam doxyPath, Array<Replacement>& replacements)
+void AddMethodOrProperty(ClassDoc& classDoc, PropertyDoc& propDoc, MethodDoc& metDoc, PropertyDoc*& resultProp, MethodDoc*& resultMethod)
+{
+  //See if this is a Get 'Property' function.
+  if(propDoc.Name[0] == 'G')
+  {
+    //strip the 'Get' off of the name
+    String getName = propDoc.Name.size() > 3 ? propDoc.Name.sub_string(3, propDoc.Name.size() - 3) : String();
+
+    if(PropertyDoc* propertyDoc = classDoc.PropertyMap.findValue(getName, NULL))
+    {
+      *propertyDoc = propDoc;
+      propertyDoc->Name = getName;
+
+      resultProp = propertyDoc;
+    }
+  }
+
+  //See if this is an m'VarName' member variable.
+  if(propDoc.Name[0] == 'm')
+  {
+    //strip the 'm' off of the name
+    String mName = propDoc.Name.size() > 1 ? propDoc.Name.sub_string(1, propDoc.Name.size() - 1) : String();
+
+    if(PropertyDoc* propertyDoc = classDoc.PropertyMap.findValue(mName, NULL))
+    {
+      if(propertyDoc->Description.empty())
+      {
+        *propertyDoc = propDoc;
+        propertyDoc->Name = mName;
+        
+        resultProp = propertyDoc;
+      }
+    }
+  }
+
+  //See if this is a property that is not a Getter and doesn't start with m, such as Translation.
+  if(PropertyDoc* propertyDoc = classDoc.PropertyMap.findValue(propDoc.Name, NULL))
+  {
+    if(propertyDoc->Description.empty())
+    {
+      *propertyDoc = propDoc;
+      
+      resultProp = propertyDoc;
+    }
+  }
+
+  //See if this was a method.
+  if(MethodDoc* methodDoc = classDoc.MethodMap.findValue(metDoc.Name, NULL))
+  {
+    *methodDoc = metDoc;
+
+    resultMethod = methodDoc;
+  }
+}
+
+void ExtractMethodDocs(ClassDoc& classDocT, HashMap<String, ClassDoc>& dataBase, DocumentationLibrary& library, ClassDoc& currentClass, ClassDoc* derivedClass, StringParam doxyPath, Array<Replacement>& replacements)
 {
   ClassDoc* baseClassDoc = dataBase.findPointer(currentClass.Name);
   //if this class already exists then don't re-read it
   if(baseClassDoc != NULL)
+  {
+    currentClass = *baseClassDoc;
     return;
+  }
 
   //extract methods and properties from the base classes
   if(!currentClass.BaseClass.empty())
   {
     if(ClassDoc* parentClass = library.ClassMap.findValue(currentClass.BaseClass, NULL))
     {
-      ExtractMethodDocs(classDocT, dataBase, library, *parentClass, doxyPath, replacements);
+      ExtractMethodDocs(classDocT, dataBase, library, *parentClass, &currentClass, doxyPath, replacements);
       //add all of the parent's properties to this class
       currentClass.Add(*parentClass);
     }
@@ -343,12 +405,12 @@ void ExtractMethodDocs(ClassDoc& classDocT, HashMap<String, ClassDoc>& dataBase,
   if(baseClassElement != NULL)
   {
     const char* baseClass = baseClassElement->GetText();
-
-    if(String(baseClass) != currentClass.BaseClass)
+    ClassDoc* parentClass = library.ClassMap.findValue(currentClass.BaseClass, NULL);
+    if(parentClass == NULL)
     {
-      ClassDoc baseDoc = currentClass;
+      ClassDoc baseDoc;// = currentClass;
       baseDoc.Name = baseClass;
-      ExtractMethodDocs(classDocT, dataBase, library, baseDoc, doxyPath, replacements);
+      ExtractMethodDocs(classDocT, dataBase, library, baseDoc, &currentClass, doxyPath, replacements);
       //add all of the parent's properties to this class
       currentClass.Add(baseDoc);
     }
@@ -407,46 +469,31 @@ void ExtractMethodDocs(ClassDoc& classDocT, HashMap<String, ClassDoc>& dataBase,
       metDoc.Description = briefdescription;
       metDoc.ReturnValue = returnValue;
 
+      PropertyDoc* resultProp = NULL;
+      MethodDoc* resultMethod = NULL;
 
-      //See if this is a Get 'Property' function.
-      if(name[0] == 'G')
+      AddMethodOrProperty(currentClass, propDoc, metDoc, resultProp, resultMethod);
+
+      if((resultProp == NULL && resultMethod == NULL) && derivedClass != NULL)
       {
-        //strip the 'Get' off of the name
-        String getName = name.size() > 3 ? name.sub_string(3, name.size() - 3) : String();
-
-        if(PropertyDoc* propertyDoc = currentClass.PropertyMap.findValue(getName, NULL))
+        AddMethodOrProperty(*derivedClass, propDoc, metDoc, resultProp, resultMethod);
+        if(resultProp != NULL && !resultProp->Description.empty())
         {
-          *propertyDoc = propDoc;
-          propertyDoc->Name = getName;
+          PropertyDoc* prop = currentClass.PropertyMap.findValue(resultProp->Name, NULL);
+          if(prop != NULL)
+            *prop = *resultProp;
+          else
+            currentClass.Properties.push_back(*resultProp);
+        }
+        else if(resultMethod && !resultMethod->Description.empty())
+        {
+          MethodDoc* method = currentClass.MethodMap.findValue(resultMethod->Name, NULL);
+          if(method != NULL)
+            *method = *resultMethod;
+          else
+            currentClass.Methods.push_back(*resultMethod);
         }
       }
-
-      //See if this is an m'VarName' member variable.
-      if(name[0] == 'm')
-      {
-        //strip the 'm' off of the name
-        String mName = name.size() > 1 ? name.sub_string(1, name.size() - 1) : String();
-
-        if(PropertyDoc* propertyDoc = currentClass.PropertyMap.findValue(mName, NULL))
-        {
-          if(propertyDoc->Description.empty())
-          {
-            *propertyDoc = propDoc;
-            propertyDoc->Name = mName;
-          }
-        }
-      }
-
-      //See if this is a property that is not a Getter and doesn't start with m, such as Translation.
-      if(PropertyDoc* propertyDoc = currentClass.PropertyMap.findValue(name, NULL))
-      {
-        if(propertyDoc->Description.empty())
-          *propertyDoc = propDoc;
-      }
-
-      //See if this was a method.
-      if(MethodDoc* methodDoc = currentClass.MethodMap.findValue(name, NULL))
-        *methodDoc = metDoc;
     }
   }
 
@@ -603,7 +650,7 @@ void ExtractMethodDocs(ClassDoc& classDoc, DocumentationLibrary& library, ClassD
 
 void ExtractMethodDocs(ClassDoc& classDoc, HashMap<String, ClassDoc>& dataBase, DocumentationLibrary& library, StringParam doxyPath, Array<Replacement>& replacements)
 {
-  ExtractMethodDocs(classDoc, dataBase, library, classDoc, doxyPath, replacements);
+  ExtractMethodDocs(classDoc, dataBase, library, classDoc, NULL, doxyPath, replacements);
 }
 
 void ExtractMethodDocs(ClassDoc& classDoc, DocumentationLibrary& library, StringParam doxyPath, Array<Replacement>& replacements)

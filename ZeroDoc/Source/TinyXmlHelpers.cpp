@@ -446,6 +446,7 @@ void ExtractMethodDocs(ClassDoc& classDocT, HashMap<String, ClassDoc>& dataBase,
       const char* isVariable = memberElement->Attribute("mutable");
       String name = GetElementValue(memberElement, "name");
       String argsstring = GetElementValue(memberElement, "argsstring");
+
       String briefdescription = DoxyToString(memberElement, "briefdescription");
       uint i = 0;
       while(briefdescription[i] == ' ')
@@ -468,6 +469,19 @@ void ExtractMethodDocs(ClassDoc& classDocT, HashMap<String, ClassDoc>& dataBase,
       metDoc.Arguments = argsstring;
       metDoc.Description = briefdescription;
       metDoc.ReturnValue = returnValue;
+
+      //extract all of the parameter (if this is a method) names and types for easy parsing for a user later
+      TiXmlNode* params = pMemberDef->FirstChild("param");
+      while(params != NULL)
+      {
+        TiXmlElement* paramElement = params->ToElement();
+
+        MethodDoc::Argument& argument = metDoc.ParsedArguments.push_back();
+        argument.Type = Replace(replacements, GetElementValue(paramElement, "type"));
+        argument.Name = GetElementValue(paramElement, "declname");
+
+        params = params->NextSibling("param");
+      }
 
       PropertyDoc* resultProp = NULL;
       MethodDoc* resultMethod = NULL;

@@ -37,7 +37,7 @@ inline Configurations LoadConfigurations(StringMap& params)
   //Load the list of events
   config.EventsFile = BuildString(config.DocumentationPath.c_str(), "EventList.data");
   //get the path to the doxygen file
-  config.DoxygenPath = GetStringValue<String>(params,"doxyPath","E:\\Zero\\Output");
+  config.DoxygenPath = GetStringValue<String>(params,"doxyPath","C:\\ZeroDoxygen");
   config.DoxygenPath = NormalizePath(config.DoxygenPath);
   //get the path to the documentation folder (where the data files for documentation are)
   config.DocumentationRoot = BuildString(config.SourcePath.c_str(),"DevTools\\Documentation\\");

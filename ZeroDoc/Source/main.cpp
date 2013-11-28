@@ -44,6 +44,7 @@ void ParseAndSaveDocumentation(StringMap& params)
 
   //for the wiki and for cleanliness we replace certain symbols that are used internally
   Array<Replacement> symbolReplacements;
+  symbolReplacements.push_back(Replacement("Vec2Param", "Vec2"));
   symbolReplacements.push_back(Replacement("Vec3Param", "Vec3"));
   symbolReplacements.push_back(Replacement("Vec4Param", "Vec4"));
   symbolReplacements.push_back(Replacement("real", "float"));
@@ -79,6 +80,11 @@ int main(int argc, char* argv[])
 
   Zero::StringMap params;
   Zero::ParseCommandLine(params, (Zero::cstr*)argv, argc);
+
+  forRange(auto& entry, params.all())
+  {
+      printf("  %s : %s\n", entry.first.c_str(), entry.second.c_str());
+  }
 
   if(Zero::GetStringValue<bool>(params, "parse", false))
     Zero::ParseAndSaveDocumentation(params);

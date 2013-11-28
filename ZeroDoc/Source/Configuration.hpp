@@ -40,7 +40,7 @@ inline Configurations LoadConfigurations(StringMap& params)
   config.DoxygenPath = GetStringValue<String>(params,"doxyPath","C:\\ZeroDoxygen");
   config.DoxygenPath = NormalizePath(config.DoxygenPath);
   //get the path to the documentation folder (where the data files for documentation are)
-  config.DocumentationRoot = BuildString(config.SourcePath.c_str(),"DevTools\\Documentation\\");
+  config.DocumentationRoot = BuildString(config.SourcePath.c_str(),"ZeroDoc\\Documentation\\");
 
   return config;
 }

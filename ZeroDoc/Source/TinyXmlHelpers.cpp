@@ -394,7 +394,7 @@ void ExtractMethodDocs(ClassDoc& classDocT, HashMap<String, ClassDoc>& dataBase,
 
   if(!loadOkay)
   {
-    //__debugbreak();
+    printf("Failed to load doc file for '%s\n", currentClass.Name.c_str());
     return;
   }
 

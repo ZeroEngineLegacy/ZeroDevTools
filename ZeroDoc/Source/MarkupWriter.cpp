@@ -7,6 +7,7 @@
 #include "Serialization/Text.hpp"
 #include "Pages.hpp"
 #include "Support/FileSupport.hpp"
+#include "Support/FilePath.hpp"
 
 namespace Zero
 {
@@ -46,7 +47,7 @@ void WriteTagIndices(String outputDir, DocToTags& tagged)
     markup << "\n";
   }
 
-  String fileName = BuildString(outputDir, "../CodeIndex.rst");
+  String fileName = FilePath::Combine(outputDir, "..", "CodeIndex.rst");
 
   String text = markup.ToString();
 
@@ -97,11 +98,13 @@ void WriteClass(String directory, ClassDoc& classDoc, DocToTags& tagged)
 
   Zero::CreateDirectoryAndParents(outputDir);
 
-  String fileName = BuildString(outputDir, classDoc.Name , ".rst");
+  String filename = BuildString(classDoc.Name , ".rst");
+
+  String fullPath = FilePath::Combine(outputDir, filename);
 
   String text = classMarkup.ToString();
 
-  WriteStringRangeToFile(fileName, text);
+  WriteStringRangeToFile(fullPath, text);
 
 }
 

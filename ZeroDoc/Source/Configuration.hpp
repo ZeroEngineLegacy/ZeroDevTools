@@ -1,6 +1,6 @@
 #pragma once
 #include "Support/StringMap.hpp"
-#include "Utility/FilePath.hpp"
+#include "Support/FilePath.hpp"
 
 namespace Zero
 {
@@ -27,20 +27,20 @@ inline Configurations LoadConfigurations(StringMap& params)
 
   //get the path to the source
   config.SourcePath = GetStringValue<String>(params,"sourcePath","E:\\Zero\\");
-  config.SourcePath = NormalizePath(config.SourcePath);
+  config.SourcePath = FilePath::Normalize(config.SourcePath);
   //get the path to the documentation
-  config.DocumentationPath = BuildString(config.SourcePath.all(),"\\Projects\\Editor\\");
-  config.DocumentationPath = NormalizePath(config.DocumentationPath);
+  config.DocumentationPath = FilePath::Combine(config.SourcePath,"Projects", "Editor");
+  config.DocumentationPath = FilePath::Normalize(config.DocumentationPath);
   //load the raw documentation (before merging with doxy) and the documentation file
-  config.DocumentationRawFile = BuildString(config.DocumentationPath.c_str(),"DocumentationRaw.data");
-  config.DocumentationFile  = BuildString(config.DocumentationPath.c_str(),"Documentation.data");
+  config.DocumentationRawFile = FilePath::Combine(config.DocumentationPath,"DocumentationRaw.data");
+  config.DocumentationFile  = FilePath::Combine(config.SourcePath,"Documentation.data");
   //Load the list of events
-  config.EventsFile = BuildString(config.DocumentationPath.c_str(), "EventList.data");
+  config.EventsFile = FilePath::Combine(config.DocumentationPath, "EventList.data");
   //get the path to the doxygen file
   config.DoxygenPath = GetStringValue<String>(params,"doxyPath","C:\\ZeroDoxygen");
-  config.DoxygenPath = NormalizePath(config.DoxygenPath);
+  config.DoxygenPath = FilePath::Normalize(config.DoxygenPath);
   //get the path to the documentation folder (where the data files for documentation are)
-  config.DocumentationRoot = BuildString(config.SourcePath.c_str(),"ZeroDoc\\Documentation\\");
+  config.DocumentationRoot = FilePath::Combine(config.SourcePath,"ZeroDoc", "Documentation");
 
   return config;
 }

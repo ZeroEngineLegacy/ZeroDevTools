@@ -8,7 +8,7 @@
 #include "Serialization/CharacterTraits.hpp"
 #include "Support/StringMap.hpp"
 #include "Engine/EngineContainers.hpp"
-#include "Utility/FilePath.hpp"
+#include "Support/FilePath.hpp"
 #include "Serialization/Text.hpp"
 #include "../TinyXml/tinyxml.h"
 #include "Configuration.hpp"

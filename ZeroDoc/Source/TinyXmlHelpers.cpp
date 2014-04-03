@@ -3,7 +3,7 @@
 #include "TinyXmlHelpers.hpp"
 #include "..\TinyXml\tinyxml.h"
 #include "Parsing.hpp"
-#include "Platform\Windows\FileSystem.hpp"
+#include "Platform\FileSystem.hpp"
 
 namespace Zero
 {

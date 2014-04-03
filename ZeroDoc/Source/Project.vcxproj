@@ -134,7 +134,7 @@
     <ProjectReference Include="$(ZERO_SOURCE)\Systems\Content\Content.vcxproj">
       <Project>{e19019f5-9c2c-4329-aab5-db28e39cc0f2}</Project>
     </ProjectReference>
-    <ProjectReference Include="$(ZERO_SOURCE)\Libraries\Geometrics\Geometrics.vcxproj">
+    <ProjectReference Include="$(ZERO_SOURCE)\Libraries\Geometry\Geometry.vcxproj">
       <Project>{787f598d-f96e-48f5-8075-25d31fc7ed60}</Project>
     </ProjectReference>
     <ProjectReference Include="..\curl\lib\vc6libcurl.vcxproj">

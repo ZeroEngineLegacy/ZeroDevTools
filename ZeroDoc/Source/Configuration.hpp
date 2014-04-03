@@ -33,7 +33,7 @@ inline Configurations LoadConfigurations(StringMap& params)
   config.DocumentationPath = FilePath::Normalize(config.DocumentationPath);
   //load the raw documentation (before merging with doxy) and the documentation file
   config.DocumentationRawFile = FilePath::Combine(config.DocumentationPath,"DocumentationRaw.data");
-  config.DocumentationFile  = FilePath::Combine(config.SourcePath,"Documentation.data");
+  config.DocumentationFile  = FilePath::Combine(config.SourcePath, "Data","Documentation.data");
   //Load the list of events
   config.EventsFile = FilePath::Combine(config.DocumentationPath, "EventList.data");
   //get the path to the doxygen file

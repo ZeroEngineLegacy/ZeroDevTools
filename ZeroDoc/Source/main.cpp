@@ -52,6 +52,8 @@ void ParseAndSaveDocumentation(StringMap& params)
   symbolReplacements.push_back(Replacement("StringParam", "String"));
   symbolReplacements.push_back(Replacement("*", ""));
   symbolReplacements.push_back(Replacement("override", ""));
+  symbolReplacements.push_back(Replacement("ProxyContactPoint", "ContactPoint"));
+  symbolReplacements.push_back(Replacement("ProxyContactPointRange", "ContactPointRange"));
   sort(symbolReplacements.all());
 
   HashMap<String, ClassDoc> dataBase;
@@ -61,7 +63,7 @@ void ParseAndSaveDocumentation(StringMap& params)
     ExtractMethodDocs(classDoc, dataBase, doc, config.DoxygenPath, symbolReplacements);
   }
 
-  String extraDocPath = BuildString(config.DocumentationRoot.c_str(),"ExtraDocumentation.txt");
+  String extraDocPath = FilePath::Combine(config.DocumentationRoot.c_str(), "ExtraDocumentation.txt");
   LoadAndReplaceDocumentation(extraDocPath,doc,symbolReplacements);
 
   //save the merged file back into the output file

@@ -21,8 +21,8 @@ namespace BuildInstall
     {
       InstallBuilder ib = new InstallBuilder();
       String installerDirectory = ib.Run();
-      ReleaseNoteBuilder rnb = new ReleaseNoteBuilder();
-      rnb.Run(installerDirectory);
+      //ReleaseNoteBuilder rnb = new ReleaseNoteBuilder();
+      //rnb.Run(installerDirectory);
     }
   }
 }

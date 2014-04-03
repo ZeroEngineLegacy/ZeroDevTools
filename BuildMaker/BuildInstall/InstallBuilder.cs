@@ -19,17 +19,49 @@ namespace BuildMaker
 {
   class InstallBuilder
   {
+
+    public String GetRevisionNumber(String cZeroSource)
+    {
+        //Get the build number.
+        ProcessStartInfo revisionNumberInfo = new ProcessStartInfo();
+        revisionNumberInfo.Arguments = @"tip -q";
+        revisionNumberInfo.FileName = "hg";
+        revisionNumberInfo.WorkingDirectory = cZeroSource;
+        revisionNumberInfo.RedirectStandardOutput = true;
+        revisionNumberInfo.UseShellExecute = false;
+        Process revisionNumber = Process.Start(revisionNumberInfo);
+        String revNum = revisionNumber.StandardOutput.ReadToEnd();
+        String buildNumber = (revNum.Split(':'))[0];
+        revisionNumber.WaitForExit();
+
+        return buildNumber;
+    }
+
+    public void OutputBuildInfo(String buildFilePath, String buildVersion, String fileName)
+    {
+      StringBuilder builder = new StringBuilder();
+      builder.Append("{");
+      builder.Append(String.Format("\"BuildVersion\": \"{0}\",", buildVersion));
+      builder.Append(String.Format("\"InstallerName\": \"{0}\"", fileName));
+      builder.Append("}");
+
+      String fileData = builder.ToString();
+      File.WriteAllText(buildFilePath, fileData);
+    }
+
     public String Run()
     {
       String cZeroSource = Environment.ExpandEnvironmentVariables("%ZERO_SOURCE%");
       String cBuildOutput = Path.Combine(cZeroSource, "Build");
+
+      String buildNumber = this.GetRevisionNumber(cZeroSource);
 
       //Print a nice message signifying the start of the install build.
       Console.WriteLine("Building the latest Zero Engine installer...");
 
       //Generate the Zero Engine installer using Inno Setup.
       ProcessStartInfo innoSetupInfo = new ProcessStartInfo();
-      innoSetupInfo.Arguments = Path.Combine(cBuildOutput, "ZeroEngineInstall.iss");
+      innoSetupInfo.Arguments = Path.Combine(cBuildOutput, "ZeroEngineInstall.iss") + String.Format(" /DMyAppVersion=\"{0}\"", buildNumber);
       innoSetupInfo.FileName = @"C:\Program Files (x86)\Inno Setup 5\iscc.exe";
       Process innoSetup;
       try
@@ -43,20 +75,12 @@ namespace BuildMaker
         Console.WriteLine("Press any key to continue...");
         Console.ReadKey();
         return null;
+      
       }
+      //String innoError = innoSetup.StandardOutput.ReadToEnd();
       innoSetup.WaitForExit();
 
-      //Get the build number.
-      ProcessStartInfo revisionNumberInfo = new ProcessStartInfo();
-      revisionNumberInfo.Arguments = "tip -q";
-      revisionNumberInfo.FileName = "hg";
-      revisionNumberInfo.WorkingDirectory = cZeroSource;
-      revisionNumberInfo.RedirectStandardOutput = true;
-      revisionNumberInfo.UseShellExecute = false;
-      Process revisionNumber = Process.Start(revisionNumberInfo);
-      String revNum = revisionNumber.StandardOutput.ReadToEnd();
-      String buildNumber = (revNum.Split(':'))[0];
-      revisionNumber.WaitForExit();
+      
 
       //Get the date.
       DateTime theDate = DateTime.Now;
@@ -68,9 +92,11 @@ namespace BuildMaker
                 Path.Combine(cBuildOutput, "Output", newFileName), true);
       File.Delete(Path.Combine(cBuildOutput, "Output", "ZeroEngineSetup.exe"));
 
+      String buildFilePath = Path.Combine(cBuildOutput, "Output", "BuildInfo.data");
+      this.OutputBuildInfo(buildFilePath, buildNumber, newFileName);
       //Open the folder
-      Process.Start("explorer.exe", 
-                    "/select, " + Path.Combine(cBuildOutput, "Output", newFileName));
+      //Process.Start("explorer.exe", 
+      //              "/select, " + Path.Combine(cBuildOutput, "Output", newFileName));
       return Path.Combine(cBuildOutput, "Output");
     }
   }

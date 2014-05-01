@@ -25,12 +25,8 @@ namespace SourceIndexer
       return currentRevision;
     }
 
-    public static String BuildSourceIndex(String depoPath, String pdbPath, String pdbStrPath, List<FileInfo> relativeFiles, bool isSilent)
+    public static String BuildSourceIndex(List<DepoInfo> depos, String pdbPath, String pdbStrPath, bool isSilent)
     {
-      String currentRevision = GetCurrentRevision(depoPath);
-      if (isSilent == false)
-        Console.WriteLine("Embedding revision {0}", currentRevision);
-
       // Get the current date and time to put into the pdb.
       String dateString;
       DateTime date = DateTime.Now;
@@ -52,14 +48,24 @@ namespace SourceIndexer
       // Unfortunately mercurial is unable to execute commands on remote repositories...
       builder.AppendLine("SRCSRVCMD=hg.exe --cwd \"%fnvar%(SRCLOCATION)\" -y cat %var3% -r %var2% > %SRCSRVTRG%");
       builder.AppendLine("SRCSRV: source files ---------------------------------------");
-      for (int i = 0; i < relativeFiles.Count; ++i)
+
+      // Iterate over each depo and write out their respective files
+      foreach(var depo in depos)
       {
-        builder.AppendLine(String.Format("{0}*{1}*{2}", relativeFiles[i].FullPath, currentRevision, relativeFiles[i].RelativePath));
+        // Get the depo's current revision
+        String currentRevision = GetCurrentRevision(depo.DepoPath);
+        if (isSilent == false)
+          Console.WriteLine("Embedding revision {0}", currentRevision);  
+
+        // Now output the format string for the file
+        foreach(var file in depo.Files)
+        {
+          builder.AppendLine(String.Format("{0}*{1}*{2}", file.FullPath, currentRevision, file.RelativePath));
+        }
       }
       builder.AppendLine("SRCSRV: end ------------------------------------------------");
 
       return builder.ToString();
     }
-
   }
 }

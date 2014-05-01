@@ -15,6 +15,12 @@ namespace SourceIndexer
     public String RelativePath;
   }
 
+  class DepoInfo
+  {
+    public String DepoPath;
+    public List<FileInfo> Files = new List<FileInfo>();
+  }
+
   class SourceIndexer
   {
     // The pdb contains a list of what files it uses. This can be extracted using srctool.exe.
@@ -34,38 +40,36 @@ namespace SourceIndexer
       return files.Split('\n');
     }
 
-    // The file list we get from the pdb contains all files referenced in the project.
-    // This includes new and malloc. Prune the file listing to only those that
-    // share the same root path as our code.
-    static List<String> PruneFileListing(String[] files, String rootPath)
+    static void PruneFileListIntoDepos(String[] files, List<DepoInfo> depos)
     {
-      // Ignore case by just to-lowering everything
-      rootPath = rootPath.ToLower();
-      List<String> results = new List<String>();
-      for(uint i = 0; i < files.Length; ++i)
+      depos.Sort(delegate(DepoInfo depo0, DepoInfo depo1) { return -depo0.DepoPath.Length.CompareTo(depo1.DepoPath.Length); });
+
+      foreach(var file in files)
       {
-        if (files[i].ToLower().StartsWith(rootPath))
+        var toLoweredFile = file.ToLower();
+
+        foreach(var depo in depos)
         {
-          results.Add(files[i]);
+          var toLoweredDepo = depo.DepoPath.ToLower();
+
+          if(toLoweredFile.Contains(toLoweredDepo))
+          {
+            // Make sure to trim out any newlines or other characters at the end
+            String fileName = file.Trim();
+            // Get the exact name so that mercurial can look it up
+            String caseSensitiveFileName = GetExactPathName(fileName);
+            // Chop of the beginning of the file path that matches the depo path.
+            String relativeFile = caseSensitiveFileName.Substring(depo.DepoPath.Length);
+            relativeFile = relativeFile.TrimStart('\\');
+
+            FileInfo info = new FileInfo();
+            info.FullPath = caseSensitiveFileName;
+            info.RelativePath = relativeFile;
+            depo.Files.Add(info);
+            break;
+          }
         }
       }
-      return results;
-    }
-
-    // Get the revision id of the depo.
-    // This is used to know what revision we want to revert each file back to.
-    static String GetCurrentRevision(String depoPath)
-    {
-      ProcessStartInfo info = new ProcessStartInfo();
-      info.Arguments = "--cwd " + depoPath + " tip --template {node}";
-      info.FileName = "hg.exe";
-      info.RedirectStandardOutput = true;
-      info.UseShellExecute = false;
-      Process process = Process.Start(info);
-      String currentRevision = process.StandardOutput.ReadToEnd();
-      process.WaitForExit();
-
-      return currentRevision;
     }
 
     // Unfortunately, the pdb changes the case of the path. Mercurial is case
@@ -90,36 +94,10 @@ namespace SourceIndexer
       }
     }
 
-    // We need the relative path of the file from the depo's root so that we it
-    // can be copied later (during the source indexing from a crash dump) to
-    // another directory but with the same relative path from the root.
-    static List<FileInfo> GetRelativePaths(List<String> files, String depoPath)
-    {
-      List<FileInfo> relativePaths = new List<FileInfo>();
-
-      for(int i = 0; i < files.Count; ++i)
-      {
-        // Make sure to trim out any newlines or other characters at the end
-        String fileName = files[i].Trim();
-        // Get the exact name so that mercurial can look it up
-        String caseSensitiveFileName = GetExactPathName(fileName);
-        // Chop of the beginning of the file path that matches the depo path.
-        String relativeFile = caseSensitiveFileName.Substring(depoPath.Length);
-        relativeFile = relativeFile.TrimStart('\\');
-
-        FileInfo info = new FileInfo();
-        info.FullPath = caseSensitiveFileName;
-        info.RelativePath = relativeFile;
-        relativePaths.Add(info);
-      }
-
-      return relativePaths;
-    }
-
     // Simple helper to turn command line arguments into a dictionary lookup.
-    static Dictionary<String, String> ParseCommandLineArgs(string[] args)
+    static Dictionary<String, List<String> > ParseCommandLineArgs(string[] args)
     {
-      Dictionary<String, String> parsedArgs = new Dictionary<String, String>();
+      Dictionary<String, List<String> > parsedArgs = new Dictionary<String, List<String> >();
 
       int i = 0;
       while(i < args.Length)
@@ -135,7 +113,9 @@ namespace SourceIndexer
           if (nextIndex < args.Length && !args[nextIndex].StartsWith("-"))
             val = args[nextIndex];
 
-          parsedArgs.Add(flag, val);
+          if (parsedArgs.ContainsKey(flag) == false)
+            parsedArgs.Add(flag, new List<String>());
+          parsedArgs[flag].Add(val);
           i += 2;
         }
         else
@@ -169,9 +149,9 @@ namespace SourceIndexer
 
     static void Main(string[] args)
     {
-      Dictionary<String, String> parsedArgs = ParseCommandLineArgs(args);
+      Dictionary<String, List<String> > parsedArgs = ParseCommandLineArgs(args);
 
-      String depoPath = @"C:\BuildBot\slave\Zero\ZeroCore";
+      List<DepoInfo> depos = new List<DepoInfo>();
       String pdbLocation = "ZeroEditor.pdb";
       String srcSrvLocation = "srcsrv";
       String mode = "hg";
@@ -182,29 +162,37 @@ namespace SourceIndexer
       // Parse the arguments we need
       String outLocation = "";
       if (parsedArgs.ContainsKey("-depo"))
-        depoPath = parsedArgs["-depo"];
+      {
+        List<String> depoParams = parsedArgs["-depo"];
+        for(int i = 0; i < depoParams.Count; ++i)
+        {
+          DepoInfo depoInfo = new DepoInfo();
+          // Some of the srcsrv tools don't work with relative paths.
+          // Convert all of our paths to full paths.
+          depoInfo.DepoPath = Path.GetFullPath(depoParams[i]);
+          depos.Add(depoInfo);
+        }
+      }
+      
       if (parsedArgs.ContainsKey("-pdb"))
-        pdbLocation = parsedArgs["-pdb"];
+        pdbLocation = parsedArgs["-pdb"][0];
       if (parsedArgs.ContainsKey("-srcsrv"))
-        srcSrvLocation = parsedArgs["-srcsrv"];
+        srcSrvLocation = parsedArgs["-srcsrv"][0];
       if (parsedArgs.ContainsKey("-mode"))
-        mode = parsedArgs["-mode"];
+        mode = parsedArgs["-mode"][0];
       if (parsedArgs.ContainsKey("-silent"))
         isSilent = true;
 
       // If the user specifies where to output the text data we need to
       // save then use that path. Otherwise put it next to the pdb.
       if (parsedArgs.ContainsKey("-out"))
-        outLocation = parsedArgs["-out"];
+        outLocation = parsedArgs["-out"][0];
       else
       {
         String fullPath = Path.GetDirectoryName(pdbLocation);
         outLocation = Path.Combine(fullPath, "PdbData.txt");
       }
-
-      // Some of the srcsrv tools don't work with relative paths.
-      // Convert all of our paths to full paths.
-      depoPath = Path.GetFullPath(depoPath);
+      
       pdbLocation = Path.GetFullPath(pdbLocation);
       srcSrvLocation = Path.GetFullPath(srcSrvLocation);
       outLocation = Path.GetFullPath(outLocation);
@@ -215,7 +203,13 @@ namespace SourceIndexer
       if (isSilent == false)
       {
         // For debugging: output what the directory of each path we need is.
-        Console.WriteLine("DepoPath: {0}", depoPath);
+        Console.Write("DepoPath: ");
+        foreach (var depo in depos)
+        {
+          Console.Write("{0}; ", depo.DepoPath);
+        }
+        Console.WriteLine();
+        
         Console.WriteLine("PdbPath: {0}", pdbLocation);
         Console.WriteLine("SrcSrvLocation: {0}", srcSrvLocation);
         Console.WriteLine("OutLocation: {0}", outLocation);
@@ -225,15 +219,12 @@ namespace SourceIndexer
       if (isSilent == false)
         Console.WriteLine("Found {0} files in the pdb", allFiles.Length);
 
-      List<String> files = PruneFileListing(allFiles, depoPath);
-      if (isSilent == false)
-        Console.WriteLine("Pruned file listing to {0} files", files.Count);
-
-      List<FileInfo> relativeFiles = GetRelativePaths(files, depoPath);
+      // Get a list of what files belong to which depo
+      PruneFileListIntoDepos(allFiles, depos);
 
       String pdbData = "";
       if (mode == "hg")
-        pdbData = MercurialIndexer.BuildSourceIndex(depoPath, pdbLocation, pdbStrLocation, relativeFiles, isSilent);
+        pdbData = MercurialIndexer.BuildSourceIndex(depos, pdbLocation, pdbStrLocation, isSilent);
 
       File.WriteAllText(outLocation, pdbData);
 

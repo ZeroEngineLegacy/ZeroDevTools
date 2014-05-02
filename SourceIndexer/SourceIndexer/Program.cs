@@ -113,6 +113,8 @@ namespace SourceIndexer
           if (nextIndex < args.Length && !args[nextIndex].StartsWith("-"))
             val = args[nextIndex];
 
+          // To support multiple depos this was turned into a multi-map. Unfortunately this
+          // means other parameters can get more than one key, but oh well...
           if (parsedArgs.ContainsKey(flag) == false)
             parsedArgs.Add(flag, new List<String>());
           parsedArgs[flag].Add(val);
@@ -172,6 +174,17 @@ namespace SourceIndexer
           depoInfo.DepoPath = Path.GetFullPath(depoParams[i]);
           depos.Add(depoInfo);
         }
+      }
+
+      // Add a default path primarily for testing
+      if(depos.Count == 0)
+      {
+        DepoInfo depoInfo = new DepoInfo();
+        depoInfo.DepoPath = @"C:\BuildBot\slave\Zero\ZeroCore";
+        depos.Add(depoInfo);
+        depoInfo = new DepoInfo();
+        depoInfo.DepoPath = @"C:\BuildBot\slave\Zero\ZeroCore\Zilch";
+        depos.Add(depoInfo);
       }
       
       if (parsedArgs.ContainsKey("-pdb"))

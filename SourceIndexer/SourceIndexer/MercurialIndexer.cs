@@ -74,7 +74,7 @@ namespace SourceIndexer
         {
           // Instead of figuring out where each file is supposed to go with the original depo
           // paths, just put each separate depo in its own folder.
-          String relativePath = Path.Combine(depoName, file.RelativePath);
+          String relativePath = file.RelativePath;
           builder.AppendLine(String.Format("{0}*{1}*{2}*{3}", file.FullPath, currentRevision, relativePath, extraDepo));
         }
       }

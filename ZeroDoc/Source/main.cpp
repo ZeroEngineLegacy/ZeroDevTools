@@ -19,9 +19,6 @@
 namespace Zero
 {
 
-
-
-
 void ParseAndSaveDocumentation(StringMap& params)
 {
   printf("ParseAndSaveDocumentation\n");
@@ -73,7 +70,6 @@ void ParseAndSaveDocumentation(StringMap& params)
                          config.Verbose, config.Log);
 }
 
-
 }//namespace Zero
 
 int main(int argc, char* argv[])
@@ -81,7 +77,7 @@ int main(int argc, char* argv[])
   printf("Zero Documentation Generator\n");
 
   Zero::StringMap params;
-  Zero::ParseCommandLine(params, (Zero::cstr*)argv, argc);
+  Zero::ParseCommandLine(params, (cstr*)argv, argc);
 
   forRange(auto& entry, params.all())
   {

@@ -5,7 +5,7 @@
 #define CURL_STATICLIB
 
 #include <curl/curl.h>
-#include "Serialization/CharacterTraits.hpp"
+#include "Common/String/CharacterTraits.hpp"
 #include "Support/StringMap.hpp"
 #include "Engine/EngineContainers.hpp"
 #include "Support/FilePath.hpp"

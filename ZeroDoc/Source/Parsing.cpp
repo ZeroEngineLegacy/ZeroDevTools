@@ -1,6 +1,6 @@
 #include "Precompiled.hpp"
 #include "Parsing.hpp"
-#include "Serialization\CharacterTraits.hpp"
+#include "Common/String/CharacterTraits.hpp"
 
 namespace Zero
 {

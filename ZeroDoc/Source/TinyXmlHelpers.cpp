@@ -4,6 +4,7 @@
 #include "..\TinyXml\tinyxml.h"
 #include "Parsing.hpp"
 #include "Platform\FileSystem.hpp"
+#include "String\CharacterTraits.hpp"
 
 namespace Zero
 {
@@ -354,6 +355,50 @@ void AddMethodOrProperty(ClassDoc& classDoc, PropertyDoc& propDoc, MethodDoc& me
   }
 }
 
+String NormalizeDocumentation(StringRange text)
+{
+  if(text.empty())
+    return String();
+
+  uint size = text.size();
+  char* buffer = (char*)alloca(size + 1);
+
+  uint outIndex = 0;
+  for(uint i = 0; i < size; ++i)
+  {
+    char current = text[i];
+
+    if(IsSpace(current))
+    {
+      // Skip all leading spaces
+      if(outIndex == 0)
+        continue;
+
+      // Skip multiple spaces
+      if(outIndex > 0 && IsSpace(buffer[outIndex  - 1]))
+        continue;
+    }
+
+    // Remove spaces before symbols
+    if(IsSymbol(current) && outIndex > 0 && IsSpace(buffer[outIndex - 1]))
+    {
+      buffer[outIndex - 1] = current;
+      continue;
+    }
+
+    buffer[outIndex++] = current;
+  }
+
+  // Remove trailing white space
+  while(outIndex > 0 && IsSpace(buffer[outIndex - 1]))
+    --outIndex;
+
+  // Null terminate
+  buffer[outIndex] = '\0';
+
+  return buffer;
+}
+
 void ExtractMethodDocs(ClassDoc& classDocT, HashMap<String, ClassDoc>& dataBase, DocumentationLibrary& library, ClassDoc& currentClass, ClassDoc* derivedClass, StringParam doxyPath, Array<Replacement>& replacements)
 {
   ClassDoc* baseClassDoc = dataBase.findPointer(currentClass.Name);
@@ -419,7 +464,7 @@ void ExtractMethodDocs(ClassDoc& classDocT, HashMap<String, ClassDoc>& dataBase,
   if(&classDocT == &currentClass)
   {
     String classDesc = DoxyToString(compounddef, "briefdescription");
-    currentClass.Description = classDesc;
+    currentClass.Description = NormalizeDocumentation(classDesc);
   }
 
   TiXmlNode* pSection;

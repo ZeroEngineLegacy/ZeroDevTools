@@ -463,6 +463,8 @@ void ExtractMethodDocs(ClassDoc& classDocT, HashMap<String, ClassDoc>& dataBase,
 
   if(&classDocT == &currentClass)
   {
+    //if(currentClass.Name == "Transform")
+    //  __debugbreak();
     String classDesc = DoxyToString(compounddef, "briefdescription");
     currentClass.Description = NormalizeDocumentation(classDesc);
   }
@@ -473,7 +475,7 @@ void ExtractMethodDocs(ClassDoc& classDocT, HashMap<String, ClassDoc>& dataBase,
     //if this is the bried description for the class then pull out the class's description
     if(strcmp(pSection->Value(),"briefdescription") == 0)
     {
-      currentClass.Description = DoxyToString(pSection->ToElement(), "para");
+      currentClass.Description = NormalizeDocumentation(DoxyToString(pSection->ToElement(), "para"));
     }
 
     TiXmlNode* pMemberDef;
@@ -502,7 +504,7 @@ void ExtractMethodDocs(ClassDoc& classDocT, HashMap<String, ClassDoc>& dataBase,
 
       name = Replace(replacements,name);
       argsstring = Replace(replacements,argsstring);
-      briefdescription = Replace(replacements,briefdescription);
+      briefdescription = NormalizeDocumentation(Replace(replacements,briefdescription));
       returnValue = Replace(replacements,returnValue);
 
       PropertyDoc propDoc;

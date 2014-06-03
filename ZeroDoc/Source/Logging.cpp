@@ -83,7 +83,7 @@ void FilterIgnoredClasses(Array<ClassDoc>& classes, HashSet<String>& classesToDo
   FindClassesWithBase(doxyPath,classesToDocument,basesToInclude,basesToIgnore,classesToIgnore);
 
   uint index = 0;
-  while(index != classes.size())
+  while(index < classes.size())
   {
     ClassDoc& classDoc = classes[index];
     String findVal = classesToDocument.findValue(classDoc.Name,"");

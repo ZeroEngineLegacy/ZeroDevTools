@@ -17,6 +17,7 @@ using System.Net;
 using System.DirectoryServices.AccountManagement;
 using ICSharpCode.SharpZipLib.Zip;
 using System.Collections.Specialized;
+using System.Threading;
 
 namespace ZeroCrashHandler
 {
@@ -43,7 +44,7 @@ namespace ZeroCrashHandler
 		const bool SSL = true;
 
 		// Php settings data
-		const String PhpRedirectUrl = "https://www.digipen.edu/zerocrash/crash.php";
+		const String PhpRedirectUrl = "http://zero.digipen.edu/crash.php";
 		const String PhpFileId = "userfile";
 		const String PhpEmailId = "email";
 		const String PhpBodyId = "body";
@@ -93,12 +94,18 @@ namespace ZeroCrashHandler
 			// Loop through all the files
 			foreach (String fileName in Files)
 			{
-				// Get the extension from the current file (if it's a text file...)
-				if (Path.GetExtension(fileName) == ".txt")
+				try
 				{
-					// Append a line of text to the message
-					AdditionalText.AppendLine("\r\n\r\n" + "---------------------" + Path.GetFileNameWithoutExtension(fileName) + "---------------------");
-					AdditionalText.Append(File.ReadAllText(fileName));
+					// Get the extension from the current file (if it's a text file...)
+					if (Path.GetExtension(fileName) == ".txt")
+					{
+						// Append a line of text to the message
+						AdditionalText.AppendLine("\r\n\r\n" + "---------------------" + Path.GetFileNameWithoutExtension(fileName) + "---------------------");
+						AdditionalText.Append(File.ReadAllText(fileName));
+					}
+				}
+				catch
+				{
 				}
 			}
 		}
@@ -106,6 +113,8 @@ namespace ZeroCrashHandler
 		// When the form loads...
 		private void Main_Load(object sender, EventArgs e)
 		{
+			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.None;
+
 			// Create the tooltips
 			new ToolTip().SetToolTip(this.RestartEngine, "Restarts the engine and loads the last project you had set");
 			new ToolTip().SetToolTip(this.RestartEngineSafe, "Restarts the engine, erases your config, and doesn't load anything extra");
@@ -488,29 +497,45 @@ namespace ZeroCrashHandler
 			// of problems otherwise.  Its exception safe as well which is great.
 			using (ZipOutputStream s = new ZipOutputStream(zipFile))
 			{
-
 				s.SetLevel(9); // 0 - store only to 9 - means best compression
 
 				byte[] buffer = new byte[4096];
 
 				foreach (string file in filenames)
 				{
+					int tries = 0;
+					FileStream fs = null;
 
-					// Using GetFileName makes the result compatible with XP
-					// as the resulting path is not absolute.
-					ZipEntry entry = new ZipEntry(Path.GetFileName(file));
-
-					// Setup the entry data as required.
-
-					// Crc and size are handled by the library for seakable streams
-					// so no need to do them here.
-
-					// Could also use the last write time or similar for the file.
-					entry.DateTime = DateTime.Now;
-					s.PutNextEntry(entry);
-
-					using (FileStream fs = File.OpenRead(file))
+					while (fs == null && tries < 10)
 					{
+						try
+						{
+							fs = File.OpenRead(file);
+						}
+						catch
+						{
+							Thread.Sleep(200);
+							++tries;
+						}
+					}
+
+					if (fs == null)
+						continue;
+
+					try
+					{
+						// Using GetFileName makes the result compatible with XP
+						// as the resulting path is not absolute.
+						ZipEntry entry = new ZipEntry(Path.GetFileName(file));
+
+						// Setup the entry data as required.
+
+						// Crc and size are handled by the library for seakable streams
+						// so no need to do them here.
+
+						// Could also use the last write time or similar for the file.
+						entry.DateTime = DateTime.Now;
+						s.PutNextEntry(entry);
 
 						// Using a fixed size buffer here makes no noticeable difference for output
 						// but keeps a lid on memory usage.
@@ -519,7 +544,15 @@ namespace ZeroCrashHandler
 						{
 							sourceBytes = fs.Read(buffer, 0, buffer.Length);
 							s.Write(buffer, 0, sourceBytes);
-						} while (sourceBytes > 0);
+						}
+						while (sourceBytes > 0);
+					}
+					catch
+					{
+					}
+					finally
+					{
+						fs.Close();
 					}
 				}
 

@@ -32,7 +32,7 @@
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
             this.label1 = new System.Windows.Forms.Label();
             this.Send = new System.Windows.Forms.Button();
-            this.DontSend = new System.Windows.Forms.Button();
+            this.Close = new System.Windows.Forms.Button();
             this.Message = new System.Windows.Forms.Label();
             this.WhatHappened = new System.Windows.Forms.TextBox();
             this.label2 = new System.Windows.Forms.Label();
@@ -73,15 +73,15 @@
             this.Send.UseVisualStyleBackColor = true;
             this.Send.Click += new System.EventHandler(this.Send_Click);
             // 
-            // DontSend
+            // Close
             // 
-            this.DontSend.Location = new System.Drawing.Point(305, 212);
-            this.DontSend.Name = "DontSend";
-            this.DontSend.Size = new System.Drawing.Size(116, 28);
-            this.DontSend.TabIndex = 3;
-            this.DontSend.Text = "Don\'t Send";
-            this.DontSend.UseVisualStyleBackColor = true;
-            this.DontSend.Click += new System.EventHandler(this.DontSend_Click);
+            this.Close.Location = new System.Drawing.Point(305, 212);
+            this.Close.Name = "Close";
+            this.Close.Size = new System.Drawing.Size(116, 28);
+            this.Close.TabIndex = 3;
+            this.Close.Text = "Close";
+            this.Close.UseVisualStyleBackColor = true;
+            this.Close.Click += new System.EventHandler(this.Close_Click);
             // 
             // Message
             // 
@@ -158,6 +158,7 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(429, 248);
+            this.ControlBox = false;
             this.Controls.Add(this.WhatHappened);
             this.Controls.Add(this.DoNotRestart);
             this.Controls.Add(this.RestartEngineSafe);
@@ -165,7 +166,7 @@
             this.Controls.Add(this.Email);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.Message);
-            this.Controls.Add(this.DontSend);
+            this.Controls.Add(this.Close);
             this.Controls.Add(this.Send);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.pictureBox1);
@@ -177,6 +178,7 @@
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Engine Crash";
             this.TopMost = true;
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Main_FormClosing);
             this.Load += new System.EventHandler(this.Main_Load);
             this.Shown += new System.EventHandler(this.Main_Shown);
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
@@ -190,7 +192,7 @@
         private System.Windows.Forms.PictureBox pictureBox1;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Button Send;
-        private System.Windows.Forms.Button DontSend;
+        private System.Windows.Forms.Button Close;
         private System.Windows.Forms.Label Message;
         private System.Windows.Forms.TextBox WhatHappened;
         private System.Windows.Forms.Label label2;

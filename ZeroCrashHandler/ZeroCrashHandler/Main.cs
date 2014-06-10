@@ -94,18 +94,27 @@ namespace ZeroCrashHandler
 			// Loop through all the files
 			foreach (String fileName in Files)
 			{
-				try
+				// Get the extension from the current file (if it's a text file...)
+				if (Path.GetExtension(fileName) == ".txt")
 				{
-					// Get the extension from the current file (if it's a text file...)
-					if (Path.GetExtension(fileName) == ".txt")
-					{
-						// Append a line of text to the message
-						AdditionalText.AppendLine("\r\n\r\n" + "---------------------" + Path.GetFileNameWithoutExtension(fileName) + "---------------------");
-						AdditionalText.Append(File.ReadAllText(fileName));
-					}
-				}
-				catch
-				{
+          String fileText = "";
+          for (int i = 0; i < 10; ++i)
+          {
+            try
+            {
+              fileText = File.ReadAllText(fileName);
+              break;
+            }
+            catch (System.Exception ex)
+            {
+              Thread.Sleep(200);
+            }
+          }
+
+					// Append a line of text to the message
+					AdditionalText.AppendLine("\r\n\r\n" + "---------------------" + Path.GetFileNameWithoutExtension(fileName) + "---------------------");
+
+          AdditionalText.Append(fileText);
 				}
 			}
 		}

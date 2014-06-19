@@ -20,11 +20,11 @@ namespace BuildMaker
   class InstallBuilder
   {
 
-    public String GetRevisionNumber(String cZeroSource)
+    public String GetRevisionNumber(String cZeroSource, String branch)
     {
         //Get the build number.
         ProcessStartInfo revisionNumberInfo = new ProcessStartInfo();
-        revisionNumberInfo.Arguments = @"tip -q";
+        revisionNumberInfo.Arguments = String.Format(@"heads -q -r {0}", branch);
         revisionNumberInfo.FileName = "hg";
         revisionNumberInfo.WorkingDirectory = cZeroSource;
         revisionNumberInfo.RedirectStandardOutput = true;
@@ -49,26 +49,27 @@ namespace BuildMaker
       File.WriteAllText(buildFilePath, fileData);
     }
 
-    public String Run()
+    public String Run(String installerPrefix, String zeroEditorOutputSuffix, String branch)
     {
       String cZeroSource = Environment.ExpandEnvironmentVariables("%ZERO_SOURCE%");
       String cBuildOutput = Path.Combine(cZeroSource, "Build");
 
-      String buildNumber = this.GetRevisionNumber(cZeroSource);
+      String buildNumber = this.GetRevisionNumber(cZeroSource, branch);
 
       //Print a nice message signifying the start of the install build.
       Console.WriteLine("Building the latest Zero Engine installer...");
 
       //Generate the Zero Engine installer using Inno Setup.
       ProcessStartInfo innoSetupInfo = new ProcessStartInfo();
-      innoSetupInfo.Arguments = Path.Combine(cBuildOutput, "ZeroEngineInstall.iss") + String.Format(" /DMyAppVersion=\"{0}\"", buildNumber);
+      innoSetupInfo.Arguments = Path.Combine(cBuildOutput, "ZeroEngineInstall.iss") + 
+                                String.Format(" /DMyAppVersion=\"{0}\" /DZeroEditorOutputSuffix=\"{1}\"", buildNumber, zeroEditorOutputSuffix);
       innoSetupInfo.FileName = @"C:\Program Files (x86)\Inno Setup 5\iscc.exe";
       Process innoSetup;
       try
       {
         innoSetup = Process.Start(innoSetupInfo);
       }
-      catch (Win32Exception win32)
+      catch (Win32Exception /*win32*/)
       {
         Console.WriteLine("Inno Setup not found. Please install it and rerun " +
                           "the build install maker.");
@@ -87,7 +88,7 @@ namespace BuildMaker
       String date = theDate.ToString(".yyyy.MM.dd.");
 
       //Rename the install executable.
-      String newFileName = "ZeroEngineSetup" + date + buildNumber + ".exe";
+      String newFileName = installerPrefix + date + buildNumber + ".exe";
       File.Copy(Path.Combine(cBuildOutput, "Output", "ZeroEngineSetup.exe"),
                 Path.Combine(cBuildOutput, "Output", newFileName), true);
       File.Delete(Path.Combine(cBuildOutput, "Output", "ZeroEngineSetup.exe"));

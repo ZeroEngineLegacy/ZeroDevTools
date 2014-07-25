@@ -3,8 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Forms;
 
+using CommandLine;
+using CommandLine.Text;
+
 namespace ZeroCrashHandler
 {
+  
+
 	static class Program
 	{
 		/// <summary>
@@ -13,23 +18,26 @@ namespace ZeroCrashHandler
 		[STAThread]
 		static void Main(String[] arguments)
 		{
+      var options = new Options();
+
+      var settings = new CommandLine.ParserSettings();
+      settings.IgnoreUnknownArguments = false;
+      CommandLine.Parser parser = new Parser(with => with.HelpWriter = Console.Error);
+      
+      // Try to parse the command line arguments
+      if (parser.ParseArguments(arguments, options) == false)
+      {
+        // If we failed to parse print out the usage of this program
+        Console.Write(options.GetUsage());
+
+        return;
+      }
+
 			// Enable visuals
 			Application.EnableVisualStyles();
 			Application.SetCompatibleTextRenderingDefault(false);
 
-			// If the arguments 
-			if (arguments.Length >= 1)
-			{
-				// The rest of the arguments are all files
-				List<String> files = arguments.ToList();
-				files.RemoveAt(0);
-
-				// Store the engine version (the first argument
-				String version = arguments[0];
-
-				// Run the application
-				Application.Run(new Main(version, files));
-			}
+      Application.Run(new Main(options));
 		}
 	}
 }

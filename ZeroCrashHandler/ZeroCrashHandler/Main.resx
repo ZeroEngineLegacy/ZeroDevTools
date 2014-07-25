@@ -439,8 +439,8 @@
         TdOHvoxhrF/MXw4L+V8P3QDo2NItYwAAAABJRU5ErkJggg==
 </value>
   </data>
-  <data name="label1.Text" xml:space="preserve">
-    <value>The Zero Engine crashed, and we're really sorry about that! Send the error report, seriously, we actually work on it if you send it. It pops up in our emails and tells us a new dump was created, and pretty much someone will always open it up, read it, and start working on it.</value>
+  <data name="CrashMessageLabel.Text" xml:space="preserve">
+    <value>{0} crashed, and we're really sorry about that! Send the error report, seriously, we actually work on it if you send it. It pops up in our emails and tells us a new dump was created, and pretty much someone will always open it up, read it, and start working on it.</value>
   </data>
   <data name="$this.Icon" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
     <value>

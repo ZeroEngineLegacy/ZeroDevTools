@@ -237,6 +237,17 @@ void GenerateOverlapCallMpr(ObjectParameters& objParam, FunctionInfo& info, Stri
   results.Append("}\n\n");
 }
 
+void GenerateOverlapMprPoint(ObjectParameters& objParam, FunctionInfo& info, StringBuilder& results)
+{
+  results.Append("{\n");
+  ResolveMeshSupport(info.mIndex2,"supportShape",info.mVar2Name,results);
+  String params;
+  params = String::Format("%s, supportShape", info.mVar1Name.c_str());
+  
+  results.Append(BuildString("  return Intersection::PointConvexShape(", params, ") >= (Intersection::Type)0;\n"));
+  results.Append("}\n\n");
+}
+
 void GenerateCollideCallNormal(ObjectParameters& objParam, FunctionInfo& info, StringBuilder& results)
 {
   results.Append("{\n  ");
@@ -368,7 +379,9 @@ void GenerateOverlapHeader(ObjectParameters& objParam,IgnoreList& ignores, Strin
     {
       if(ignores.Ignores[i][j] == false)
       {
-        if(!(objParam[i].mHasMpr && objParam[j].mHasMpr))
+        if(!(i == Point && objParam[j].mHasMpr) &&
+           !(j == Point && objParam[i].mHasMpr) && 
+           !(objParam[i].mHasMpr && objParam[j].mHasMpr))
           continue;
       }
 
@@ -391,7 +404,10 @@ void GenerateOverlapFunctions(ObjectParameters& objParam,IgnoreList& ignores, St
       if(ignores.Ignores[i][j] == false)
       {
         bool hasMpr = objParam[i].mHasMpr && objParam[j].mHasMpr;
-        if(!hasMpr)
+        if((i == Point && objParam[j].mHasMpr) || 
+           (j == Point && objParam[i].mHasMpr))
+           callback = GenerateOverlapMprPoint;
+        else if(!hasMpr)
           callback = GenerateOverlapCallError;
         else
           callback = GenerateOverlapCallMpr;

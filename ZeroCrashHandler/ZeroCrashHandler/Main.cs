@@ -1,4 +1,5 @@
-﻿using System;
+﻿#define NO_SMTP_FOR_VIRUS_SCANNERS
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -64,7 +65,7 @@ namespace ZeroCrashHandler
 
 		HashSet<String> UserInfoValues = new HashSet<String>();
 
-    Options Options;
+		Options Options;
 
 		// The bug reporting mechanism
 		enum BugReportMode
@@ -72,107 +73,107 @@ namespace ZeroCrashHandler
 			FogBugz,
 			Email,
 			Php,
-      JsonPhp,
+			JsonPhp,
 		}
 
-    // A pair class for serializing data to json
-    public class Pair
-    {
-      public Pair() { }
-      public Pair(string name, string value) { Name = name; Value = value; }
+		// A pair class for serializing data to json
+		public class Pair
+		{
+			public Pair() { }
+			public Pair(string name, string value) { Name = name; Value = value; }
 
-      public string Name { get; set; }
-      public string Value { get; set; }
-    }
+			public string Name { get; set; }
+			public string Value { get; set; }
+		}
 
-    List<Pair> TextFilePairs = new List<Pair>();
+		List<Pair> TextFilePairs = new List<Pair>();
 
-    public Main(Options options)
-    {
-      // Store the command line options
-      Options = options;
+		public Main(Options options)
+		{
+			// Store the command line options
+			Options = options;
 
-      // Keep the old list of files around since it's easier to copy it over than change everything to string[]
-      if (options.Files != null)
-        Files.AddRange(options.Files.ToList());
+			// Keep the old list of files around since it's easier to copy it over than change everything to string[]
+			if (options.Files != null)
+				Files.AddRange(options.Files.ToList());
 
-      // Process any text files
-      // (we send them through to the organizer pre-pended with a | so they can be parsed special)
-      foreach (String fileName in Files)
-      {
-        ProcessTextFile(fileName, "|" + Path.GetFileNameWithoutExtension(fileName));
-      }
+			// Process any text files
+			// (we send them through to the organizer pre-pended with a | so they can be parsed special)
+			foreach (String fileName in Files)
+			{
+				ProcessTextFile(fileName, "|" + Path.GetFileNameWithoutExtension(fileName));
+			}
 
-      // Add the special file types (also add them to Files so they get included in the zip, etc...)
-      if (options.Stack != null)
-      {
-        ProcessTextFile(options.Stack, ":Stack");
-        Files.Add(options.Stack);
-      }
-      if (options.Log != null)
-      {
-        ProcessTextFile(options.Log, ":Log");
-        Files.Add(options.Log);
-      }
+			// Add the special file types (also add them to Files so they get included in the zip, etc...)
+			if (options.Stack != null)
+			{
+				ProcessTextFile(options.Stack, ":Stack");
+				Files.Add(options.Stack);
+			}
+			if (options.Log != null)
+			{
+				ProcessTextFile(options.Log, ":Log");
+				Files.Add(options.Log);
+			}
 
-      // Initialize all the form components
-      InitializeComponent();
-    }
+			// Initialize all the form components
+			InitializeComponent();
+		}
 
-		
-    // The pair name allows us to overwrite the name in the json file to
-    // differentiate special file types (such as stack) by preceding them with a ':'
-    void ProcessTextFile(String fileName, String pairName = "")
-    {
-      // Get the extension from the current file (if it's a text file...)
-      if (Path.GetExtension(fileName) == ".txt")
-      {
-        String fileText = "";
-        for (int i = 0; i < 10; ++i)
-        {
-          try
-          {
-            fileText = File.ReadAllText(fileName);
-            break;
-          }
-          catch (System.Exception ex)
-          {
-            Thread.Sleep(200);
-          }
-        }
 
-        var pair = new Pair();
-        var fileNameWithoutExt = Path.GetFileNameWithoutExtension(fileName);
-        // Add the data to a pair of fileName - fileData
-        if (pairName == String.Empty)
-          pairName = fileNameWithoutExt;
-        pair.Name = pairName;
-        pair.Value = fileText;
-        TextFilePairs.Add(pair);
+		// The pair name allows us to overwrite the name in the json file to
+		// differentiate special file types (such as stack) by preceding them with a ':'
+		void ProcessTextFile(String fileName, String pairName = "")
+		{
+			// Get the extension from the current file (if it's a text file...)
+			if (Path.GetExtension(fileName) == ".txt")
+			{
+				String fileText = "";
+				for (int i = 0; i < 10; ++i)
+				{
+					try
+					{
+						fileText = File.ReadAllText(fileName);
+						break;
+					}
+					catch (System.Exception ex)
+					{
+						Thread.Sleep(200);
+					}
+				}
 
-        // Append the data to one string for old methods of sending
-        AdditionalText.AppendLine("\r\n\r\n" + "---------------------" + fileNameWithoutExt + "---------------------");
-        AdditionalText.Append(pair.Value);
-      }
-    }
+				var pair = new Pair();
+				var fileNameWithoutExt = Path.GetFileNameWithoutExtension(fileName);
+				// Add the data to a pair of fileName - fileData
+				if (pairName == String.Empty)
+					pairName = fileNameWithoutExt;
+				pair.Name = pairName;
+				pair.Value = fileText;
+				TextFilePairs.Add(pair);
 
-    // Load any text files into the "additional text" field
-    void ProcessTextFiles()
-    {
-      // Loop through all the files
-      foreach (String fileName in Files)
-      {
-        ProcessTextFile(fileName);
-      }
-    }
+				// Append the data to one string for old methods of sending
+				AdditionalText.AppendLine("\r\n\r\n" + "---------------------" + fileNameWithoutExt + "---------------------");
+				AdditionalText.Append(pair.Value);
+			}
+		}
+
+		// Load any text files into the "additional text" field
+		void ProcessTextFiles()
+		{
+			// Loop through all the files
+			foreach (String fileName in Files)
+			{
+				ProcessTextFile(fileName);
+			}
+		}
 
 		// When the form loads...
 		private void Main_Load(object sender, EventArgs e)
 		{
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.None;
 
-      // Change the text that tells the user we really want their crash to include the name of the program.
-      this.CrashMessageLabel.Text = String.Format(this.CrashMessageLabel.Text, Options.ProgramName);
+			// Change the text that tells the user we really want their crash to include the name of the program.
+			this.CrashMessageLabel.Text = String.Format(this.CrashMessageLabel.Text, Options.ProgramName);
 
 			// Create the tooltips
 			new ToolTip().SetToolTip(this.RestartEngine, "Restarts the engine and loads the last project you had set");
@@ -232,8 +233,8 @@ namespace ZeroCrashHandler
 		{
 			try
 			{
-        if (Options.ExePath == null || Options.ExePath == String.Empty)
-          return;
+				if (Options.ExePath == null || Options.ExePath == String.Empty)
+					return;
 
 				// If we should restart the engine...
 				if (RestartEngine.Checked)
@@ -289,30 +290,30 @@ namespace ZeroCrashHandler
 			Send_Click(sender, e);
 		}
 
-    private void AddUserInfo(List<Pair> dataPairs, String category, String value)
-    {
-      if (value == null || value.Trim() == String.Empty)
-      {
-        return;
-      }
+		private void AddUserInfo(List<Pair> dataPairs, String category, String value)
+		{
+			if (value == null || value.Trim() == String.Empty)
+			{
+				return;
+			}
 
-      if (UserInfoValues.Contains(value) == false)
-      {
-        UserInfoValues.Add(value);
+			if (UserInfoValues.Contains(value) == false)
+			{
+				UserInfoValues.Add(value);
 
-        dataPairs.Add(new Pair(category, value));
-      }
-    }
+				dataPairs.Add(new Pair(category, value));
+			}
+		}
 
-    private void AddPair(List<Pair> dataPairs, String category, String value)
-    {
-      if (value == null || value.Trim() == String.Empty)
-      {
-        return;
-      }
+		private void AddPair(List<Pair> dataPairs, String category, String value)
+		{
+			if (value == null || value.Trim() == String.Empty)
+			{
+				return;
+			}
 
-      dataPairs.Add(new Pair(category, value));
-    }
+			dataPairs.Add(new Pair(category, value));
+		}
 
 		private void Send_Click(object sender, EventArgs e)
 		{
@@ -325,70 +326,82 @@ namespace ZeroCrashHandler
 			// Hide the form (it will close when its done sending)
 			this.Hide();
 
-      // Collect all of the pairs of data to send off 
-      List<Pair> dataPairs = new List<Pair>();
+			// Collect all of the pairs of data to send off 
+			List<Pair> dataPairs = new List<Pair>();
 
-      // Add the data that came from the command line
-      AddPair(dataPairs, ":Guid", Options.ProgramGuid);
-      AddPair(dataPairs, ":ProgramName", Options.ProgramName);
-      AddPair(dataPairs, ":Revision", Options.Revision);
-      AddPair(dataPairs, ":Version", Options.Version);
-      AddPair(dataPairs, ":ChangeSet", Options.ChangeSet);
-      AddPair(dataPairs, ":ChangeSetDate", Options.ChangeSetDate);
-      AddPair(dataPairs, ":Platform", Options.Platform);
-      AddPair(dataPairs, ":Configuration", Options.Configuration);
-      // Add the user's email
-      dataPairs.Add(new Pair(":UserEmail", Email.Text));
-
-
-      try { AddUserInfo(dataPairs, "RegisteredOrganization", (String)Microsoft.Win32.Registry.GetValue(@"HKEY_LOCAL_MACHINE\Software\Microsoft\Windows NT\CurrentVersion", "RegisteredOrganization", "")); } catch {}
-      try { AddUserInfo(dataPairs, "RegisteredOwner", (String)Microsoft.Win32.Registry.GetValue(@"HKEY_LOCAL_MACHINE\Software\Microsoft\Windows NT\CurrentVersion", "RegisteredOwner", "")); } catch {}
-      try { AddUserInfo(dataPairs, "DisplayName", UserPrincipal.Current.DisplayName); } catch {}
-      try { AddUserInfo(dataPairs, "DistinguishedName", UserPrincipal.Current.DistinguishedName); } catch {}
-      try { AddUserInfo(dataPairs, "DomainEmailAddress", UserPrincipal.Current.EmailAddress); } catch {}
-      try { AddUserInfo(dataPairs, "EmployeeId", UserPrincipal.Current.EmployeeId); } catch {}
-      try { AddUserInfo(dataPairs, "GivenName", UserPrincipal.Current.GivenName); } catch {}
-      try { AddUserInfo(dataPairs, "UserPrincipalName", UserPrincipal.Current.UserPrincipalName); } catch {}
-      try { AddUserInfo(dataPairs, "HostName", Dns.GetHostName()); } catch {}
-      try { AddUserInfo(dataPairs, "MachineName", Environment.MachineName); } catch {}
-      try { AddUserInfo(dataPairs, "UserName", Environment.UserName); } catch {}
-      try { AddUserInfo(dataPairs, "UserDomainName", Environment.UserDomainName); } catch {}
+			// Add the data that came from the command line
+			AddPair(dataPairs, ":Guid", Options.ProgramGuid);
+			AddPair(dataPairs, ":ProgramName", Options.ProgramName);
+			AddPair(dataPairs, ":Revision", Options.Revision);
+			AddPair(dataPairs, ":Version", Options.Version);
+			AddPair(dataPairs, ":ChangeSet", Options.ChangeSet);
+			AddPair(dataPairs, ":ChangeSetDate", Options.ChangeSetDate);
+			AddPair(dataPairs, ":Platform", Options.Platform);
+			AddPair(dataPairs, ":Configuration", Options.Configuration);
+			// Add the user's email
+			dataPairs.Add(new Pair(":UserEmail", Email.Text));
 
 
-      // Assume they did not fill it in
-      String whatHappened = String.Empty;
+			try { AddUserInfo(dataPairs, "RegisteredOrganization", (String)Microsoft.Win32.Registry.GetValue(@"HKEY_LOCAL_MACHINE\Software\Microsoft\Windows NT\CurrentVersion", "RegisteredOrganization", "")); }
+			catch { }
+			try { AddUserInfo(dataPairs, "RegisteredOwner", (String)Microsoft.Win32.Registry.GetValue(@"HKEY_LOCAL_MACHINE\Software\Microsoft\Windows NT\CurrentVersion", "RegisteredOwner", "")); }
+			catch { }
+			try { AddUserInfo(dataPairs, "DisplayName", UserPrincipal.Current.DisplayName); }
+			catch { }
+			try { AddUserInfo(dataPairs, "DistinguishedName", UserPrincipal.Current.DistinguishedName); }
+			catch { }
+			try { AddUserInfo(dataPairs, "DomainEmailAddress", UserPrincipal.Current.EmailAddress); }
+			catch { }
+			try { AddUserInfo(dataPairs, "EmployeeId", UserPrincipal.Current.EmployeeId); }
+			catch { }
+			try { AddUserInfo(dataPairs, "GivenName", UserPrincipal.Current.GivenName); }
+			catch { }
+			try { AddUserInfo(dataPairs, "UserPrincipalName", UserPrincipal.Current.UserPrincipalName); }
+			catch { }
+			try { AddUserInfo(dataPairs, "HostName", Dns.GetHostName()); }
+			catch { }
+			try { AddUserInfo(dataPairs, "MachineName", Environment.MachineName); }
+			catch { }
+			try { AddUserInfo(dataPairs, "UserName", Environment.UserName); }
+			catch { }
+			try { AddUserInfo(dataPairs, "UserDomainName", Environment.UserDomainName); }
+			catch { }
 
-      StringBuilder userInfo = new StringBuilder();
-      foreach (var pair in dataPairs)
-      {
-        userInfo.AppendLine(pair.Name + ": " + pair.Value);
-      }
 
-      dataPairs.Add(new Pair(":UserText", WhatHappened.Text));
+			// Assume they did not fill it in
+			String whatHappened = String.Empty;
+
+			StringBuilder userInfo = new StringBuilder();
+			foreach (var pair in dataPairs)
+			{
+				userInfo.AppendLine(pair.Name + ": " + pair.Value);
+			}
+
+			dataPairs.Add(new Pair(":UserText", WhatHappened.Text));
 			// If they actually filled in the "what happened" field...
 			whatHappened = userInfo.ToString() + "\r\n\r\n" + WhatHappened.Text;
 
 			// Add the additional text
 			whatHappened += AdditionalText.ToString();
 
-      // If extra data was passed in to describe something that went wrong then add that as one string
-      if(Options.ExtraData != null)
-      {
-        StringBuilder extraData = new StringBuilder();
-        foreach (var entry in Options.ExtraData)
-          extraData.AppendLine(entry);
-        TextFilePairs.Add(new Pair("ExtraData", extraData.ToString()));
+			// If extra data was passed in to describe something that went wrong then add that as one string
+			if (Options.ExtraData != null)
+			{
+				StringBuilder extraData = new StringBuilder();
+				foreach (var entry in Options.ExtraData)
+					extraData.AppendLine(entry);
+				TextFilePairs.Add(new Pair("ExtraData", extraData.ToString()));
 
-        // For the old methods of viewing (non-jsonphp)
-        whatHappened += "\r\n\r\n" + "---------------------ExtraData---------------------\r\n" + extraData.ToString();
-      }
+				// For the old methods of viewing (non-jsonphp)
+				whatHappened += "\r\n\r\n" + "---------------------ExtraData---------------------\r\n" + extraData.ToString();
+			}
 
-      // Add all of the pairs of text data that we saved off to our list of entries for the json.
-      // This is done last here so as to not break the previous methods of sending.
-      dataPairs.AddRange(TextFilePairs);
+			// Add all of the pairs of text data that we saved off to our list of entries for the json.
+			// This is done last here so as to not break the previous methods of sending.
+			dataPairs.AddRange(TextFilePairs);
 
 			// Create the bug report
-      CreateBugReport(whatHappened, Email.Text, dataPairs);
+			CreateBugReport(whatHappened, Email.Text, dataPairs);
 
 			// Exit out
 			CloseCrashHandler();
@@ -398,7 +411,7 @@ namespace ZeroCrashHandler
 		{
 			// Save the email that we're using now for the next time this dialog appears
 			Application.UserAppDataRegistry.SetValue("Email", email);
-      
+
 			// Depending on the mode...
 			if (Mode == BugReportMode.FogBugz)
 			{
@@ -415,16 +428,19 @@ namespace ZeroCrashHandler
 				// Create the bug report
 				CreatePhpReport(whatHappened, Email.Text);
 			}
-      else if (Mode == BugReportMode.JsonPhp)
-      {
-        // Create the json data to send to php
-        CreateJsonPhpReport(whatHappened, Email.Text, dataPairs);
-      }
+			else if (Mode == BugReportMode.JsonPhp)
+			{
+				// Create the json data to send to php
+				CreateJsonPhpReport(whatHappened, Email.Text, dataPairs);
+			}
 		}
 
 		// Create the email message
 		private void SendEmail(String whatHappened, String email, bool doAttachments)
 		{
+#if NO_SMTP_FOR_VIRUS_SCANNERS
+			throw new Exception("Cannot send an email because we disabled it");
+#else
 			// Create a new email client
 			SmtpClient emailClient = new SmtpClient();
 
@@ -441,11 +457,11 @@ namespace ZeroCrashHandler
 
 			// Create a message that will be sent
 			MailMessage message = new MailMessage();
-      
+
 			// Setup the message
 			message.From = new MailAddress(From);
 			message.To.Add(To);
-      message.Subject = String.Format("{0} Crash - [{1} {2} {3} {4} {5} {6}]", Options.ProgramName, Options.Version, Options.Revision, Options.ChangeSet, Options.ChangeSetDate, Options.Configuration, Options.Platform);
+			message.Subject = String.Format("{0} Crash - [{1} {2} {3} {4} {5} {6}]", Options.ProgramName, Options.Version, Options.Revision, Options.ChangeSet, Options.ChangeSetDate, Options.Configuration, Options.Platform);
 			message.Body = whatHappened;
 
 			// Should we attach anything to the email?
@@ -467,9 +483,10 @@ namespace ZeroCrashHandler
 
 			// Send the message
 			emailClient.Send(message);
+#endif
 		}
 
-    
+
 		private void CreatePhpReport(String whatHappened, String email)
 		{
 			var zipFile = CreateZipFile(Files);
@@ -482,53 +499,53 @@ namespace ZeroCrashHandler
 			HttpUploadFile(PhpRedirectUrl, zipFile, PhpFileId, "application/octet-stream", collection);
 		}
 
-    private void CreateJsonPhpReport(String whatHappened, String email, List<Pair> dataPairs)
-    {
-      // Create a stream and a writer to that stream so we can write it out to json
-      MemoryStream stream = new MemoryStream();
-      StreamWriter streamWriter = new StreamWriter(stream);
+		private void CreateJsonPhpReport(String whatHappened, String email, List<Pair> dataPairs)
+		{
+			// Create a stream and a writer to that stream so we can write it out to json
+			MemoryStream stream = new MemoryStream();
+			StreamWriter streamWriter = new StreamWriter(stream);
 
-      // Create a json writer object and tell it to not close the
-      // output stream when it's done (so we can read from it again)
-      JsonWriter jsonWriter = new JsonTextWriter(streamWriter);
-      jsonWriter.CloseOutput = false;
-      jsonWriter.Formatting = Newtonsoft.Json.Formatting.Indented;
+			// Create a json writer object and tell it to not close the
+			// output stream when it's done (so we can read from it again)
+			JsonWriter jsonWriter = new JsonTextWriter(streamWriter);
+			jsonWriter.CloseOutput = false;
+			jsonWriter.Formatting = Newtonsoft.Json.Formatting.Indented;
 
-      // Serialize out our data
-      JsonSerializer serializer = new JsonSerializer();
-      List<string> errors = new List<string>();
-      // Log errors for debugging (just during VS runs)
-      serializer.Error += delegate(object sender, Newtonsoft.Json.Serialization.ErrorEventArgs args)
-      {
-          // only log an error once
-          if (args.CurrentObject == args.ErrorContext.OriginalObject)
-              errors.Add(args.ErrorContext.Error.Message);
-      };
-      serializer.NullValueHandling = NullValueHandling.Ignore;
-      serializer.Serialize(jsonWriter, dataPairs);
-      
-      // Close the json writer so that it flushes to the memory stream
-      jsonWriter.Close();
+			// Serialize out our data
+			JsonSerializer serializer = new JsonSerializer();
+			List<string> errors = new List<string>();
+			// Log errors for debugging (just during VS runs)
+			serializer.Error += delegate(object sender, Newtonsoft.Json.Serialization.ErrorEventArgs args)
+			{
+				// only log an error once
+				if (args.CurrentObject == args.ErrorContext.OriginalObject)
+					errors.Add(args.ErrorContext.Error.Message);
+			};
+			serializer.NullValueHandling = NullValueHandling.Ignore;
+			serializer.Serialize(jsonWriter, dataPairs);
 
-      // Seek back to the beginning of the stream and read out all the json data
-      streamWriter.Flush();
-      stream.Seek(0, SeekOrigin.Begin);
-      StreamReader streamReader = new StreamReader(stream);
-      String jsonData = streamReader.ReadToEnd();
+			// Close the json writer so that it flushes to the memory stream
+			jsonWriter.Close();
+
+			// Seek back to the beginning of the stream and read out all the json data
+			streamWriter.Flush();
+			stream.Seek(0, SeekOrigin.Begin);
+			StreamReader streamReader = new StreamReader(stream);
+			String jsonData = streamReader.ReadToEnd();
 
 
-      // Now create the php data.
-      // First grab all of the files and zip them together
-      var zipFile = CreateZipFile(Files);
+			// Now create the php data.
+			// First grab all of the files and zip them together
+			var zipFile = CreateZipFile(Files);
 
-      // Then add the json data and the email to the php data and send it
-      var collection = new NameValueCollection();
-      collection.Add(PhpBodyId, jsonData);
-      collection.Add(PhpEmailId, email);
-      collection.Add(PhpVersionId, String.Format("{1} {2} {3} {4} {5} {6}", Options.ProgramName, Options.Version, Options.Revision, Options.ChangeSet, Options.ChangeSetDate, Options.Configuration, Options.Platform));
-      
-      HttpUploadFile(PhpRedirectUrl, zipFile, PhpFileId, "application/octet-stream", collection);
-    }
+			// Then add the json data and the email to the php data and send it
+			var collection = new NameValueCollection();
+			collection.Add(PhpBodyId, jsonData);
+			collection.Add(PhpEmailId, email);
+			collection.Add(PhpVersionId, String.Format("{1} {2} {3} {4} {5} {6}", Options.ProgramName, Options.Version, Options.Revision, Options.ChangeSet, Options.ChangeSetDate, Options.Configuration, Options.Platform));
+
+			HttpUploadFile(PhpRedirectUrl, zipFile, PhpFileId, "application/octet-stream", collection);
+		}
 
 		private void CreateEmailReport(String whatHappened, String email)
 		{
@@ -575,7 +592,7 @@ namespace ZeroCrashHandler
 			args.Add("sTitle", Title);
 			args.Add("sProject", Project);
 			args.Add("sPriority", Priority);
-      args.Add("sVersion", Options.Revision);
+			args.Add("sVersion", Options.Revision);
 			args.Add("sComputer", Environment.MachineName + " - " + Environment.UserName);
 			args.Add("sEvent", whatHappened);
 
@@ -805,51 +822,51 @@ namespace ZeroCrashHandler
 		}
 	}
 
-  // The command line options that we parse
-  public class Options
-  {
-    // Required options
-    [Option("Guid", Required = true, HelpText = "The guid of the program")]
-    public string ProgramGuid { get; set; }
+	// The command line options that we parse
+	public class Options
+	{
+		// Required options
+		[Option("Guid", Required = true, HelpText = "The guid of the program")]
+		public string ProgramGuid { get; set; }
 
-    [Option("Name", Required = true, HelpText = "The name of the program")]
-    public string ProgramName { get; set; }
+		[Option("Name", Required = true, HelpText = "The name of the program")]
+		public string ProgramName { get; set; }
 
-    [Option("Revision", Required = true, HelpText = "The revision of the program. This needs to be some ever increasing number, but should be tied to source control.")]
-    public string Revision { get; set; }
+		[Option("Revision", Required = true, HelpText = "The revision of the program. This needs to be some ever increasing number, but should be tied to source control.")]
+		public string Revision { get; set; }
 
-    // Optional options
-    [Option("Version", Required = false, HelpText = "Some identifier of what version of the engine this is. Typically this is Major.Minor.Patch.")]
-    public string Version { get; set; }
-    [Option("ChangeSet", Required = false, HelpText = "The changeset of a build is a unique identifier in source control. Revision numbers are not always unique so this can be used to revert code to a specific changeset.")]
-    public string ChangeSet { get; set; }
-    [Option("ChangeSetDate", Required = false, HelpText = "The date this changeset was made. Useful to help identify when a certain build was made.")]
-    public string ChangeSetDate { get; set; }
-    [Option("Platform", Required = false, HelpText = "The platform of this build (such as Win32).")]
-    public string Platform { get; set; }
-    [Option("Configuration", Required = false, HelpText = "What configuration this build was made in. Typically this should always be Release")]
-    public string Configuration { get; set; }
+		// Optional options
+		[Option("Version", Required = false, HelpText = "Some identifier of what version of the engine this is. Typically this is Major.Minor.Patch.")]
+		public string Version { get; set; }
+		[Option("ChangeSet", Required = false, HelpText = "The changeset of a build is a unique identifier in source control. Revision numbers are not always unique so this can be used to revert code to a specific changeset.")]
+		public string ChangeSet { get; set; }
+		[Option("ChangeSetDate", Required = false, HelpText = "The date this changeset was made. Useful to help identify when a certain build was made.")]
+		public string ChangeSetDate { get; set; }
+		[Option("Platform", Required = false, HelpText = "The platform of this build (such as Win32).")]
+		public string Platform { get; set; }
+		[Option("Configuration", Required = false, HelpText = "What configuration this build was made in. Typically this should always be Release")]
+		public string Configuration { get; set; }
 
-    // Stack and log are special from other files so that we can send them to the crash
-    // organizer with a special format to prevent any other files from accidentally taking the stack's place.
-    [Option("Stack", Required = false, HelpText = "The file that contains the stack trace of the crash. This is used to help uniquely identify where a crash happened.")]
-    public string Stack { get; set; }
-    [Option("Log", Required = false, HelpText = "A log file containing information about what the user has been doing before the crash.")]
-    public string Log { get; set; }
+		// Stack and log are special from other files so that we can send them to the crash
+		// organizer with a special format to prevent any other files from accidentally taking the stack's place.
+		[Option("Stack", Required = false, HelpText = "The file that contains the stack trace of the crash. This is used to help uniquely identify where a crash happened.")]
+		public string Stack { get; set; }
+		[Option("Log", Required = false, HelpText = "A log file containing information about what the user has been doing before the crash.")]
+		public string Log { get; set; }
 
-    [OptionArray("Files", HelpText = "Any extra files to add to the crash report such as a script file they were running during the crash. Allows multiple arguments.")]
-    public string[] Files { get; set; }
+		[OptionArray("Files", HelpText = "Any extra files to add to the crash report such as a script file they were running during the crash. Allows multiple arguments.")]
+		public string[] Files { get; set; }
 
-    [OptionArray("ExtraData", HelpText = "Extra data to add to the report (such as a step of the crash handler failing). Allows multiple arguments.")]
-    public string[] ExtraData { get; set; }
+		[OptionArray("ExtraData", HelpText = "Extra data to add to the report (such as a step of the crash handler failing). Allows multiple arguments.")]
+		public string[] ExtraData { get; set; }
 
-    [Option("ExePath", Required = false, HelpText = "The location of the program that we will restart if the user chooses the restart option. The program will be invoked with the argument /crashed. If the user requests to restart in safe mode then the arguments will be /crashed /safe.")]
-    public string ExePath { get; set; }
+		[Option("ExePath", Required = false, HelpText = "The location of the program that we will restart if the user chooses the restart option. The program will be invoked with the argument /crashed. If the user requests to restart in safe mode then the arguments will be /crashed /safe.")]
+		public string ExePath { get; set; }
 
-    [HelpOption(HelpText = "Display this help screen.")]
-    public string GetUsage()
-    {
-      return HelpText.AutoBuild(this, current => HelpText.DefaultParsingErrorsHandler(this, current));
-    }
-  }
+		[HelpOption(HelpText = "Display this help screen.")]
+		public string GetUsage()
+		{
+			return HelpText.AutoBuild(this, current => HelpText.DefaultParsingErrorsHandler(this, current));
+		}
+	}
 }

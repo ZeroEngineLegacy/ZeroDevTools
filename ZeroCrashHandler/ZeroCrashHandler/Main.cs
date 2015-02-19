@@ -241,14 +241,14 @@ namespace ZeroCrashHandler
 				{
 					// Start the process
 					Application.UserAppDataRegistry.SetValue("RestartMode", "RestartEngine");
-					System.Diagnostics.Process.Start(Options.ExePath, @"/crashed");
+					System.Diagnostics.Process.Start(Options.ExePath, @"-crashed");
 				}
 				// If we should restart the engine in safe mode...
 				else if (RestartEngineSafe.Checked)
 				{
 					// Start the process with the "safe" flag
 					Application.UserAppDataRegistry.SetValue("RestartMode", "RestartEngineSafe");
-					System.Diagnostics.Process.Start(Options.ExePath, @"/crashed /safe");
+					System.Diagnostics.Process.Start(Options.ExePath, @"-crashed -safe");
 				}
 				else if (DoNotRestart.Checked)
 				{

@@ -544,7 +544,9 @@ namespace ZeroCrashHandler
 			collection.Add(PhpEmailId, email);
 			collection.Add(PhpVersionId, String.Format("{1} {2} {3} {4} {5} {6}", Options.ProgramName, Options.Version, Options.Revision, Options.ChangeSet, Options.ChangeSetDate, Options.Configuration, Options.Platform));
 
-			HttpUploadFile(PhpRedirectUrl, zipFile, PhpFileId, "application/octet-stream", collection);
+            try { HttpUploadFile(PhpRedirectUrl, zipFile, PhpFileId, "application/octet-stream", collection); }
+            catch { }
+			
 		}
 
 		private void CreateEmailReport(String whatHappened, String email)

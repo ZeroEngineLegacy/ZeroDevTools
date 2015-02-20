@@ -22,6 +22,7 @@ using System.Threading;
 using CommandLine;
 using CommandLine.Text;
 using Newtonsoft.Json;
+using System.Diagnostics;
 
 namespace ZeroCrashHandler
 {
@@ -167,6 +168,56 @@ namespace ZeroCrashHandler
 			}
 		}
 
+        private void UpdateShowButtonsLayout()
+        {
+            // Make all of the show buttons visible if we have something to show
+            int extraTextFilesCount = 0;
+            if (Options.Files != null)
+            {
+                foreach (var fileName in Options.Files)
+                {
+                    if (Path.GetExtension(fileName) == ".txt")
+                        ++extraTextFilesCount;
+                }
+            }
+
+            this.ShowScripts.Visible = extraTextFilesCount != 0;
+            this.ShowStack.Visible = Options.Stack != null;
+            this.ShowLog.Visible = Options.Log != null;
+
+            int visibleItems = 0;
+            if (extraTextFilesCount != 0)
+                ++visibleItems;
+            if (Options.Stack != null)
+                ++visibleItems;
+            if (Options.Log != null)
+                ++visibleItems;
+
+            if (visibleItems != 0)
+            {
+                int itemWidth = this.ShowFilesPanel.Size.Width / visibleItems;
+                int position = 0;// this.ShowFilesPanel.Location.X;
+                if (Options.Stack != null)
+                {
+                    this.ShowStack.Location = new Point(position, this.ShowStack.Location.Y);
+                    this.ShowStack.Size = new Size(itemWidth, this.ShowStack.Size.Height);
+                    position += itemWidth;
+                }
+                if (Options.Log != null)
+                {
+                    this.ShowLog.Location = new Point(position, this.ShowLog.Location.Y);
+                    this.ShowLog.Size = new Size(itemWidth, this.ShowLog.Size.Height);
+                    position += itemWidth;
+                }
+                if (extraTextFilesCount != 0)
+                {
+                    this.ShowScripts.Location = new Point(position, this.ShowScripts.Location.Y);
+                    this.ShowScripts.Size = new Size(itemWidth, this.ShowScripts.Size.Height);
+                    position += itemWidth;
+                }
+            }
+        }
+
 		// When the form loads...
 		private void Main_Load(object sender, EventArgs e)
 		{
@@ -179,6 +230,8 @@ namespace ZeroCrashHandler
 			new ToolTip().SetToolTip(this.RestartEngine, "Restarts the engine and loads the last project you had set");
 			new ToolTip().SetToolTip(this.RestartEngineSafe, "Restarts the engine, erases your config, and doesn't load anything extra");
 			new ToolTip().SetToolTip(this.DoNotRestart, "Doesn't restart the engine at all");
+
+            UpdateShowButtonsLayout();
 
 			// Get the email that we might already have saved away
 			String email = Application.UserAppDataRegistry.GetValue("Email") as String;
@@ -822,6 +875,44 @@ namespace ZeroCrashHandler
 				wr = null;
 			}
 		}
+
+        private void OpenFile(string file)
+        {
+            ProcessStartInfo info = new ProcessStartInfo();
+            info.FileName = file;
+            info.Verb = "Open";
+            System.Diagnostics.Process.Start(info);
+        }
+
+        private void ShowStack_Click(object sender, EventArgs e)
+        {
+            if(Options.Stack != null)
+            {
+                OpenFile(Options.Stack);
+            }
+        }
+
+        private void ShowLog_Click(object sender, EventArgs e)
+        {
+            if (Options.Log != null)
+            {
+                OpenFile(Options.Log);
+            }
+        }
+
+        private void ShowScripts_Click(object sender, EventArgs e)
+        {
+            if(Options.Files != null)
+            {
+                foreach (var file in Options.Files)
+                {
+                    if (Path.GetExtension(file) == ".txt")
+                    {
+                        OpenFile(file);
+                    }
+                }
+            }
+        }
 	}
 
 	// The command line options that we parse

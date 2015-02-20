@@ -321,28 +321,6 @@ namespace ZeroCrashHandler
 			Application.Exit();
 		}
 
-		// If the user clicks "Don't Send"...
-		private void Close_Click(object sender, EventArgs e)
-		{
-			//// Make a dialog that makes sure that they want to ignore the bug report
-			//DialogResult result = MessageBox.Show("Are you sure?", ":(", MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2);
-
-			//// If the result was indeed yes...
-			//if (result == DialogResult.Yes)
-			//{
-			//    // Close out of this application
-			//    CloseCrashHandler();
-			//}
-
-			// Restart the engine if specified
-			//DoEngineRestart();
-
-			// Close out of this application
-			//CloseCrashHandler();
-
-			Send_Click(sender, e);
-		}
-
 		private void AddUserInfo(List<Pair> dataPairs, String category, String value)
 		{
 			if (value == null || value.Trim() == String.Empty)

@@ -32,7 +32,6 @@
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
             this.CrashMessageLabel = new System.Windows.Forms.Label();
             this.Send = new System.Windows.Forms.Button();
-            this.CloseButton = new System.Windows.Forms.Button();
             this.Message = new System.Windows.Forms.Label();
             this.WhatHappened = new System.Windows.Forms.TextBox();
             this.label2 = new System.Windows.Forms.Label();
@@ -72,21 +71,11 @@
             // 
             this.Send.Location = new System.Drawing.Point(182, 212);
             this.Send.Name = "Send";
-            this.Send.Size = new System.Drawing.Size(116, 28);
+            this.Send.Size = new System.Drawing.Size(239, 28);
             this.Send.TabIndex = 2;
-            this.Send.Text = "Send";
+            this.Send.Text = "Send and Close";
             this.Send.UseVisualStyleBackColor = true;
             this.Send.Click += new System.EventHandler(this.Send_Click);
-            // 
-            // CloseButton
-            // 
-            this.CloseButton.Location = new System.Drawing.Point(305, 212);
-            this.CloseButton.Name = "CloseButton";
-            this.CloseButton.Size = new System.Drawing.Size(116, 28);
-            this.CloseButton.TabIndex = 3;
-            this.CloseButton.Text = "Close";
-            this.CloseButton.UseVisualStyleBackColor = true;
-            this.CloseButton.Click += new System.EventHandler(this.Close_Click);
             // 
             // Message
             // 
@@ -212,7 +201,6 @@
             this.Controls.Add(this.Email);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.Message);
-            this.Controls.Add(this.CloseButton);
             this.Controls.Add(this.Send);
             this.Controls.Add(this.CrashMessageLabel);
             this.Controls.Add(this.pictureBox1);
@@ -239,7 +227,6 @@
         private System.Windows.Forms.PictureBox pictureBox1;
         private System.Windows.Forms.Label CrashMessageLabel;
         private System.Windows.Forms.Button Send;
-        private System.Windows.Forms.Button CloseButton;
         private System.Windows.Forms.Label Message;
         private System.Windows.Forms.TextBox WhatHappened;
         private System.Windows.Forms.Label label2;

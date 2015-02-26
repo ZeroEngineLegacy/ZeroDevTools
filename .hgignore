@@ -15,3 +15,5 @@ ZeroDoc/LocalBuildEnvironment.cmd
 BuildMaker/LocalBuildEnvironment.cmd
 ZeroCrashHandler/ZeroCrashHandler/bin/
 ZeroCrashHandler/ZeroCrashHandler/obj/
+SourceIndexer/SourceIndexer/bin/
+SourceIndexer/SourceIndexer/obj/

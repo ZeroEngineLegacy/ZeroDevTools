@@ -168,7 +168,7 @@ void BuildValuesArray(uint values, StringBuilder& builder, StringParam tab, bool
   else
     nameVar = "value";
 
-  start = "static Enum Values[] = {";
+  start = "static uint Values[] = {";
   start = Zero::BuildString(tab, start);
   startingCharDistance = start.size();
   currSize = startingCharDistance;
@@ -177,9 +177,12 @@ void BuildValuesArray(uint values, StringBuilder& builder, StringParam tab, bool
   {
     String item;
     if (i == values)
-      item = String::Format("NULL};");
+      item = String::Format("};");
     else
-      item = String::Format("%s%d, ", nameVar.c_str(), i + 1, i);
+    {
+      const char *fmt = (i == values - 1) ? "%s%d" : "%s%d, ";
+      item = String::Format(fmt, nameVar.c_str(), i + 1);
+    }      
     WordWrapAppend(item, builder, currSize, startingCharDistance);
   }
   FillToEnd(builder, currSize);
@@ -206,6 +209,9 @@ void ExpandNames(uint values, StringBuilder& builder, bool uniqueNames = false)
   str = Zero::BuildString(tab,String("typedef uint Type;"));
   builder.Append(str);
   FillToEnd(builder,str.size());
+  str = Zero::BuildString(tab, String("static const cstr EnumName = #name;"));
+  builder.Append(str);
+  FillToEnd(builder, str.size());
 
   ////add the Enum values
   BuildInternalEnum(values,builder,tab);

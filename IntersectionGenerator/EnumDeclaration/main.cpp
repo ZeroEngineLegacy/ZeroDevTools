@@ -157,6 +157,34 @@ void BuildNamesArray(uint values, StringBuilder& builder, StringParam tab, bool 
   FillToEnd(builder,currSize);
 }
 
+void BuildValuesArray(uint values, StringBuilder& builder, StringParam tab, bool uniqueNames = false)
+{
+  String start, item;
+  uint startingCharDistance, currSize;
+
+  String nameVar;
+  if (uniqueNames)
+    nameVar = "name";
+  else
+    nameVar = "value";
+
+  start = "static Enum Values[] = {";
+  start = Zero::BuildString(tab, start);
+  startingCharDistance = start.size();
+  currSize = startingCharDistance;
+  builder.Append(start);
+  for (uint i = 0; i < values + 1; ++i)
+  {
+    String item;
+    if (i == values)
+      item = String::Format("NULL};");
+    else
+      item = String::Format("%s%d, ", nameVar.c_str(), i + 1, i);
+    WordWrapAppend(item, builder, currSize, startingCharDistance);
+  }
+  FillToEnd(builder, currSize);
+}
+
 void ExpandNames(uint values, StringBuilder& builder, bool uniqueNames = false)
 {
   String str,start;
@@ -187,6 +215,9 @@ void ExpandNames(uint values, StringBuilder& builder, bool uniqueNames = false)
 
   //Add the array of strings for each enum value
   BuildNamesArray(values,builder,tab,uniqueNames);
+
+  //Add the array of values for each enum constant
+  BuildValuesArray(values,builder,tab,uniqueNames);
 
   str = Zero::BuildString(tab,"}");
   builder.Append(str);

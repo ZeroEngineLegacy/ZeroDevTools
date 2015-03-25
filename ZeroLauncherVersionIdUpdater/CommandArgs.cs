@@ -29,6 +29,10 @@ namespace ZeroLauncherVersionIdUpdater
     public bool CreatePackageProperty { get { return CreatePackage; } set {CreatePackage = value;} }
     public bool CreatePackage = false;
 
+    [Option("Install", Required = false, HelpText = "Should the program package up the tools/resources or just create the version id file")]
+    public bool GenerateInstallerProperty { get { return GenerateInstaller; } set { GenerateInstaller = value; } }
+    public bool GenerateInstaller = false;
+
     [HelpOption(HelpText = "Display this help screen.")]
     public string GetUsage()
     {

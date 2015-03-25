@@ -157,6 +157,37 @@ void BuildNamesArray(uint values, StringBuilder& builder, StringParam tab, bool 
   FillToEnd(builder,currSize);
 }
 
+void BuildValuesArray(uint values, StringBuilder& builder, StringParam tab, bool uniqueNames = false)
+{
+  String start, item;
+  uint startingCharDistance, currSize;
+
+  String nameVar;
+  if (uniqueNames)
+    nameVar = "name";
+  else
+    nameVar = "value";
+
+  start = "static uint Values[] = {";
+  start = Zero::BuildString(tab, start);
+  startingCharDistance = start.size();
+  currSize = startingCharDistance;
+  builder.Append(start);
+  for (uint i = 0; i < values + 1; ++i)
+  {
+    String item;
+    if (i == values)
+      item = String::Format("};");
+    else
+    {
+      const char *fmt = (i == values - 1) ? "%s%d" : "%s%d, ";
+      item = String::Format(fmt, nameVar.c_str(), i + 1);
+    }      
+    WordWrapAppend(item, builder, currSize, startingCharDistance);
+  }
+  FillToEnd(builder, currSize);
+}
+
 void ExpandNames(uint values, StringBuilder& builder, bool uniqueNames = false)
 {
   String str,start;
@@ -178,6 +209,9 @@ void ExpandNames(uint values, StringBuilder& builder, bool uniqueNames = false)
   str = Zero::BuildString(tab,String("typedef uint Type;"));
   builder.Append(str);
   FillToEnd(builder,str.size());
+  str = Zero::BuildString(tab, String("static const cstr EnumName = #name;"));
+  builder.Append(str);
+  FillToEnd(builder, str.size());
 
   ////add the Enum values
   BuildInternalEnum(values,builder,tab);
@@ -187,6 +221,9 @@ void ExpandNames(uint values, StringBuilder& builder, bool uniqueNames = false)
 
   //Add the array of strings for each enum value
   BuildNamesArray(values,builder,tab,uniqueNames);
+
+  //Add the array of values for each enum constant
+  BuildValuesArray(values,builder,tab,uniqueNames);
 
   str = Zero::BuildString(tab,"}");
   builder.Append(str);

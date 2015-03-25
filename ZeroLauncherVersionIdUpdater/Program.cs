@@ -3,6 +3,7 @@ using CommandLine.Text;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
@@ -87,6 +88,39 @@ namespace ZeroLauncherVersionIdUpdater
       CopyDirectory(Path.Combine(sourceDir, "Resources", "Loading"), Path.Combine(packageOutDir, "Resources", "Loading"));
     }
 
+    static void GenerateInstaller(String sourceDir, String zeroOutDir)
+    {
+      //Generate the Zero Engine installer using Inno Setup.
+      ProcessStartInfo innoSetupInfo = new ProcessStartInfo();
+      innoSetupInfo.Arguments = Path.Combine(sourceDir, "Build", "ZeroLauncherInstaller.iss ") +
+                                  String.Format("/DZeroSource=\"{0}\"" , sourceDir) +
+                                  String.Format(" /DZeroLauncherOutputPath=\"{0}\"", zeroOutDir);// +
+      innoSetupInfo.FileName = @"C:\Program Files (x86)\Inno Setup 5\iscc.exe";
+      innoSetupInfo.RedirectStandardOutput = true;
+      innoSetupInfo.RedirectStandardError = true;
+      innoSetupInfo.UseShellExecute = false;
+
+      Process innoSetup;
+      try
+      {
+        innoSetup = Process.Start(innoSetupInfo);
+      }
+      catch (Win32Exception /*win32*/)
+      {
+        Console.WriteLine("Inno Setup not found. Please install it and rerun " +
+                          "the build install maker.");
+        Console.WriteLine("Press any key to continue...");
+        Console.ReadKey();
+        return;
+
+      }
+      String output = innoSetup.StandardOutput.ReadToEnd();
+      String errs = innoSetup.StandardError.ReadToEnd();
+
+      //String innoError = innoSetup.StandardOutput.ReadToEnd();
+      innoSetup.WaitForExit();
+    }
+
     static void Main(string[] args)
     {
       var commandArgs = new CommandArgs();
@@ -127,6 +161,18 @@ namespace ZeroLauncherVersionIdUpdater
         //open the package folder
         if (commandArgs.OpenExplorer)
           Process.Start(commandArgs.OutDir);
+      }
+      
+      if(commandArgs.GenerateInstaller)
+      {
+        if (createPackage == false)
+        {
+          Console.WriteLine("Generate installer requires create package");
+          return;
+        }
+
+        CopyDirectory(packageOutDir, commandArgs.ZeroOutDir);
+        GenerateInstaller(commandArgs.SourceDir, commandArgs.ZeroOutDir);
       }
     }
   }

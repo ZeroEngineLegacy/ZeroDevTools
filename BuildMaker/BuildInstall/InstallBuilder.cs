@@ -103,7 +103,7 @@ namespace BuildMaker
       
 
       //Get the date from the last commit
-      String date = GetRevisionDate(cZeroSource, branch) + ".";
+      String date = "." + GetRevisionDate(cZeroSource, branch) + ".";
 
       //Rename the install executable.
       String newFileName = installerPrefix + date + buildNumber + ".exe";

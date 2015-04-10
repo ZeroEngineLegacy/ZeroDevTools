@@ -24,7 +24,7 @@ namespace BuildMaker
     {
         //Get the build number.
         ProcessStartInfo revisionNumberInfo = new ProcessStartInfo();
-        revisionNumberInfo.Arguments = String.Format(@"heads -q -r {0}", branch);
+        revisionNumberInfo.Arguments = String.Format("log -q -r \"max(parents())\"");
         revisionNumberInfo.FileName = "hg";
         revisionNumberInfo.WorkingDirectory = cZeroSource;
         revisionNumberInfo.RedirectStandardOutput = true;

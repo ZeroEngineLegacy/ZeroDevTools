@@ -37,6 +37,25 @@ namespace BuildMaker
         return buildNumber;
     }
 
+    public String GetRevisionDate(String cZeroSource, String branch)
+    {
+      //Get the build number.
+      ProcessStartInfo procInfo = new ProcessStartInfo();
+      procInfo.Arguments = String.Format("heads -q -r {0} --template \"{{date|shortdate}}\"", branch);
+      procInfo.FileName = "hg";
+      procInfo.WorkingDirectory = cZeroSource;
+      procInfo.RedirectStandardOutput = true;
+      procInfo.UseShellExecute = false;
+      Process process = Process.Start(procInfo);
+      String revNum = process.StandardOutput.ReadToEnd();
+      String buildDate = (revNum.Split(':'))[0];
+      process.WaitForExit();
+
+      return buildDate.Replace('-', '.');
+
+      return buildDate;
+    }
+
     public void OutputBuildInfo(String buildFilePath, String buildVersion, String fileName)
     {
       StringBuilder builder = new StringBuilder();
@@ -83,9 +102,8 @@ namespace BuildMaker
 
       
 
-      //Get the date.
-      DateTime theDate = DateTime.Now;
-      String date = theDate.ToString(".yyyy.MM.dd.");
+      //Get the date from the last commit
+      String date = "." + GetRevisionDate(cZeroSource, branch) + ".";
 
       //Rename the install executable.
       String newFileName = installerPrefix + date + buildNumber + ".exe";

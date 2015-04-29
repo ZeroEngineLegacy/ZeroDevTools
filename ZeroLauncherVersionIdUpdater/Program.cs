@@ -69,7 +69,8 @@ namespace ZeroLauncherVersionIdUpdater
       Directory.CreateDirectory(outDir);
 
       //curently we only need these files from the tools directory, don't copy more as it bloats the package size
-      string[] files = {"cudart32_30_14.dll", "FreeImage.dll", "ImageProcessor.exe", "nvdxt.exe", "nvtt.dll"};
+      string[] files = {"cudart32_30_14.dll", "FreeImage.dll", "ImageProcessor.exe", "nvdxt.exe", "nvtt.dll", 
+                         "ZeroCrashHandler.exe", "CommandLine.dll", "ICSharpCode.SharpZipLib.dll", "Newtonsoft.Json.dll"};
 
       foreach (var file in files)
         File.Copy(Path.Combine(toolsDir, file), Path.Combine(outDir, file));
@@ -87,6 +88,9 @@ namespace ZeroLauncherVersionIdUpdater
       CopyDirectory(Path.Combine(sourceDir, "Resources", "ZeroLauncherResources"), Path.Combine(packageOutDir, "Resources", "ZeroLauncherResources"));
       CopyDirectory(Path.Combine(sourceDir, "Resources", "Loading"), Path.Combine(packageOutDir, "Resources", "Loading"));
       File.Copy(Path.Combine(sourceDir, "Data", "ZeroLauncherEula.txt"), Path.Combine(packageOutDir, "ZeroLauncherEula.txt"));
+
+      // Copy the default templates we install with over too
+      CopyDirectory(Path.Combine(sourceDir, "Projects", "LauncherTemplates"), Path.Combine(packageOutDir, "LauncherTemplates"));
     }
 
     static void GenerateInstaller(String sourceDir, String zeroOutDir)

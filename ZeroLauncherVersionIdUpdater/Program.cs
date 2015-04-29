@@ -90,7 +90,7 @@ namespace ZeroLauncherVersionIdUpdater
       File.Copy(Path.Combine(sourceDir, "Data", "ZeroLauncherEula.txt"), Path.Combine(packageOutDir, "ZeroLauncherEula.txt"));
 
       // Copy the default templates we install with over too
-      CopyDirectory(Path.Combine(sourceDir, "Projects", "LauncherTemplates"), Path.Combine(packageOutDir, "LauncherTemplates"));
+      CopyDirectory(Path.Combine(sourceDir, "Projects", "LauncherTemplates"), Path.Combine(packageOutDir, "Templates"));
     }
 
     static void GenerateInstaller(String sourceDir, String zeroOutDir)

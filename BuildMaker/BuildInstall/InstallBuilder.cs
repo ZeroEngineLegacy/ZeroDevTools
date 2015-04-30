@@ -41,7 +41,7 @@ namespace BuildMaker
     {
       //Get the build number.
       ProcessStartInfo procInfo = new ProcessStartInfo();
-      procInfo.Arguments = String.Format("heads -q -r {0} --template \"{{date|shortdate}}\"", branch);
+      procInfo.Arguments = String.Format("log -q -r \"max(parents())\" --template \"{{date|shortdate}}\"", branch);
       procInfo.FileName = "hg";
       procInfo.WorkingDirectory = cZeroSource;
       procInfo.RedirectStandardOutput = true;

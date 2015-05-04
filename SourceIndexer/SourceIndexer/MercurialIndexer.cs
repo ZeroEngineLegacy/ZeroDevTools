@@ -15,7 +15,7 @@ namespace SourceIndexer
     static String GetCurrentRevision(String depoPath)
     {
       ProcessStartInfo info = new ProcessStartInfo();
-      info.Arguments = "--cwd " + depoPath + " tip --template {node}";
+      info.Arguments = "--cwd " + depoPath + " log -q -r \"max(parents())\" --template {node}";
       info.FileName = "hg.exe";
       info.RedirectStandardOutput = true;
       info.UseShellExecute = false;

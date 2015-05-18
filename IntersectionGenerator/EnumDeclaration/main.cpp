@@ -140,7 +140,7 @@ void BuildNamesArray(uint values, StringBuilder& builder, StringParam tab, bool 
   else
     nameVar = "value";
 
-  start = "static cstr Names[] = {";
+  start = "static const cstr Names[] = {";
   start = Zero::BuildString(tab,start);
   startingCharDistance = start.size();
   currSize = startingCharDistance;
@@ -168,7 +168,7 @@ void BuildValuesArray(uint values, StringBuilder& builder, StringParam tab, bool
   else
     nameVar = "value";
 
-  start = "static uint Values[] = {";
+  start = "static const uint Values[] = {";
   start = Zero::BuildString(tab, start);
   startingCharDistance = start.size();
   currSize = startingCharDistance;

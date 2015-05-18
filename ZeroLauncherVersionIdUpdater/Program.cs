@@ -79,7 +79,9 @@ namespace ZeroLauncherVersionIdUpdater
     static void CreatePackage(String sourceDir, String zeroOutDir, String outDir, String packageOutDir)
     {
       String dllName = "ZeroLauncherDll.dll";
+      String pdbName = "ZeroLauncherDll.pdb";
       File.Copy(Path.Combine(zeroOutDir, dllName), Path.Combine(packageOutDir, dllName), true);
+      File.Copy(Path.Combine(zeroOutDir, pdbName), Path.Combine(packageOutDir, pdbName), true);
       File.Copy(Path.Combine(outDir, "ZeroLauncherVersionId.txt"), Path.Combine(packageOutDir, "ZeroLauncherVersionId.txt"), true);
 
       CopyTools(Path.Combine(sourceDir, "Tools"), Path.Combine(packageOutDir, "Tools"));

@@ -87,7 +87,7 @@ int DoDiff(Zero::Image &image1,
   // Check to see if the difference is small enough to pass.
   if (mConfidence > percentageCorrect)
   {
-    std::cout << "Failure: newImage is only " << percentageCorrect 
+    std::cout << "Warning: newImage is only " << percentageCorrect 
 			        << "% correct compared to oldImage." << std::endl;
 	  returnValue = 1;
   }
@@ -141,7 +141,6 @@ int main(int argc, cstr* argv)
 
   double confidence = Zero::GetStringValue(commandLineArgs,"confidence", 1.0);
 
-  int returnValue = 0;
 
   // Make and load our images.
   Zero::Image image1;
@@ -162,16 +161,12 @@ int main(int argc, cstr* argv)
 	  char *message2 = status2 ? status1.Message.c_str() : "Success";
 
 	  std::cout << file1.c_str() << ": " << message1 << std::endl;
-	  std::cout << file1.c_str() << ": " << message2 << std::endl;
-
-	  returnValue = 1;
+	  std::cout << file2.c_str() << ": " << message2 << std::endl;
   }
   // Check to make sure the images are the same dimentions.
   else if ((image1.Width != image2.Width) || (image1.Height != image2.Height))
   {
     std::cout << "Error: Images are not the width and height!" << std::endl;
-
-    returnValue = 1;
   }
   // Diff the images.
   else
@@ -179,8 +174,8 @@ int main(int argc, cstr* argv)
     // Print the filepaths of the images we're diffing.
     std::cout << "Original Image:" << file1.c_str() << std::endl;
     std::cout << "New Image:" << file2.c_str() << std::endl;
-    returnValue = DoDiff(image1, image2, output1, output2, confidence);
+    DoDiff(image1, image2, output1, output2, confidence);
   }
 
-  return returnValue;
+  return 0;
 }

@@ -13,10 +13,23 @@
 #include "Platform/FileSystem.hpp"
 #include "Platform/FilePath.hpp"
 
+void CheckStatus(Zero::Status status, Zero::StringRef filePath)
+{
+  if (!status)
+  {
+    char *message = status ? status.Message.c_str() : "Success";
+
+    std::cout << "Error: An image was not loaded and had this error:" << message << std::endl;
+    std::cout << "File: " << filePath.c_str() << ": " << message << std::endl;
+  }
+}
+
+
 int DoDiff(Zero::Image &image1, 
            Zero::Image &image2, 
-           Zero::StringRef diffImageFile, 
-           Zero::StringRef diffSqImageFile,
+           Zero::StringRef diffImagePath, 
+           Zero::StringRef SqImagePath,
+           Zero::StringRef BWImagePath,
            double mConfidence)
 {
   // Allocate our difference and squared difference images.
@@ -25,6 +38,9 @@ int DoDiff(Zero::Image &image1,
 
   Zero::Image diffSqImage;
   diffSqImage.Allocate(image1.Width, image1.Height);
+
+  Zero::Image diffBWImage;
+  diffBWImage.Allocate(image1.Width, image1.Height);
 
   int returnValue = 0;
   int height = image1.Height;
@@ -36,6 +52,7 @@ int DoDiff(Zero::Image &image1,
   Zero::ImagePixel *imagePixel2 = image2.Data;
   Zero::ImagePixel *diffPixel = diffImage.Data;
   Zero::ImagePixel *diffSqPixel = diffSqImage.Data;
+  Zero::ImagePixel *diffBWPixel = diffBWImage.Data;
   Zero::ImagePixel diffPixelColor;
   Zero::ImagePixel diffPixelSqColor;
 
@@ -48,7 +65,7 @@ int DoDiff(Zero::Image &image1,
 
   // Construct the difference and squared difference images while checking 
   // how different the images are.
-  for (; imagePixel1 < finalPixel; ++imagePixel1, ++imagePixel2, ++diffPixel, ++diffSqPixel)
+  for (; imagePixel1 < finalPixel; ++imagePixel1, ++imagePixel2, ++diffPixel, ++diffSqPixel, ++diffBWPixel)
   {
     //Switch to floats for manipulation.
 	  pixelColor1 = ToFloatColor(*imagePixel1);
@@ -74,6 +91,12 @@ int DoDiff(Zero::Image &image1,
     if (diffPixelColor != Color::Black)
     {
       incorrectScore += 1.0f;
+      
+      *diffBWPixel = Color::White;
+    }
+    else
+    {
+      *diffBWPixel = Color::Black;
     }
 
     //Write out the pixels.
@@ -100,29 +123,25 @@ int DoDiff(Zero::Image &image1,
   // Save out our difference and squared difference images.
   Zero::Status status;
 
-  Zero::CreateDirectoryAndParents(Zero::FilePath::GetDirectoryPath(diffImageFile));
-  SaveToPng(status, &diffImage, diffImageFile);
+  Zero::CreateDirectoryAndParents(Zero::FilePath::GetDirectoryPath(diffImagePath));
+  SaveToPng(status, &diffImage, diffImagePath);
 
-  // Check to make sure our image saved successfully.
-  if (!status)
-  {
-	  std::cout << status.Message.c_str() << std::endl;
-	  returnValue = 1;
-  }
+  CheckStatus(status, diffImagePath);
 
-  Zero::CreateDirectoryAndParents(Zero::FilePath::GetDirectoryPath(diffSqImageFile));
-  SaveToPng(status, &diffSqImage, diffSqImageFile);
+  Zero::CreateDirectoryAndParents(Zero::FilePath::GetDirectoryPath(SqImagePath));
+  SaveToPng(status, &diffSqImage, SqImagePath);
 
-  // Check to make sure our image saved successfully.
-  if (!status)
-  {
-    std::cout << status.Message.c_str() << std::endl;
-    returnValue = 1;
-  }
+  CheckStatus(status, SqImagePath);
+
+  Zero::CreateDirectoryAndParents(Zero::FilePath::GetDirectoryPath(BWImagePath));
+  SaveToPng(status, &diffBWImage, BWImagePath);
+
+  CheckStatus(status, BWImagePath);
 
   
-  std::cout << "Diff Image:" << diffImageFile.c_str() << std::endl;
-  std::cout << "Diff Image Squared:" << diffSqImageFile.c_str() << std::endl;
+  std::cout << "Diff Image:" << diffImagePath.c_str() << std::endl;
+  std::cout << "Diff Image Squared:" << SqImagePath.c_str() << std::endl;
+  std::cout << "Diff Black and White:" << BWImagePath.c_str() << std::endl;
 
   return returnValue;
 }
@@ -136,8 +155,9 @@ int main(int argc, cstr* argv)
   Zero::String file1 = commandLineArgs.findValue("file1", "");
   Zero::String file2 = commandLineArgs.findValue("file2", "");
   
-  Zero::String output1 = commandLineArgs.findValue("output1", "");
-  Zero::String output2 = commandLineArgs.findValue("output2", "");
+  Zero::String diffImagePath = commandLineArgs.findValue("output1", "");
+  Zero::String SqImagePath = commandLineArgs.findValue("output2", "");
+  Zero::String BWImagePath = commandLineArgs.findValue("output3", "");
 
   double confidence = Zero::GetStringValue(commandLineArgs,"confidence", 1.0);
 
@@ -174,7 +194,7 @@ int main(int argc, cstr* argv)
     // Print the filepaths of the images we're diffing.
     std::cout << "Original Image:" << file1.c_str() << std::endl;
     std::cout << "New Image:" << file2.c_str() << std::endl;
-    DoDiff(image1, image2, output1, output2, confidence);
+    DoDiff(image1, image2, diffImagePath, SqImagePath, BWImagePath, confidence);
   }
 
   return 0;

@@ -17,7 +17,7 @@ void CheckStatus(Zero::Status status, Zero::StringRef filePath)
 {
   if (!status)
   {
-    char *message = status ? status.Message.c_str() : "Success";
+    char *message = !status ? status.Message.c_str() : "Success";
 
     std::cout << "Error: An image was not loaded and had this error:" << message << std::endl;
     std::cout << "File: " << filePath.c_str() << ": " << message << std::endl;
@@ -177,8 +177,8 @@ int main(int argc, cstr* argv)
   {
     std::cout << "Error: One or more images were not loaded:" << std::endl;
 
-	  char *message1 = status1 ? status1.Message.c_str() : "Success";
-	  char *message2 = status2 ? status1.Message.c_str() : "Success";
+	  char *message1 = !status1 ? status1.Message.c_str() : "Success";
+	  char *message2 = !status2 ? status1.Message.c_str() : "Success";
 
 	  std::cout << file1.c_str() << ": " << message1 << std::endl;
 	  std::cout << file2.c_str() << ": " << message2 << std::endl;

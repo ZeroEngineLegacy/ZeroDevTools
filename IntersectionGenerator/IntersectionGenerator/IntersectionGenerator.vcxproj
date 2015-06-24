@@ -11,7 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{9A6E4795-3B62-468F-8B03-DA9FEA6B464C}</ProjectGuid>
+    <ProjectGuid>{50A09666-C800-48B7-BCDF-7FF29F83155E}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>IntersectionGenerator</RootNamespace>
   </PropertyGroup>
@@ -31,10 +31,9 @@
   <ImportGroup Label="ExtensionSettings">
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Platform)'=='Win32'">
-    <Import Project ="$(ZERO_SOURCE)\Build\Win32.$(Configuration).props" Condition="exists('$(ZERO_SOURCE)\Build\Win32.$(Configuration).props')"/>
+    <Import Project="$(ZERO_SOURCE)\Build\Win32.$(Configuration).props" Condition="exists('$(ZERO_SOURCE)\Build\Win32.$(Configuration).props')" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <PreprocessorDefinitions>;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>

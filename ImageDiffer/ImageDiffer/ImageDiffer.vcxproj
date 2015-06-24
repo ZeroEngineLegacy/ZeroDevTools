@@ -41,7 +41,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(GENERATOR_SOURCE)\SharedUtilities;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\SharedUtilities;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ProgramDataBaseFileName>$(IntDir)$(ProjectName)_Int.pdb</ProgramDataBaseFileName>
     </ClCompile>
     <Link>
@@ -64,7 +64,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(GENERATOR_SOURCE)\SharedUtilities;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\SharedUtilities;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ProgramDataBaseFileName>$(IntDir)$(ProjectName)_Int.pdb</ProgramDataBaseFileName>
     </ClCompile>
     <Link>
@@ -99,7 +99,7 @@
     <ProjectReference Include="$(ZeroExtensionLibrariesSource)\Support\Support.vcxproj">
       <Project>{767a1057-b18f-478e-b480-f6f624f9282a}</Project>
     </ProjectReference>
-    <ProjectReference Include="$(GENERATOR_SOURCE)\SharedUtilities\SharedUtilities.vcxproj">
+    <ProjectReference Include="..\SharedUtilities\SharedUtilities.vcxproj">
       <Project>{9e1559fe-708c-4adf-b302-ee0491c74fbe}</Project>
     </ProjectReference>
   </ItemGroup>

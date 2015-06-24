@@ -29,26 +29,13 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
   </ImportGroup>
-  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
-  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  <ImportGroup Label="PropertySheets" Condition="'$(Platform)'=='Win32'">
+    <Import Project ="$(ZERO_SOURCE)\Build\Win32.$(Configuration).props" Condition="exists('$(ZERO_SOURCE)\Build\Win32.$(Configuration).props')"/>
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <OutDir>$(GENERATOR_OUTPUT)\Out\$(Platform)\$(Configuration)\$(ProjectName)\</OutDir>
-    <IntDir>$(GENERATOR_OUTPUT)\Int\$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <OutDir>$(GENERATOR_OUTPUT)\Out\$(Platform)\$(Configuration)\$(ProjectName)\</OutDir>
-    <IntDir>$(GENERATOR_OUTPUT)\Int\$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
-  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
-      <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(GENERATOR_SOURCE)\SharedUtilities;$(ZERO_SOURCE)\Libraries;$(ZERO_SOURCE)\Libraries\Common;$(ZERO_SOURCE)\Systems;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(GENERATOR_SOURCE)\SharedUtilities;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -56,11 +43,9 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
-      <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>$(GENERATOR_SOURCE)\SharedUtilities;$(ZERO_SOURCE)\Libraries;$(ZERO_SOURCE)\Libraries\Common;$(ZERO_SOURCE)\Systems;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(GENERATOR_SOURCE)\SharedUtilities;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -72,13 +57,13 @@
     <ClInclude Include="SharedUtilities.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(ZERO_SOURCE)\Libraries\Math\Math.vcxproj">
+    <ProjectReference Include="$(ZeroStandardLibrariesSource)\Math\Math.vcxproj">
       <Project>{767a1157-b18f-478e-b580-f6f624f9282a}</Project>
     </ProjectReference>
-    <ProjectReference Include="$(ZERO_SOURCE)\Libraries\Platform\Windows\WindowsPlatform.vcxproj">
+    <ProjectReference Include="$(ZeroStandardLibrariesSource)\Platform\Windows\WindowsPlatform.vcxproj">
       <Project>{dbe8e33a-7e70-402c-bcf6-d1efee93fa76}</Project>
     </ProjectReference>
-    <ProjectReference Include="$(ZERO_SOURCE)\Libraries\Common\Common.vcxproj">
+    <ProjectReference Include="$(ZeroStandardLibrariesSource)\Common\Common.vcxproj">
       <Project>{3a62ce69-835e-4d16-86c2-5326625a18bc}</Project>
     </ProjectReference>
   </ItemGroup>

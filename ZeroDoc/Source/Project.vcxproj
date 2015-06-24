@@ -37,7 +37,7 @@
     <ClCompile>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>Precompiled.hpp</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>..\curl\include;$(ZERO_SOURCE)\Libraries\Common;$(ZERO_SOURCE)\Utilities;$(ZERO_SOURCE)\Libraries;$(ZERO_SOURCE)\Systems;$(ZERO_SOURCE)\Extensions;$(ZERO_SOURCE)\External\GLEW\include;$(ZERO_SOURCE)\External\SDL\include;$(ZERO_SOURCE)\External\SOIL\include;$(ZERO_SOURCE)\External\Cg\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\curl\include;$(ZERO_SOURCE)\Extensions;$(ZERO_SOURCE)\External\GLEW\include;$(ZERO_SOURCE)\External\SOIL\include;$(ZERO_SOURCE)\External\Cg\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -87,31 +87,31 @@
     <ClCompile Include="Pages.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(ZERO_SOURCE)\Libraries\Common\Common.vcxproj">
+    <ProjectReference Include="$(ZeroStandardLibrariesSource)\Common\Common.vcxproj">
       <Project>{3a62ce69-835e-4d16-86c2-5326625a18bc}</Project>
     </ProjectReference>
-    <ProjectReference Include="$(ZERO_SOURCE)\Libraries\Math\Math.vcxproj">
+    <ProjectReference Include="$(ZeroStandardLibrariesSource)\Math\Math.vcxproj">
       <Project>{767a1157-b18f-478e-b580-f6f624f9282a}</Project>
     </ProjectReference>
-    <ProjectReference Include="$(ZERO_SOURCE)\Libraries\Serialization\Serialization.vcxproj">
+    <ProjectReference Include="$(ZeroExtensionLibrariesSource)\Serialization\Serialization.vcxproj">
       <Project>{35d4371c-b7a6-4fc4-aba3-0be750125ce3}</Project>
     </ProjectReference>
     <ProjectReference Include="$(ZERO_SOURCE)\Systems\Engine\Engine.vcxproj">
       <Project>{b45f9232-8734-48ea-ac16-29f41866d676}</Project>
     </ProjectReference>
-    <ProjectReference Include="$(ZERO_SOURCE)\Systems\Meta\Meta.vcxproj">
+    <ProjectReference Include="$(ZeroExtensionLibrariesSource)\Meta\Meta.vcxproj">
       <Project>{b45f9232-8734-47ea-ac16-29f418d6d676}</Project>
     </ProjectReference>
-    <ProjectReference Include="$(ZERO_SOURCE)\Libraries\Support\Support.vcxproj">
+    <ProjectReference Include="$(ZeroExtensionLibrariesSource)\Support\Support.vcxproj">
       <Project>{767a1057-b18f-478e-b480-f6f624f9282a}</Project>
     </ProjectReference>
-    <ProjectReference Include="$(ZERO_SOURCE)\Libraries\Platform\Windows\WindowsPlatform.vcxproj">
+    <ProjectReference Include="$(ZeroStandardLibrariesSource)\Platform\Windows\WindowsPlatform.vcxproj">
       <Project>{dbe8e33a-7e70-402c-bcf6-d1efee93fa76}</Project>
     </ProjectReference>
     <ProjectReference Include="$(ZERO_SOURCE)\Systems\Content\Content.vcxproj">
       <Project>{e19019f5-9c2c-4329-aab5-db28e39cc0f2}</Project>
     </ProjectReference>
-    <ProjectReference Include="$(ZERO_SOURCE)\Libraries\Geometry\Geometry.vcxproj">
+    <ProjectReference Include="$(ZeroExtensionLibrariesSource)\Geometry\Geometry.vcxproj">
       <Project>{787f598d-f96e-48f5-8075-25d31fc7ed60}</Project>
     </ProjectReference>
     <ProjectReference Include="..\curl\lib\vc6libcurl.vcxproj">

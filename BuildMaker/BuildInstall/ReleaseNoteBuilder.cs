@@ -11,11 +11,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using FogLampz;
 using System.Net;
 using System.IO;
 using System.Xml.Linq;
-using FogLampz.Model;
 using System.Xml;
 
 namespace BuildMaker

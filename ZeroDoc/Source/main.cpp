@@ -5,7 +5,7 @@
 #include "Serialization/Simple.hpp"
 #include "Serialization/Text.hpp"
 #include "Support/StringMap.hpp"
-#include "Support/FilePath.hpp"
+#include "Platform/FilePath.hpp"
 
 #include "WikiOperations.hpp"
 #include "TinyXmlHelpers.hpp"

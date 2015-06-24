@@ -17,11 +17,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "EnumDeclaration", "EnumDecl
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SharedUtilities", "SharedUtilities\SharedUtilities.vcxproj", "{9E1559FE-708C-4ADF-B302-EE0491C74FBE}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Common", "%ZERO_SOURCE%\Libraries\Common\Common.vcxproj", "{3A62CE69-835E-4D16-86C2-5326625A18BC}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Common", "..\..\ExtensionLibraries\StandardLibraries\Common\Common.vcxproj", "{3A62CE69-835E-4D16-86C2-5326625A18BC}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "WindowsPlatform", "%ZERO_SOURCE%\Libraries\Platform\Windows\WindowsPlatform.vcxproj", "{DBE8E33A-7E70-402C-BCF6-D1EFEE93FA76}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "WindowsPlatform", "..\..\ExtensionLibraries\StandardLibraries\Platform\Windows\WindowsPlatform.vcxproj", "{DBE8E33A-7E70-402C-BCF6-D1EFEE93FA76}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Math", "%ZERO_SOURCE%\Libraries\Math\Math.vcxproj", "{767A1157-B18F-478E-B580-F6F624F9282A}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Math", "..\..\ExtensionLibraries\StandardLibraries\Math\Math.vcxproj", "{767A1157-B18F-478E-B580-F6F624F9282A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -58,9 +58,6 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
-    <PostBuildEvent>
-      <Command>"$(ProjectDir)PostBuild.cmd" "$(ZERO_OUTPUT)\Out\$(Platform)\$(Configuration)\$(ProjectName)\" "$(ProjectDir)"</Command>
-    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />

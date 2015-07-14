@@ -9,6 +9,7 @@
 #include "Support/Image.hpp"
 #include "Utility/Status.hpp"
 #include "Support/PngSupport.hpp"
+#include "Common/Containers/Array.hpp"
 #include "Math/ByteColor.hpp"
 #include "Platform/FileSystem.hpp"
 #include "Platform/FilePath.hpp"
@@ -24,6 +25,26 @@ void CheckStatus(Zero::Status status, Zero::StringRef filePath)
   }
 }
 
+Zero::Pair<Math::IntVec2, Math::IntVec2> 
+FindPixelBoundingBox(Zero::Array<Math::IntVec2> &pixels, unsigned int width, unsigned int height)
+{
+  Zero::Array<Math::IntVec2>::range range = pixels.all();
+
+  Math::IntVec2 topLeftPixel = Math::IntVec2(width, height);
+  Math::IntVec2 bottomRightPixel = Math::IntVec2(0, 0);
+
+  for (Zero::Array<Math::IntVec2>::iterator pixel = range.begin(); 
+       pixel != range.end();
+       ++pixel)
+  {
+    bottomRightPixel.x = Math::Max(pixel->x, bottomRightPixel.x);
+    bottomRightPixel.y = Math::Max(pixel->y, bottomRightPixel.y);
+    topLeftPixel.x = Math::Min(pixel->x, topLeftPixel.x);
+    topLeftPixel.y = Math::Min(pixel->y, topLeftPixel.y);
+  }
+
+  return Zero::Pair<Math::IntVec2, Math::IntVec2>(topLeftPixel, bottomRightPixel);
+}
 
 int DoDiff(Zero::Image &image1, 
            Zero::Image &image2, 
@@ -32,22 +53,23 @@ int DoDiff(Zero::Image &image1,
            Zero::StringRef BWImagePath,
            double mConfidence)
 {
-  // Allocate our difference and squared difference images.
-  Zero::Image diffImage;
-  diffImage.Allocate(image1.Width, image1.Height);
-
-  Zero::Image diffSqImage;
-  diffSqImage.Allocate(image1.Width, image1.Height);
-
-  Zero::Image diffBWImage;
-  diffBWImage.Allocate(image1.Width, image1.Height);
-
   int returnValue = 0;
   int height = image1.Height;
   int width = image1.Width;
   int resolution = height * width;
   float incorrectScore = 0.0f;
 
+  // Allocate our difference and squared difference images.
+  Zero::Image diffImage;
+  diffImage.Allocate(width, height);
+
+  Zero::Image diffSqImage;
+  diffSqImage.Allocate(width, height);
+
+  Zero::Image diffBWImage;
+  diffBWImage.Allocate(width, height);
+
+  unsigned int index = 0;
   Zero::ImagePixel *imagePixel1 = image1.Data;
   Zero::ImagePixel *imagePixel2 = image2.Data;
   Zero::ImagePixel *diffPixel = diffImage.Data;
@@ -63,9 +85,11 @@ int DoDiff(Zero::Image &image1,
   Math::Vec4 diffColor;
   Math::Vec4 diffSqColor;
 
+  Zero::Array<Math::IntVec2> wrongPixels;
+
   // Construct the difference and squared difference images while checking 
   // how different the images are.
-  for (; imagePixel1 < finalPixel; ++imagePixel1, ++imagePixel2, ++diffPixel, ++diffSqPixel, ++diffBWPixel)
+  for (; imagePixel1 < finalPixel; ++index, ++imagePixel1, ++imagePixel2, ++diffPixel, ++diffSqPixel, ++diffBWPixel)
   {
     //Switch to floats for manipulation.
 	  pixelColor1 = ToFloatColor(*imagePixel1);
@@ -88,15 +112,21 @@ int DoDiff(Zero::Image &image1,
     diffPixelSqColor = ToByteColor(Math::Clamped(diffSqColor, 0.0, 1.0));
 
     // If the difference isn't black then there's a difference.
-    if (diffPixelColor != Color::Black)
+    if (diffPixelColor == Color::Black)
     {
-      incorrectScore += 1.0f;
-      
-      *diffBWPixel = Color::White;
+      *diffBWPixel = Color::Black;
     }
     else
     {
-      *diffBWPixel = Color::Black;
+      incorrectScore += 1.0f;
+
+      *diffBWPixel = Color::White;
+
+      // Now we need to caclculate the position of this pixel.
+      unsigned int y = index / width;
+      unsigned int x = index - (y * width);
+
+      wrongPixels.append(Math::IntVec2(x, y));
     }
 
     //Write out the pixels.
@@ -110,8 +140,18 @@ int DoDiff(Zero::Image &image1,
   // Check to see if the difference is small enough to pass.
   if (mConfidence > percentageCorrect)
   {
+    Zero::Pair<Math::IntVec2, Math::IntVec2> boundingBox =
+      FindPixelBoundingBox(wrongPixels, width, height);
+
     std::cout << "Warning: newImage is only " << percentageCorrect 
-			        << "% correct compared to oldImage." << std::endl;
+			        << "% correct compared to oldImage. "
+              << "Bounding box of pixels: "
+              << "TopLeft: (" 
+              << boundingBox.first.x << ", " << boundingBox.first.y << ") "
+              << "BottomRight: ("
+              << boundingBox.second.x << ", " << boundingBox.second.y << ") "
+              << std::endl;
+
 	  returnValue = 1;
   }
   // Success

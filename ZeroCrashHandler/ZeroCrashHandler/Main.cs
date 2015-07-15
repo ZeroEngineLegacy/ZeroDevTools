@@ -697,7 +697,9 @@ namespace ZeroCrashHandler
 		{
 			if (WasSent == false)
 			{
-				e.Cancel = true;
+				var ask = MessageBox.Show("We'd really appreciate it if you sent the crash report. Are you sure you want to close?", "Close", MessageBoxButtons.YesNo, MessageBoxIcon.Exclamation);
+				if (ask == System.Windows.Forms.DialogResult.No)
+					e.Cancel = true;
 			}
 		}
 

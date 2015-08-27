@@ -17,3 +17,14 @@ ZeroCrashHandler/ZeroCrashHandler/bin/
 ZeroCrashHandler/ZeroCrashHandler/obj/
 SourceIndexer/SourceIndexer/bin/
 SourceIndexer/SourceIndexer/obj/
+ErrorDialog/bin/*
+ErrorDialog/obj/*
+ImageDiffer/ImageDiffer/Release/*
+ImageDiffer/SharedUtilities/Release/*
+IntersectionGenerator/EnumDeclaration/Release/*
+IntersectionGenerator/IntersectionGenerator/Release/*
+IntersectionGenerator/SharedUtilities/Release/*
+ZeroDoc/Source/Release/*
+ZeroDoc/TinyXml/Release/*
+ZeroLauncherVersionIdUpdater/bin/*
+ZeroLauncherVersionIdUpdater/obj/*

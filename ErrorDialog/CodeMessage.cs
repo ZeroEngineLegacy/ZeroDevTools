@@ -130,6 +130,11 @@ namespace ErrorDialog
     {
     }
 
+    private void Ignore_Click(object sender, EventArgs e)
+    {
+        System.Environment.Exit(3);
+    }
+
 
   }
 }

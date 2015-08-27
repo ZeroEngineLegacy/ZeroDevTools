@@ -35,6 +35,7 @@ namespace ErrorDialog
             this.DebugBreak = new System.Windows.Forms.Button();
             this.Continue = new System.Windows.Forms.Button();
             this.DataGrid = new System.Windows.Forms.PropertyGrid();
+            this.Ignore = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.SuspendLayout();
             // 
@@ -85,9 +86,9 @@ namespace ErrorDialog
             // 
             this.Continue.Image = ((System.Drawing.Image)(resources.GetObject("Continue.Image")));
             this.Continue.ImageAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            this.Continue.Location = new System.Drawing.Point(358, 259);
+            this.Continue.Location = new System.Drawing.Point(352, 259);
             this.Continue.Name = "Continue";
-            this.Continue.Size = new System.Drawing.Size(147, 40);
+            this.Continue.Size = new System.Drawing.Size(153, 40);
             this.Continue.TabIndex = 1;
             this.Continue.Text = "Continue";
             this.Continue.UseVisualStyleBackColor = true;
@@ -95,6 +96,7 @@ namespace ErrorDialog
             // 
             // DataGrid
             // 
+            this.DataGrid.CategoryForeColor = System.Drawing.SystemColors.InactiveCaptionText;
             this.DataGrid.CommandsDisabledLinkColor = System.Drawing.Color.Black;
             this.DataGrid.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.DataGrid.Location = new System.Drawing.Point(12, 91);
@@ -105,15 +107,28 @@ namespace ErrorDialog
             this.DataGrid.TabStop = false;
             this.DataGrid.ToolbarVisible = false;
             // 
+            // Ignore
+            // 
+            this.Ignore.Image = ((System.Drawing.Image)(resources.GetObject("Ignore.Image")));
+            this.Ignore.ImageAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this.Ignore.Location = new System.Drawing.Point(12, 259);
+            this.Ignore.Name = "Ignore";
+            this.Ignore.Size = new System.Drawing.Size(153, 40);
+            this.Ignore.TabIndex = 9;
+            this.Ignore.Text = "Ignore";
+            this.Ignore.UseVisualStyleBackColor = true;
+            this.Ignore.Click += new System.EventHandler(this.Ignore_Click);
+            // 
             // CodeMessage
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackgroundImageLayout = System.Windows.Forms.ImageLayout.None;
             this.ClientSize = new System.Drawing.Size(678, 306);
-            this.Controls.Add(this.DataGrid);
-            this.Controls.Add(this.Continue);
+            this.Controls.Add(this.Ignore);
             this.Controls.Add(this.DebugBreak);
+            this.Controls.Add(this.Continue);
+            this.Controls.Add(this.DataGrid);
             this.Controls.Add(this.pictureBox1);
             this.Controls.Add(this.Message);
             this.Controls.Add(this.MessageText);
@@ -139,6 +154,7 @@ namespace ErrorDialog
         private System.Windows.Forms.Button DebugBreak;
         private System.Windows.Forms.Button Continue;
         private System.Windows.Forms.PropertyGrid DataGrid;
+        private System.Windows.Forms.Button Ignore;
 
     }
 }

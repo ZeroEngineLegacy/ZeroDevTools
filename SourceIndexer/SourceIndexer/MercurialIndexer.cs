@@ -68,6 +68,12 @@ namespace SourceIndexer
         var depoName = depo.DepoPath.Substring(lastSlash).Trim('\\');
         if (depoName == "Zilch")
           extraDepo += "\\Zilch";
+        else if (depoName == "ExtensionLibraries")
+          extraDepo += "\\ExtensionLibraries";
+        else if (depoName == "StandardLibraries")
+          extraDepo += "\\ExtensionLibraries\\StandardLibraries";
+        else if (depoName == "AudioEngine")
+          extraDepo += "\\AudioEngine";
         
         // Now output the format string for the file
         foreach(var file in depo.Files)

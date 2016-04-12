@@ -53,7 +53,7 @@ namespace BuildMaker
 
       return buildDate.Replace('-', '.');
 
-      return buildDate;
+      //return buildDate;
     }
 
     public void OutputBuildInfo(String buildFilePath, String buildVersion, String fileName)

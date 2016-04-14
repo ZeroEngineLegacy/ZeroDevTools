@@ -28,3 +28,4 @@ ZeroDoc/Source/Release/*
 ZeroDoc/TinyXml/Release/*
 ZeroLauncherVersionIdUpdater/bin/*
 ZeroLauncherVersionIdUpdater/obj/*
+ZeroZilchPlugins/ZeroZilchPlugins/obj/

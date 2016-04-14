@@ -29,3 +29,5 @@ ZeroDoc/TinyXml/Release/*
 ZeroLauncherVersionIdUpdater/bin/*
 ZeroLauncherVersionIdUpdater/obj/*
 ZeroZilchPlugins/ZeroZilchPlugins/obj/
+ZeroZilchPlugins/packages/
+ZeroZilchPlugins/ZeroZilchPlugins/bin/

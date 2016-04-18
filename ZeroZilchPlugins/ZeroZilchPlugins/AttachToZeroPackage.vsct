@@ -15,10 +15,10 @@
         defining some of the constants that we will use inside the file. -->
 
   <!--This is the file that defines the IDs for all the commands exposed by VisualStudio. -->
-  <Extern href="stdidcmd.h"/>
+  <Extern href="stdidcmd.h" />
 
   <!--This header contains the command ids for the menus provided by the shell. -->
-  <Extern href="vsshlids.h"/>
+  <Extern href="vsshlids.h" />
 
   <!--The Commands section is where commands, menus, and menu groups are defined.
       This section uses a Guid to identify the package that provides the command defined inside it. -->
@@ -31,7 +31,7 @@
     group; your package should define its own command set in order to avoid collisions
     with command ids defined by other packages. -->
     <Menus>
-      <Menu guid="guidAttachToZeroPackageCmdSet" id="Toolbar" type="Toolbar" >
+      <Menu guid="guidAttachToZeroPackageCmdSet" id="Toolbar" type="Toolbar">
         <CommandFlag>DefaultDocked</CommandFlag>
         <CommandFlag>IconAndText</CommandFlag>
         <Strings>
@@ -47,10 +47,10 @@
          must be a menu. -->
     <Groups>
       <Group guid="guidAttachToZeroPackageCmdSet" id="MyMenuGroup" priority="0x0600">
-        <Parent guid="guidSHLMainMenu" id="IDM_VS_MENU_TOOLS"/>
+        <Parent guid="guidSHLMainMenu" id="IDM_VS_MENU_TOOLS" />
       </Group>
       <Group guid="guidAttachToZeroPackageCmdSet" id="ToolbarGroup" priority="0x0000">
-        <Parent guid="guidAttachToZeroPackageCmdSet" id="Toolbar"/>
+        <Parent guid="guidAttachToZeroPackageCmdSet" id="Toolbar" />
       </Group>
     </Groups>
 
@@ -96,7 +96,7 @@
             bitmap strip containing the bitmaps and then there are the numeric ids of the elements used
             inside a button definition. An important aspect of this declaration is that the element id
             must be the actual index (1-based) of the bitmap inside the bitmap strip. -->
-      <Bitmap guid="guidImages" href="Resources\AttachToZero.png" usedList="bmpPic1, bmpPic2, bmpPicSearch, bmpPicX, bmpPicArrows, bmpPicStrikethrough"/>
+      <Bitmap guid="guidImages" href="Resources\AttachToZero.png" usedList="bmpPic1, bmpPic2, bmpPicSearch, bmpPicX, bmpPicArrows, bmpPicStrikethrough" />
     </Bitmaps>
   </Commands>
 
@@ -110,9 +110,19 @@
       <IDSymbol name="AttachToZeroId" value="0x0100" />
       <IDSymbol name="Toolbar" value="0x1000" />
       <IDSymbol name="ToolbarGroup" value="0x1050" />
+      <IDSymbol value="4177" name="cmdidAddComponent" />
     </GuidSymbol>
 
-    <GuidSymbol name="guidImages" value="{4310b516-ce1b-45cb-b9b4-bedf229536b5}" >
+    <GuidSymbol name="guidImages" value="{4310b516-ce1b-45cb-b9b4-bedf229536b5}">
+      <IDSymbol name="bmpPic1" value="1" />
+      <IDSymbol name="bmpPic2" value="2" />
+      <IDSymbol name="bmpPicSearch" value="3" />
+      <IDSymbol name="bmpPicX" value="4" />
+      <IDSymbol name="bmpPicArrows" value="5" />
+      <IDSymbol name="bmpPicStrikethrough" value="6" />
+    </GuidSymbol>
+  
+    <GuidSymbol value="{2f1c6717-d834-49cb-a6e7-5a1a58802410}" name="guidImages1">
       <IDSymbol name="bmpPic1" value="1" />
       <IDSymbol name="bmpPic2" value="2" />
       <IDSymbol name="bmpPicSearch" value="3" />

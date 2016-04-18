@@ -49,6 +49,8 @@ namespace ZeroZilchPlugins
         /// </summary>
         private bool AttachOnFinishBuild;
 
+        private ProjectItemsEvents ProjectItemEvents;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="AttachToZero"/> class.
         /// Adds our command handlers for menu (commands must exist in the command table file)
@@ -62,6 +64,14 @@ namespace ZeroZilchPlugins
             }
 
             this.package = package;
+            
+            var dte = this.GetDTE();
+            var events = (dte.Events as Events2);
+            if (events != null)
+            {
+                this.ProjectItemEvents = events.ProjectItemsEvents;
+                this.ProjectItemEvents.ItemAdded += this.ProjectItemsEvents_ItemAdded;
+            }
 
             OleMenuCommandService commandService = this.ServiceProvider.GetService(typeof(IMenuCommandService)) as OleMenuCommandService;
             if (commandService != null)
@@ -73,7 +83,6 @@ namespace ZeroZilchPlugins
                     this.AnythingChangedUpdate();
 
                     var enabled = true;
-                    var dte = this.GetDTE();
 
                     // We must be in design mode to see
                     enabled &= (dte.Debugger.CurrentMode == dbgDebugMode.dbgDesignMode);
@@ -94,6 +103,63 @@ namespace ZeroZilchPlugins
                   AdviseShellPropertyChanges(this, out this.EventSinkCookie));
             }
         }
+
+        private void ProjectItemsEvents_ItemAdded(ProjectItem projectItem)
+        {
+            if (projectItem.Name.EndsWith("hpp") == false)
+                return;
+
+            if (this.IsZeroPluginSolution() == false)
+                return;
+
+            var dte = this.GetDTE();
+            var projectName = Path.GetFileNameWithoutExtension(dte.Solution.FullName);
+            
+            var precompiledHpp = dte.Solution.FindProjectItem(projectName + "Precompiled.hpp");
+            var precompiledCpp = dte.Solution.FindProjectItem(projectName + "Precompiled.cpp");
+            if (precompiledHpp != null && precompiledCpp != null)
+            {
+                for (var i = 0; i < projectItem.FileCount; ++i)
+                {
+                    var filePath = projectItem.FileNames[(short)i];
+
+                    var autoInitialize = false;
+                    try
+                    {
+                        var text = File.ReadAllText(filePath);
+                        autoInitialize = text.Contains("ZilchDeclare");
+                    }
+                    catch
+                    {
+                    }
+                    
+
+                    var extension = Path.GetExtension(filePath);
+
+                    if (extension == ".hpp")
+                    {
+                        var fileName = Path.GetFileName(filePath);
+                        var name = Path.GetFileNameWithoutExtension(fileName);
+
+                        var hppFind = "// Auto Includes";
+                        var hppReplace = "#include \"" + fileName + "\"" + Environment.NewLine + hppFind;
+
+                        precompiledHpp.Open().Document.ReplaceText(hppFind, hppReplace);
+                        precompiledHpp.Document.Save();
+
+                        if (autoInitialize)
+                        {
+                            var cppFind = "// Auto Initialize";
+                            var cppReplace = "ZilchInitializeType(" + name + ");" + Environment.NewLine + "  " + cppFind;
+
+                            precompiledCpp.Open().Document.ReplaceText(cppFind, cppReplace);
+                            precompiledCpp.Document.Save();
+                        }
+                    }
+                }
+            }
+        }
+
 
         /// <summary>
         /// Gets the instance of the command.
@@ -124,24 +190,6 @@ namespace ZeroZilchPlugins
             Instance = new AttachToZero(package);
         }
 
-        public bool FindZeroItem(ProjectItem item)
-        {
-            if (item.Name == "Zero" || Path.GetFileNameWithoutExtension(item.Name) == "ZeroEngine")
-                return true;
-
-            try
-            {
-                foreach (ProjectItem subItem in item.ProjectItems)
-                {
-                    this.FindZeroItem(item);
-                }
-            }
-            catch
-            {
-            }
-            return false;
-        }
-
         public Boolean IsZeroPluginSolution()
         {
             // I would love to cache this information instead of querying it every time
@@ -151,23 +199,8 @@ namespace ZeroZilchPlugins
             if (dte.Solution == null)
                 return false;
 
-            try
-            {
-                // The solution must contain a ZeroEngine file
-                foreach (Project project in dte.Solution.Projects)
-                {
-                    foreach (ProjectItem item in project.ProjectItems)
-                    {
-                        // See if there is a filter named Zero or a ZeroEngine file
-                        if (this.FindZeroItem(item))
-                            return true;
-                    }
-                }
-            }
-            catch
-            {
-            }
-            return false;
+            var result = dte.Solution.FindProjectItem("ZeroEngine.cpp") != null;
+            return result;
         }
 
         private String GetZeroProjectName(String projectDirectory)
@@ -197,6 +230,18 @@ namespace ZeroZilchPlugins
             try
             {
                 return this.ServiceProvider.GetService(typeof(DTE)) as DTE;
+            }
+            catch (COMException)
+            {
+                this.MessageBox("Visual Studio was not found", OLEMSGICON.OLEMSGICON_CRITICAL);
+                return null;
+            }
+        }
+        DTE2 GetDTE2()
+        {
+            try
+            {
+                return this.ServiceProvider.GetService(typeof(DTE2)) as DTE2;
             }
             catch (COMException)
             {

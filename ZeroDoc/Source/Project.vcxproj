@@ -1,5 +1,8 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Label="Configuration">
+    <PlatformToolset>v140</PlatformToolset>
+  </PropertyGroup>
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
@@ -15,11 +18,12 @@
     <ProjectGuid>{9F87A6BF-269D-499B-A5B0-EA61445FDD50}</ProjectGuid>
     <RootNamespace>PerfTest</RootNamespace>
     <Keyword>Win32Proj</Keyword>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <!--Add Static library with no CharacterSet for all x86 project configurations-->
   <PropertyGroup Condition="'$(Platform)'=='Win32'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <CharacterSet>NotSet</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
@@ -27,7 +31,7 @@
   </ImportGroup>
   <!--Import the Win32 property sheet (from the build folder) for each configuration-->
   <ImportGroup Condition="'$(Platform)'=='Win32'" Label="PropertySheets">
-    <Import Project ="$(ZERO_SOURCE)\Build\Win32.$(Configuration).props" Condition="exists('$(ZERO_SOURCE)\Build\Win32.$(Configuration).props')"/>
+    <Import Project="$(ZERO_SOURCE)\Build\Win32.$(Configuration).props" Condition="exists('$(ZERO_SOURCE)\Build\Win32.$(Configuration).props')" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
@@ -37,13 +41,13 @@
     <ClCompile>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>Precompiled.hpp</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>..\curl\include;$(ZERO_SOURCE)\Extensions;$(ZERO_SOURCE)\External\GLEW\include;$(ZERO_SOURCE)\External\SOIL\include;$(ZERO_SOURCE)\External\Cg\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ZERO_SOURCE)\Extensions;$(ZERO_SOURCE)\External\GLEW\include;$(ZERO_SOURCE)\External\SOIL\include;$(ZERO_SOURCE)\External\Cg\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <TargetMachine>MachineX86</TargetMachine>
-      <AdditionalLibraryDirectories>..\curl\lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Winmm.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(ZeroExtensionLibrariesSource)\External\libpng\lib;$(ZERO_SOURCE)\External\Curl\lib;$(ZeroExtensionLibrariesSource)\External\zlib\lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>zlib.lib;Winmm.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>COPY $(TargetPath) "%ZERO_SOURCE%\DevTools" /Y</Command>
@@ -114,8 +118,8 @@
     <ProjectReference Include="$(ZeroExtensionLibrariesSource)\Geometry\Geometry.vcxproj">
       <Project>{787f598d-f96e-48f5-8075-25d31fc7ed60}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\curl\lib\vc6libcurl.vcxproj">
-      <Project>{ceff3501-192f-d4e1-26e6-073c783da0b0}</Project>
+    <ProjectReference Include="..\..\..\ExtensionLibraries\StandardLibraries\Platform\Platform.vcxproj">
+      <Project>{c26bf2c8-d6c3-441a-83aa-9ba656cdf41c}</Project>
     </ProjectReference>
     <ProjectReference Include="..\TinyXml\TinyXml.vcxproj">
       <Project>{81266cb3-406e-4f01-9daa-b99b6e1b0ddc}</Project>

@@ -47,6 +47,9 @@ void ParseAndSaveDocumentation(StringMap& params)
   symbolReplacements.push_back(Replacement("real", "float"));
   symbolReplacements.push_back(Replacement("StringRef", "String"));
   symbolReplacements.push_back(Replacement("StringParam", "String"));
+  symbolReplacements.push_back(Replacement("const String &", "String"));
+  symbolReplacements.push_back(Replacement("const String&", "String"));
+  symbolReplacements.push_back(Replacement("&", ""));
   symbolReplacements.push_back(Replacement("*", ""));
   symbolReplacements.push_back(Replacement("override", ""));
   symbolReplacements.push_back(Replacement("ProxyContactPoint", "ContactPoint"));
@@ -90,6 +93,6 @@ int main(int argc, char* argv[])
   if(Zero::GetStringValue<bool>(params, "markup", false))
     WriteOutMarkup(params);
 
-  if(Zero::GetStringValue<bool>(params, "wiki", false))
-    Zero::PushToWiki(params);
+  //if(Zero::GetStringValue<bool>(params, "wiki", false))
+  //  Zero::PushToWiki(params);
 }

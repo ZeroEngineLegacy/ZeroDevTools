@@ -399,6 +399,27 @@ String NormalizeDocumentation(StringRange text)
   return buffer;
 }
 
+String FindFile(StringParam basePath, StringParam fileName)
+{
+  String fullPath = FilePath::Combine(basePath, fileName);
+  if (FileExists(fullPath))
+    return fullPath;
+
+  FileRange range(basePath);
+  for (; !range.empty(); range.popFront())
+  {
+    FileEntry entry = range.frontEntry();
+    String subPath = entry.GetFullPath();
+    if (IsDirectory(subPath))
+    {
+      String subFilePath = FindFile(subPath, fileName);
+      if (!subFilePath.empty())
+        return subFilePath;
+    }
+  }
+  return String();
+}
+
 void ExtractMethodDocs(ClassDoc& classDocT, HashMap<String, ClassDoc>& dataBase, DocumentationLibrary& library, ClassDoc& currentClass, ClassDoc* derivedClass, StringParam doxyPath, Array<Replacement>& replacements)
 {
   ClassDoc* baseClassDoc = dataBase.findPointer(currentClass.Name);
@@ -420,19 +441,20 @@ void ExtractMethodDocs(ClassDoc& classDocT, HashMap<String, ClassDoc>& dataBase,
     }
   }
 
+  String searchPath = doxyPath;
   //try to open the class file
-  String fileName = BuildString(doxyPath.c_str(),"\\xml\\class_zero_1_1", GetDoxygenName(currentClass.Name).c_str(), ".xml");
+  String fileName = FindFile(searchPath, BuildString("class_zero_1_1", GetDoxygenName(currentClass.Name).c_str(), ".xml"));
   TiXmlDocument doc(fileName.c_str());
   bool loadOkay = doc.LoadFile();
   //if loading the class file failed, search for a struct file
   if(!loadOkay)
   {
-    String fileName = BuildString(doxyPath.c_str(),"\\xml\\struct_zero_1_1", GetDoxygenName(currentClass.Name).c_str(), ".xml");
+    String fileName = FindFile(searchPath, BuildString("struct_zero_1_1", GetDoxygenName(currentClass.Name).c_str(), ".xml"));
     loadOkay = doc.LoadFile(fileName.c_str());
 
     if(!loadOkay)
     {
-      String fileName = BuildString(doxyPath.c_str(),"\\xml\\struct_zero_1_1_physics_1_1", GetDoxygenName(currentClass.Name).c_str(), ".xml");
+      String fileName = FindFile(searchPath, BuildString("struct_zero_1_1_physics_1_1", GetDoxygenName(currentClass.Name).c_str(), ".xml"));
       loadOkay = doc.LoadFile(fileName.c_str());
     }
   }
@@ -503,9 +525,9 @@ void ExtractMethodDocs(ClassDoc& classDocT, HashMap<String, ClassDoc>& dataBase,
       String returnValue  = ToTypeName(memberElement, "type");
 
       name = Replace(replacements,name);
-      argsstring = Replace(replacements,argsstring);
+      argsstring = NormalizeDocumentation(Replace(replacements,argsstring));
       briefdescription = NormalizeDocumentation(Replace(replacements,briefdescription));
-      returnValue = Replace(replacements,returnValue);
+      returnValue = NormalizeDocumentation(Replace(replacements,returnValue));
 
       PropertyDoc propDoc;
       propDoc.Name = name;
@@ -524,7 +546,7 @@ void ExtractMethodDocs(ClassDoc& classDocT, HashMap<String, ClassDoc>& dataBase,
         TiXmlElement* paramElement = params->ToElement();
 
         MethodDoc::Argument& argument = metDoc.ParsedArguments.push_back();
-        argument.Type = Replace(replacements, GetElementValue(paramElement, "type"));
+        argument.Type = NormalizeDocumentation(Replace(replacements, GetElementValue(paramElement, "type")));
         if(argument.Type.empty())
         {
           TiXmlNode* typeNode = paramElement->FirstChild("type");
@@ -532,7 +554,7 @@ void ExtractMethodDocs(ClassDoc& classDocT, HashMap<String, ClassDoc>& dataBase,
           {
             TiXmlElement* typeElement = typeNode->ToElement();
             if(typeElement != NULL)
-              argument.Type = Replace(replacements, GetElementValue(typeElement, "ref"));
+              argument.Type = NormalizeDocumentation(Replace(replacements, GetElementValue(typeElement, "ref")));
           }
         }
         argument.Name = GetElementValue(paramElement, "declname");
@@ -554,7 +576,10 @@ void ExtractMethodDocs(ClassDoc& classDocT, HashMap<String, ClassDoc>& dataBase,
           if(prop != NULL)
             *prop = *resultProp;
           else
+          {
             currentClass.Properties.push_back(*resultProp);
+            currentClass.Build();
+          }
         }
         else if(resultMethod && !resultMethod->Description.empty())
         {
@@ -562,7 +587,10 @@ void ExtractMethodDocs(ClassDoc& classDocT, HashMap<String, ClassDoc>& dataBase,
           if(method != NULL)
             *method = *resultMethod;
           else
+          {
             currentClass.Methods.push_back(*resultMethod);
+            currentClass.Build();
+          }
         }
       }
     }

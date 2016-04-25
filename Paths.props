@@ -7,7 +7,7 @@
     <ZILCH_SOURCE>$(ZilchSource)</ZILCH_SOURCE>
     <ZeroExtensionLibrariesSource>$(ZeroSource)\ExtensionLibraries</ZeroExtensionLibrariesSource>
     <ZeroStandardLibrariesSource>$(ZeroExtensionLibrariesSource)\StandardLibraries</ZeroStandardLibrariesSource>
-    <ZERO_OUTPUT>$(HOMEDRIVE)\BuildOutput</ZERO_OUTPUT>
+    <ZERO_OUTPUT>$(SolutionDir)\BuildOutput</ZERO_OUTPUT>
   </PropertyGroup>
   <ImportGroup Label="PropertySheets">
     <Import Condition="exists('LocalPaths.props')" Project="LocalPaths.props" />

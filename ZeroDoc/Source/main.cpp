@@ -44,7 +44,7 @@ void ParseAndSaveDocumentation(StringMap& params)
   symbolReplacements.push_back(Replacement("Vec2Param", "Vec2"));
   symbolReplacements.push_back(Replacement("Vec3Param", "Vec3"));
   symbolReplacements.push_back(Replacement("Vec4Param", "Vec4"));
-  symbolReplacements.push_back(Replacement("real", "float"));
+  symbolReplacements.push_back(Replacement("float", "Real"));
   symbolReplacements.push_back(Replacement("StringRef", "String"));
   symbolReplacements.push_back(Replacement("StringParam", "String"));
   symbolReplacements.push_back(Replacement("const String &", "String"));

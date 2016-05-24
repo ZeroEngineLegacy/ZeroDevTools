@@ -92,7 +92,7 @@ namespace Zero
         }
 		classMarkup << ".. include:: Description/" << classDoc.Name << ".rst\n\n";
 
-		classMarkup << ".. cpp:type:: " << classDoc.Name << "\n\n";
+		classMarkup << ".. cpp:class:: " << classDoc.Name << "\n\n";
 
 		if (!classDoc.BaseClass.empty())
 			classMarkup << tab(1u, TAB_LENGTH) << "Base Class: " << ":cpp:type:`" << classDoc.BaseClass << "`" << "\n\n";
@@ -109,7 +109,7 @@ namespace Zero
 					continue;
 
 				classMarkup << tab(1u, TAB_LENGTH) << ".. rst-class:: " << "collapsible\n\n";
-				classMarkup << tab(2u, TAB_LENGTH) << ".. cpp:member:: " << propertyDoc.Type << " " << propertyDoc.Name << "\n\n";
+				classMarkup << tab(2u, TAB_LENGTH) << ".. cpp:member:: " << propertyDoc.Type << " " << classDoc.Name << "::" << propertyDoc.Name << "\n\n";
 				classMarkup << tab(3u, TAB_LENGTH) << propertyDoc.Description << "\n\n";
 			}
 		}
@@ -123,8 +123,8 @@ namespace Zero
 			{
 				//classMarkup << ".. collapsible:: " << methodDoc.Name << methodDoc.Arguments << "\n\n";
 				classMarkup << tab(1u, TAB_LENGTH) << ".. rst-class:: " << "collapsible\n\n";
-				classMarkup << tab(2u, TAB_LENGTH) << ".. cpp:function:: " << methodDoc.ReturnValue << " "
-					<< methodDoc.Name << methodDoc.Arguments << "\n\n";
+				classMarkup << tab(2u, TAB_LENGTH) << ".. cpp:function:: "  << methodDoc.ReturnValue << " "
+					<< classDoc.Name << "::" << methodDoc.Name << methodDoc.Arguments << "\n\n";
 
 				classMarkup << tab(3u, TAB_LENGTH) << methodDoc.Description << "\n\n";
 			}

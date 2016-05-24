@@ -76,17 +76,23 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <VSTemplate Include="ClassTemplate.vstemplate" />
+    <VSTemplate Include="ClassTemplate.vstemplate">
+      <SubType>Designer</SubType>
+    </VSTemplate>
     <Content Include="Class.cpp" />
     <Content Include="Class.hpp" />
     <Content Include="Event.cpp" />
     <Content Include="Event.hpp" />
     <Content Include="Component.cpp" />
-    <VSTemplate Include="EventTemplate.vstemplate" />
+    <VSTemplate Include="EventTemplate.vstemplate">
+      <SubType>Designer</SubType>
+    </VSTemplate>
     <None Include="Zero.ico" />
   </ItemGroup>
   <ItemGroup>
-    <VSTemplate Include="ComponentTemplate.vstemplate" />
+    <VSTemplate Include="ComponentTemplate.vstemplate">
+      <SubType>Designer</SubType>
+    </VSTemplate>
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include=".NETFramework,Version=v4.5.2">

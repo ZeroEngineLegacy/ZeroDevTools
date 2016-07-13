@@ -34,3 +34,8 @@ ZeroZilchPlugins/ZeroZilchPlugins/bin/
 ZeroZilchPlugins/Templates/bin/
 ZeroZilchPlugins/Templates/obj/
 BuildOutput
+Debug_why/TinyXml.pdb
+DocGenerator.exe
+ZeroDoc/TinyXml/Debug/*
+ZeroDoc/Source/Debug/*
+Debug_why/TinyXml.lib

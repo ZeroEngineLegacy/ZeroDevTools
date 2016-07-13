@@ -2,6 +2,5 @@
 namespace Zero
 {
 
-void WriteOutMarkup(StringMap& params);
-
+void WriteOutMarkup(Zero::DocGeneratorConfig& config);
 }

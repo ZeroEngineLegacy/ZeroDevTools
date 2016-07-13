@@ -12,13 +12,13 @@ namespace Zero
 //class to sort the ClassDoc based upon its name
 struct ClassDocSorter
 {
-  bool operator()(ClassDoc& lhs, ClassDoc& rhs) const
+  bool operator()(ClassDoc* lhs, ClassDoc* rhs) const
   {
-    return strcmp(lhs.Name.c_str(),rhs.Name.c_str()) < 0;
+    return strcmp(lhs->mName.c_str(),rhs->mName.c_str()) < 0;
   }
 };
 
-void WarnAndLogUndocumented(Array<ClassDoc>& classes, StringParam doxyPath,
+void WarnAndLogUndocumented(Array<ClassDoc *>& classes, StringParam doxyPath,
                             StringParam docPath, bool verbose, String log)
 {
   //if we are not marked as verbose and there is no log to write to then there's nothing to do
@@ -68,7 +68,7 @@ void LoadSet(StringParam fileName, HashSet<String>& data)
   }
 }
 
-void FilterIgnoredClasses(Array<ClassDoc>& classes, HashSet<String>& classesToDocument, Array<String>& undocumentedClasses,
+void FilterIgnoredClasses(Array<ClassDoc *>& classes, HashSet<String>& classesToDocument, Array<String>& undocumentedClasses,
                           StringParam doxyPath, StringParam docPath)
 {
   HashSet<String> basesToInclude;
@@ -85,8 +85,8 @@ void FilterIgnoredClasses(Array<ClassDoc>& classes, HashSet<String>& classesToDo
   uint index = 0;
   while(index < classes.size())
   {
-    ClassDoc& classDoc = classes[index];
-    String findVal = classesToDocument.findValue(classDoc.Name,"");
+    ClassDoc* classDoc = classes[index];
+    String findVal = classesToDocument.findValue(classDoc->mName,"");
     if(findVal.empty() == true)
     {
       classes[index] = classes[classes.size() - 1];
@@ -97,51 +97,51 @@ void FilterIgnoredClasses(Array<ClassDoc>& classes, HashSet<String>& classesToDo
   }
 }
 
-void WarnAndLogUndocumentedProperties(Array<ClassDoc>& classes, StringBuilder& builder)
+void WarnAndLogUndocumentedProperties(Array<ClassDoc *>& classes, StringBuilder& builder)
 {
   //if any property or method is has an empty description then it is
   //considered to not be documented. If we encounter any of these then build
   //the string that says this.
-  forRange(ClassDoc& classDoc, classes.all())
+  forRange(ClassDoc* classDoc, classes.all())
   {
-    if(classDoc.Description.empty())
+    if(classDoc->mDescription.empty())
     {
-      String str = String::Format("%s: Class itself is not documented.\n", classDoc.Name.c_str());
+      String str = String::Format("%s: Class itself is not documented.\n", classDoc->mName.c_str());
       builder.Append(str);
     }
 
-    for(uint i = 0; i < classDoc.Properties.size(); ++i)
+    for(uint i = 0; i < classDoc->mProperties.size(); ++i)
     {
-      if(classDoc.Properties[i].Description.empty())
+      if(classDoc->mProperties[i]->mDescription.empty())
       {
         String str = String::Format("%s: %s is not documented.\n",
-          classDoc.Name.c_str(),classDoc.Properties[i].Name.c_str());
+          classDoc->mName.c_str(),classDoc->mProperties[i]->mName.c_str());
         builder.Append(str);
       }
     }
 
-    for(uint i = 0; i < classDoc.Methods.size(); ++i)
+    for(uint i = 0; i < classDoc->mMethods.size(); ++i)
     {
-      if(classDoc.Methods[i].Description.empty())
+      if(classDoc->mMethods[i]->mDescription.empty())
       {
         String str = String::Format("%s: %s is not documented.\n",
-          classDoc.Name.c_str(),classDoc.Methods[i].Name.c_str());
+          classDoc->mName.c_str(),classDoc->mMethods[i]->mName.c_str());
         builder.Append(str);
       }
     }
   }
 }
 
-void WarnUndocumentedClasses(Array<ClassDoc>& classes, HashSet<String>& classesToDocument, StringBuilder& builder)
+void WarnUndocumentedClasses(Array<ClassDoc *>& classes, HashSet<String>& classesToDocument, StringBuilder& builder)
 {
   //go through all of the classes that are marked as documented and remove them
   //from the set of what should be documented. What's left is what should be documented but isn't.
-  forRange(ClassDoc& classDoc, classes.all())
+  forRange(ClassDoc* classDoc, classes.all())
   {
-    String findVal = classesToDocument.findValue(classDoc.Name,"");
+    String findVal = classesToDocument.findValue(classDoc->mName,"");
     if(findVal.empty() == false)
     {
-      classesToDocument.erase(classDoc.Name);
+      classesToDocument.erase(classDoc->mName);
     }
   }
 
@@ -161,7 +161,7 @@ void WarnUndocumentedClasses(Array<ClassDoc>& classes, HashSet<String>& classesT
     builder.Append(BuildString("Warning: Class ",undocumentedClasses[i]," is undocumented.\n"));\
 }
 
-void WarnNeedsWikiPage(Array<WikiUpdatePage>& pagesToUpdate, Array<ClassDoc>& documentedClasses,
+void WarnNeedsWikiPage(Array<WikiUpdatePage>& pagesToUpdate, Array<ClassDoc *>& documentedClasses,
                        StringParam doxyPath, StringParam docPath, 
                        bool verbose, StringParam log)
 {
@@ -174,7 +174,7 @@ void WarnNeedsWikiPage(Array<WikiUpdatePage>& pagesToUpdate, Array<ClassDoc>& do
 
   HashSet<String> docClasses;
   for(uint i = 0; i < documentedClasses.size(); ++i)
-    docClasses.insert(documentedClasses[i].Name);
+    docClasses.insert(documentedClasses[i]->mName);
 
   for(uint i = 0; i < pagesToUpdate.size(); ++i)
   {

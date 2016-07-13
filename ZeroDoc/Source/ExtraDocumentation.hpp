@@ -53,4 +53,6 @@ struct ExtraDocumentation
 
 void LoadAndReplaceDocumentation(StringParam path, DocumentationLibrary& libary, Array<Replacement>& replacements);
 
+void NormalizeDocumentation(Zero::DocumentationLibrary &doc, Replacements &replacements);
+
 }//namespace Zero

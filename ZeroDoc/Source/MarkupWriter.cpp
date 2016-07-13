@@ -1,6 +1,6 @@
 #include "Precompiled.hpp"
 #include "Engine/EngineContainers.hpp"
-#include "Configuration.hpp"
+#include "DocConfiguration.hpp"
 #include "Platform/FileSystem.hpp"
 #include "Engine/Documentation.hpp"
 #include "Serialization/Simple.hpp"
@@ -41,13 +41,13 @@ void WriteTagIndices(String outputDir, DocToTags& tagged)
 
     forRange(ClassDoc* doc, stuff.all())
     {
-        markup << String::Format("*  :doc:`Reference/%s`\n", doc->Name.c_str(), doc->Name.c_str());
+        markup << String::Format("*  :doc:`Reference/%s`\n", doc->mName.c_str(), doc->mName.c_str());
     }
 
     markup << "\n";
   }
 
-  String fileName = FilePath::Combine(outputDir, "..", "CodeIndex.rst");
+  String fileName = FilePath::Combine(outputDir, "CodeIndex.rst");
 
   String text = markup.ToString();
 
@@ -55,83 +55,147 @@ void WriteTagIndices(String outputDir, DocToTags& tagged)
 }
 
 
-void WriteClass(String directory, ClassDoc& classDoc, DocToTags& tagged)
+void WriteClass(String directory, ClassDoc& classDoc,DocumentationLibrary &lib, DocToTags& tagged)
 {
+
+  if ( classDoc.mName.Contains("<")
+    || classDoc.mName.Contains(">")
+    || classDoc.mName.Contains("!")
+    || classDoc.mName.Contains("\'")
+    || classDoc.mName.Contains("\"")
+    || classDoc.mName.empty()
+    )
+    return;
   //printf("Class %s\n", classDoc.Name.c_str());
 
-  forRange(String tag, classDoc.Tags.all())
+  forRange(String tag, classDoc.mTags.all())
     tagged[tag].push_back(&classDoc);
   
-  if(classDoc.Tags.empty())
+  if(classDoc.mTags.empty())
     tagged["Various"].push_back(&classDoc);
 
   String outputDir = directory;
 
   StringBuilder classMarkup;
 
-  classMarkup << classDoc.Name << "\n";
+  classMarkup << classDoc.mName << "\n";
   classMarkup << "=================================" << "\n";
     
-  classMarkup << ".. cpp:type:: " << classDoc.Name << "\n\n";
+  classMarkup << ".. cpp:type:: " << classDoc.mName << "\n\n";
   
-  classMarkup << classDoc.Description << "\n\n";
+  classMarkup << classDoc.mDescription << "\n\n";
 
-  if(!classDoc.BaseClass.empty())
-    classMarkup << "\tBase Class: " << ":cpp:type:`" << classDoc.BaseClass << "`" << "\n\n";
+  if(!classDoc.mBaseClass.empty())
+    classMarkup << "\tBase Class: " << ":cpp:type:`" << classDoc.mBaseClass << "`" << "\n\n";
 
-  forRange(PropertyDoc& propertyDoc, classDoc.Properties.all())
+  classMarkup << "Properties\n----------\n";
+
+  ClassDoc *IterClass = &classDoc;
+
+  while (IterClass)
   {
-    if(propertyDoc.Name == "Name" && propertyDoc.Description.empty())
-      continue;
+    forRange(PropertyDoc* propertyDoc, IterClass->mProperties.all())
+    {
+      if (propertyDoc->mName == "Name" && propertyDoc->mDescription.empty())
+        continue;
 
-    classMarkup << "\t" << ".. cpp:member:: " << propertyDoc.Type <<  " " << propertyDoc.Name << "\n\n";
-    classMarkup << "\t" << propertyDoc.Description << "\n\n";
+      classMarkup << "\t" << ".. cpp:member:: " << propertyDoc->mType << " " << propertyDoc->mName << "\n\n";
+      classMarkup << "\t" << propertyDoc->mDescription << "\n\n";
+    }
+    if (!IterClass->mBaseClass.empty() && lib.mClassMap.containsKey(IterClass->mBaseClass))
+    {
+      IterClass = lib.mClassMap[IterClass->mBaseClass];
+
+      if (!IterClass || IterClass->mProperties.empty())
+      {
+        continue;
+      }
+
+      classMarkup << "\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n"
+        << "Properties From: :cpp:type:`" << IterClass->mName
+        << "`\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
+    }
+    else
+    {
+      IterClass = nullptr;
+    }
   }
 
-  forRange(MethodDoc& methodDoc, classDoc.Methods.all())
-  {
-    classMarkup << "\t" <<  ".. cpp:function:: " << methodDoc.ReturnValue << " "  
-      << methodDoc.Name << methodDoc.Arguments << "\n\n";
+  IterClass = &classDoc;
 
-    classMarkup << "\t" << methodDoc.Description << "\n\n";
+  classMarkup << "Methods\n----------\n";
+
+  while (IterClass)
+  {
+    forRange(MethodDoc* methodDoc, IterClass->mMethods.all())
+    {
+      classMarkup << "\t" << ".. cpp:function:: " << methodDoc->mReturnType << " "
+        << methodDoc->mName << methodDoc->mParameters << "\n\n";
+
+      classMarkup << "\t" << methodDoc->mDescription << "\n\n";
+    }
+    if (!IterClass->mBaseClass.empty() && lib.mClassMap.containsKey(IterClass->mBaseClass))
+    {
+      IterClass = lib.mClassMap[IterClass->mBaseClass];
+
+      if (!IterClass || IterClass->mMethods.empty())
+      {
+        continue;
+      }
+
+      classMarkup << "\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n"
+        << "Methods From: :cpp:type:`" << IterClass->mName
+        << "`\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n";      
+    }
+    else
+    {
+      IterClass = nullptr;
+    }
   }
 
   Zero::CreateDirectoryAndParents(outputDir);
 
-  String filename = BuildString(classDoc.Name , ".rst");
+  String filename = BuildString(classDoc.mName , ".rst");
 
-  String fullPath = FilePath::Combine(outputDir, filename);
+  String fullPath = FilePath::Combine(outputDir, "Reference");
+
+  CreateDirectoryAndParents(fullPath);
+
+  fullPath = FilePath::Combine(fullPath, filename);
+
+  fullPath = FilePath::Normalize(fullPath);
 
   String text = classMarkup.ToString();
+
 
   WriteStringRangeToFile(fullPath, text);
 
 }
 
-void WriteOutMarkup(StringMap& params)
+void WriteOutMarkup(Zero::DocGeneratorConfig& config)
 {
   printf("Mark up\n");
 
-  Configurations config = LoadConfigurations(params);
-
-  DocumentationLibrary doc;
-  LoadFromDataFile(doc, config.DocumentationFile);
-  doc.Build();
-
-  String directory = GetStringValue<String>(params, "output", "Markup");
-  DocToTags tagged;
-
   //Now load the documentation file (the documentation for all the classes)
-  if(!FileExists(config.DocumentationFile.c_str()))
+  if (!FileExists(config.mTrimmedOutput.c_str()))
   {
-    printf("%s does not exist.",config.DocumentationFile.c_str());
+    printf("%s does not exist.", config.mTrimmedOutput.c_str());
     return;
   }
+  StringRef directory = config.mMarkupDirectory;
+
+  CreateDirectoryAndParents(directory);
+
+  DocumentationLibrary doc;
+  LoadFromDataFile(doc, config.mTrimmedOutput);
+  doc.FinalizeDocumentation();
+
+  DocToTags tagged;
 
   //Upload the class' page to the wiki, making sure to perform the link replacements
-  forRange(ClassDoc& classDoc, doc.Classes.all())
+  forRange(ClassDoc* classDoc, doc.mClasses.all())
   {
-    WriteClass(directory, classDoc,  tagged);
+    WriteClass(directory, *classDoc, doc,  tagged);
   }
 
   WriteTagIndices(directory, tagged);

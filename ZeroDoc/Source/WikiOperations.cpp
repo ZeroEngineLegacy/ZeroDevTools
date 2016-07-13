@@ -458,7 +458,7 @@
 //  doc.Build();
 //
 //  //Warn for classes that have documentation but are not parked to push to the wiki
-//  WarnNeedsWikiPage(pagesToUpdate, doc.Classes, config.DoxygenPath, 
+//  WarnNeedsWikiPage(pagesToUpdate, doc.Classes, config.mDoxygenPath, 
 //    config.DocumentationRoot, config.Verbose, config.Log);
 //
 //  //Log onto the wiki and get our token to use for further operations

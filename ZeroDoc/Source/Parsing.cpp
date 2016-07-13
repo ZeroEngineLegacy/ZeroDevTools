@@ -9,28 +9,28 @@ String BuildDoc(ClassDoc& classDoc, Replacements& replacements)
 {
   StringBuilder builder;
 
-  if(!classDoc.BaseClass.empty())
+  if(!classDoc.mBaseClass.empty())
   {
     builder << "<h4 class=\"FunctionDoc\">";
     builder << "Base Class - ";
-    Replace(builder, replacements, classDoc.BaseClass);
+    Replace(builder, replacements, classDoc.mBaseClass);
     builder << "</h4>";
   }
 
   builder << "<h2> Description </h2>";
   builder << "<p>";
-  Check(classDoc.Name, "Class Desc", classDoc.Description);
-  Replace(builder, replacements, classDoc.Description);
+  Check(classDoc.mName, "Class Desc", classDoc.mDescription);
+  Replace(builder, replacements, classDoc.mDescription);
   builder << "</p>";
 
   builder << "<h2> Events </h2>";
-  if(!classDoc.EventsSent.empty())
+  if(!classDoc.mEventsSent.empty())
   {
-    forRange(EventDoc& eventDoc, classDoc.EventsSent.all())
+    forRange(EventDoc* eventDoc, classDoc.mEventsSent.all())
     {
       builder << "<h4 class=\"FunctionDoc\">";
-      builder << "On Events." << eventDoc.EventName << " Sends ";
-      Replace(builder, replacements, eventDoc.EventType);
+      builder << "On Events." << eventDoc->mName << " Sends ";
+      Replace(builder, replacements, eventDoc->mType);
       builder << "</h4>";
     }
   }
@@ -41,20 +41,20 @@ String BuildDoc(ClassDoc& classDoc, Replacements& replacements)
 
   builder << "<h2> Properties </h2>";
 
-  if(!classDoc.Properties.empty())
+  if(!classDoc.mProperties.empty())
   {
-    forRange(PropertyDoc& propertyDoc, classDoc.Properties.all())
+    forRange(PropertyDoc* propertyDoc, classDoc.mProperties.all())
     {
       builder << "<h4 class=\"FunctionDoc\">";
-      builder << propertyDoc.Name;
+      builder << propertyDoc->mName;
       builder << " - ";
-      Replace(builder, replacements, propertyDoc.Type);
+      Replace(builder, replacements, propertyDoc->mType);
 
       builder << "</h4>";
 
       builder << "<p>";
-      Check(classDoc.Name, propertyDoc.Name, propertyDoc.Description);
-      Replace(builder, replacements, propertyDoc.Description);
+      Check(classDoc.mName, propertyDoc->mName, propertyDoc->mDescription);
+      Replace(builder, replacements, propertyDoc->mDescription);
       builder << "</p>";
 
     }
@@ -66,20 +66,20 @@ String BuildDoc(ClassDoc& classDoc, Replacements& replacements)
 
 
   builder << "<h2> Methods </h2>";
-  if(!classDoc.Methods.empty())
+  if(!classDoc.mMethods.empty())
   {
-    forRange(MethodDoc& methodDoc, classDoc.Methods.all())
+    forRange(MethodDoc* methodDoc, classDoc.mMethods.all())
     {
       builder << "<h4 class=\"FunctionDoc\"> ";
-      Replace(builder, replacements, methodDoc.ReturnValue);
+      Replace(builder, replacements, methodDoc->mReturnType);
 
-      builder << " " << methodDoc.Name << " ";
-      Replace(builder, replacements, methodDoc.Arguments);
+      builder << " " << methodDoc->mName << " ";
+      Replace(builder, replacements, methodDoc->mParameters);
       builder << "</h4>";
 
       builder << "<p>";
-      Check(classDoc.Name, methodDoc.Name, methodDoc.Description);
-      Replace(builder, replacements, methodDoc.Description);
+      Check(classDoc.mName, methodDoc->mName, methodDoc->mDescription);
+      Replace(builder, replacements, methodDoc->mDescription);
       builder << "</p>";
     }
   }

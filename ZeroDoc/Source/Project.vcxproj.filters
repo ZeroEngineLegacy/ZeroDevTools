@@ -25,16 +25,16 @@
     <ClInclude Include="Logging.hpp">
       <Filter>Source</Filter>
     </ClInclude>
-    <ClInclude Include="ExtraDocumentation.hpp">
+    <ClInclude Include="DocTypeParser.hpp">
+      <Filter>Source</Filter>
+    </ClInclude>
+    <ClInclude Include="RawDocumentation.hpp">
+      <Filter>Source</Filter>
+    </ClInclude>
+    <ClInclude Include="DocConfiguration.hpp">
       <Filter>Source</Filter>
     </ClInclude>
     <ClInclude Include="MarkupWriter.hpp">
-      <Filter>Source</Filter>
-    </ClInclude>
-    <ClInclude Include="Configuration.hpp">
-      <Filter>Source</Filter>
-    </ClInclude>
-    <ClInclude Include="Pages.hpp">
       <Filter>Source</Filter>
     </ClInclude>
   </ItemGroup>
@@ -57,14 +57,22 @@
     <ClCompile Include="Logging.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="ExtraDocumentation.cpp">
+    <ClCompile Include="DocTypeParser.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="RawDocumentation.cpp">
       <Filter>Source</Filter>
     </ClCompile>
     <ClCompile Include="MarkupWriter.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="Pages.cpp">
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="DocTypeTokens.inl">
       <Filter>Source</Filter>
-    </ClCompile>
+    </None>
+    <None Include="DocTypeKeywords.inl">
+      <Filter>Source</Filter>
+    </None>
   </ItemGroup>
 </Project>

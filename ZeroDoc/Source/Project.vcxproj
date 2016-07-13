@@ -68,29 +68,29 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="Configuration.hpp" />
+    <ClInclude Include="DocConfiguration.hpp" />
     <ClInclude Include="DebugPrint.hpp" />
-    <ClInclude Include="ExtraDocumentation.hpp" />
-    <ClInclude Include="Logging.hpp" />
+    <ClInclude Include="DocTypeParser.hpp" />
     <ClInclude Include="MarkupWriter.hpp" />
+    <ClInclude Include="RawDocumentation.hpp" />
+    <ClInclude Include="Logging.hpp" />
     <ClInclude Include="Parsing.hpp" />
     <ClInclude Include="Precompiled.hpp" />
     <ClInclude Include="TinyXmlHelpers.hpp" />
     <ClInclude Include="WikiOperations.hpp" />
-    <ClInclude Include="Pages.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ExtraDocumentation.cpp" />
+    <ClCompile Include="DocTypeParser.cpp" />
+    <ClCompile Include="MarkupWriter.cpp" />
+    <ClCompile Include="RawDocumentation.cpp" />
     <ClCompile Include="Logging.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="MarkupWriter.cpp" />
     <ClCompile Include="Parsing.cpp" />
     <ClCompile Include="Precompiled.cpp">
       <PrecompiledHeader Condition="'$(Platform)'=='Win32'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="TinyXmlHelpers.cpp" />
     <ClCompile Include="WikiOperations.cpp" />
-    <ClCompile Include="Pages.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(ZeroStandardLibrariesSource)\Common\Common.vcxproj">
@@ -127,6 +127,14 @@
       <Project>{81266cb3-406e-4f01-9daa-b99b6e1b0ddc}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="DocTypeKeywords.inl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    </None>
+    <None Include="DocTypeTokens.inl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    </None>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

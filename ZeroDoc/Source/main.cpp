@@ -44,15 +44,7 @@ bool ValidateConfig(DocGeneratorConfig &config)
   bool noLoadRawOption = config.mRawDocDirectory.empty() && config.mDoxygenPath.empty();
 
   // we basically have two main cases, with and without trimmed output
-  if (!config.mCreateTrimmed)
-  {
-    if (noLoadRawOption)
-    {
-      printf("No option for loading documentation was given\n");
-      return false;
-    }
-  }
-  else
+  if (config.mCreateTrimmed)
   {
     if (config.mTrimmedOutput.empty())
     {
@@ -67,13 +59,6 @@ bool ValidateConfig(DocGeneratorConfig &config)
 // wow lets see if we can somehow come up with a worse name
 void RunDocumentationGenerator(DocGeneratorConfig &config)
 {
-  // if the help flag is passed, ignore everything else and just print the help info
-  if (config.mHelp || !ValidateConfig(config))
-  {
-    PrintHelp();
-    return;
-  }
-
   if (config.mLogFile.size() > 0)
   {
     DocLogger::Get()->StartLogger(config.mLogFile);
@@ -81,21 +66,9 @@ void RunDocumentationGenerator(DocGeneratorConfig &config)
 
   if (config.mVerbose)
     SetVerboseFlag();
-
-  // first check for some required parameters to make sure we have them
-  if (config.mOutputDirectory.size() == 0)
-  {
-    printf("output flag is required with a valid output directory\n");
-    PrintHelp();
-    return;
-  }
   
   RawDocumentationLibrary *library = nullptr;
   RawTypedefLibrary tdLibrary;
-
-  IgnoreList saveIgnoreList;
-
-  SaveToDataFile(saveIgnoreList, BuildString(config.mOutputDirectory, "\\exampleIgFile.data"));
 
   // if we are going to parse doxygen
   if (config.mDoxygenPath.size() != 0)
@@ -205,9 +178,12 @@ void RunDocumentationGenerator(DocGeneratorConfig &config)
       }
     }
 
-    // output library and typedefs
-    library->GenerateCustomDocumentationFiles(config.mOutputDirectory);
-    tdLibrary.GenerateTypedefDataFile(config.mOutputDirectory);
+    if (config.mOutputDirectory.size())
+    {
+      // output library and typedefs
+      library->GenerateCustomDocumentationFiles(config.mOutputDirectory);
+      tdLibrary.GenerateTypedefDataFile(config.mOutputDirectory);
+    }
   }
 
   /////// Trimmed Documentation ///////
@@ -269,10 +245,22 @@ int main(int argc, char* argv[])
 
   Zero::DocGeneratorConfig config = LoadConfigurations(params);
 
+  // if the help flag is passed, ignore everything else and just print the help info
+  if (config.mHelp || !Zero::ValidateConfig(config))
+  {
+    Zero::PrintHelp();
+    return 0;
+  }
+
   Zero::RunDocumentationGenerator(config);
 
   if (!config.mMarkupDirectory.empty())
     WriteOutMarkup(config);
+
+  if (!config.mCommandListFile.empty())
+  {
+    WriteCommandReference(config);
+  }
 
   return 0;
 }

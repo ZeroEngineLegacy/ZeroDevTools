@@ -88,9 +88,10 @@ void WriteClass(String directory, ClassDoc& classDoc,DocumentationLibrary &lib, 
   if(!classDoc.mBaseClass.empty())
     classMarkup << "\tBase Class: " << ":cpp:type:`" << classDoc.mBaseClass << "`" << "\n\n";
 
-  classMarkup << "Properties\n----------\n";
-
   ClassDoc *IterClass = &classDoc;
+
+  if (IterClass->mProperties.size())
+    classMarkup << "Properties\n----------\n";
 
   while (IterClass)
   {
@@ -111,6 +112,7 @@ void WriteClass(String directory, ClassDoc& classDoc,DocumentationLibrary &lib, 
         continue;
       }
 
+      // The tilde are there so we create a shortened link to the class DO NOT REMOVE
       classMarkup << "\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n"
         << "Properties From: :cpp:type:`" << IterClass->mName
         << "`\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
@@ -123,7 +125,8 @@ void WriteClass(String directory, ClassDoc& classDoc,DocumentationLibrary &lib, 
 
   IterClass = &classDoc;
 
-  classMarkup << "Methods\n----------\n";
+  if (IterClass->mMethods.size())
+    classMarkup << "Methods\n----------\n";
 
   while (IterClass)
   {
@@ -143,6 +146,7 @@ void WriteClass(String directory, ClassDoc& classDoc,DocumentationLibrary &lib, 
         continue;
       }
 
+      // The tilde are there so we create a shortened link to the class DO NOT REMOVE
       classMarkup << "\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n"
         << "Methods From: :cpp:type:`" << IterClass->mName
         << "`\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n";      
@@ -199,6 +203,64 @@ void WriteOutMarkup(Zero::DocGeneratorConfig& config)
   }
 
   WriteTagIndices(directory, tagged);
+}
+
+
+void WriteCommandReference(Zero::DocGeneratorConfig& config)
+{
+  //StringParam loadFilePath, StringParam outputPath
+
+  String filePath = BuildString(config.mMarkupDirectory, "\\CommandRef.rst");
+
+  // get outta here with that nonexistent file
+  if (!FileExists(config.mCommandListFile.c_str()))
+  {
+    printf("%s does not exist.", config.mCommandListFile.c_str());
+    return;
+  }
+
+  CreateDirectoryAndParents(config.mMarkupDirectory);
+
+  // actually load command list now. (If this fails it probably means the file is mis-formatted)
+  CommandDocList commandListDoc;
+  LoadFromDataFile(commandListDoc, config.mCommandListFile);
+
+  Array<CommandDoc *> &commandList = commandListDoc.mCommands;
+
+  // do the fancy string building to put this markup file together
+  StringBuilder markupText;
+
+  markupText << "Zero Commands\n";
+  markupText << "=================================\n";
+
+  for (uint i = 0; i < commandList.size(); ++i)
+  {
+    CommandDoc *cmdDoc = commandList[i];
+
+    markupText << "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
+    markupText << cmdDoc->mName << "\n";
+    markupText << "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
+
+    if (!cmdDoc->mTags.empty())
+    {
+      markupText << "**Tags:** " << cmdDoc->mTags[0];
+
+      for (uint j = 1; j < cmdDoc->mTags.size(); ++j)
+      {
+        markupText << ", " << cmdDoc->mTags[j];
+      }
+      markupText << "\n\n";
+    }
+
+    if (!cmdDoc->mShortcut.empty())
+      markupText << "**Shortcut:** " << cmdDoc->mShortcut << "\n\n";
+
+    markupText << cmdDoc->mDescription << "\n\n";
+
+    markupText << "\n\n\n";
+  }
+
+  WriteStringRangeToFile(filePath, markupText.ToString());
 }
 
 }

@@ -543,6 +543,7 @@ namespace Zero
 
   bool IgnoreList::NameIsOnIgnoreList(StringParam name)
   {
+    // strip all namespaces off of the name
     String strippedName;
     if (name.Contains(":"))
        strippedName = name.sub_string(name.FindLastOf(':') + 1, name.size());

@@ -39,6 +39,8 @@ struct DocGeneratorConfig
   ///// Markup Strings /////
   String mMarkupDirectory;
 
+  String mCommandListFile;
+
   ///// Raw Bools /////
   bool mReplaceTypes;
   bool mLoadTypedefs;
@@ -111,6 +113,9 @@ inline DocGeneratorConfig LoadConfigurations(StringMap& params)
   ///// Load Markup Options /////
   config.mMarkupDirectory = GetStringValue<String>(params, "markupDirectory", "");
   config.mMarkupDirectory = FilePath::Normalize(config.mMarkupDirectory);
+
+  config.mCommandListFile = GetStringValue<String>(params, "commandListFile", "");
+  config.mCommandListFile = FilePath::Normalize(config.mCommandListFile);
 
   return config;
 }

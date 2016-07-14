@@ -39,3 +39,4 @@ DocGenerator.exe
 ZeroDoc/TinyXml/Debug/*
 ZeroDoc/Source/Debug/*
 Debug_why/TinyXml.lib
+*.opendb

@@ -18,16 +18,25 @@ void PrintHelp(void)
 "\
 Usage: [-flags] [-option \"argument\"]\n\
 flags:\n\
-replaceTypes - replaces types in documentation with definitions of types in the typedef library->\n\n\
-loadTypedefs - if flag is set, typedefs will be loaded from typedef library data file.\n\n\
+replaceTypes - Replaces types in documentation with definitions of types in the typedef library.\n\n\
+loadTypedefs - Flag tells the program that you are going to load typedefs from Documentation.\n\n\
+loadTypedefsFromDoxygen - Tells program you are going to load typedefs from Doxygen xml files.\n\n\
+verbose - Tells program to output some additional information during parsing.\n\n\
+tagAllAsUnbound - Gives every single class loaded the unbound tag.\n\n\
+createTrimmed - Tells program to create a new trimmed doc file for output.\n\n\
 \noptions:\n\
-doxyPath - if set, path passed in is used as path to load all doxygen documentation from, by default doxygen is not loaded.\n\n\
-zeroDocFile - if set, zero doc file will be used to generate a list of class names to try to find and parse.\n\n\
-output - location to output the raw documentation files for both classes and typedefs.\n\n\
-rawDocDirectory - used to load class and typedef raw documentation, used when 'replaceTypes' is set.\n\n\
-typedefsFile - used to override the path to load the raw typedef documentation file when 'replaceTypes' is set.\n\n\
-trimmedOutput - if set, Trimmed Doc file will be created, if optional path set, file will output there instead of default output directory.\n\n\
-trimmedTypedefFile - path to typedef file used to replace types specifically for the trimmed output file.\n\n\
+doxyPath - If set, path passed in is used as path to load all doxygen documentation from, by default doxygen is not loaded.\n\n\
+zeroDocFile - If set, zero doc file will be used to generate a list of class names to try to find and parse.\n\n\
+output - Location to output the raw documentation files for both classes and typedefs.\n\n\
+rawDocDirectory - Used to load class and typedef raw documentation, used when 'replaceTypes' is set.\n\n\
+typedefsFile - Used to override the path to load the raw typedef documentation file when 'replaceTypes' is set.\n\n\
+ignoreFile - Location to file with list of paths and class names to ignore. When searching/loading. \n\n\
+ignoreSkeletonFile - Location to DocumentationLibrary. All classes in the library will not be saved during any steps.\n\n\
+logFile - Path to file where most console output is duplicated with timestamps.\n\n\
+trimmedOutput - Overrides default location for trimmed documentation. Used to load and saved trimmed documentation.\n\n\
+trimmedTypedefFile - Path to typedef file used to replace types specifically for the trimmed output file.\n\n\
+markupDirectory - Path to location where all markup files will be saved.\n\n\
+commandListFile - Path to location to save the command list markup file.\n\n\
 "
   );
 }

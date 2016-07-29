@@ -263,4 +263,110 @@ void WriteCommandReference(Zero::DocGeneratorConfig& config)
   WriteStringRangeToFile(filePath, markupText.ToString());
 }
 
+// this output will not be perfect since there is no way to get ALL send and receive
+void WriteEventList(Zero::DocGeneratorConfig& config)
+{
+  String filePath = BuildString(config.mMarkupDirectory, "\\EventList.rst");
+
+  // get outta here with that nonexistent file
+  if (!FileExists(config.mEventsOutputLocation.c_str()))
+  {
+    printf("%s does not exist.", config.mEventsOutputLocation.c_str());
+    return;
+  }
+
+  CreateDirectoryAndParents(config.mMarkupDirectory);
+
+  // actually load event list now. (If this fails it probably means the file is mis-formatted)
+  EventDocList eventListDoc;
+  LoadFromDataFile(eventListDoc, config.mEventsOutputLocation);
+
+  Array<EventDoc *> &eventList = eventListDoc.mEvents;
+
+  // do the fancy string building to put this markup file together
+  StringBuilder markupText;
+
+  markupText << "Zero Events\n";
+  markupText << "=================================\n";
+
+  for (uint i = 0; i < eventList.size(); ++i)
+  {
+    EventDoc *eventDoc = eventList[i];
+
+
+    markupText << "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
+    markupText << eventDoc->mName << "\n";
+    markupText << "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
+    markupText << "**Type:** " << eventDoc->mType << "\n\n";
+
+    if (!eventDoc->mSenders.empty())
+    {
+      markupText << "**Senders:** \n\n";
+
+      for (uint j = 0; j < eventDoc->mSenders.size(); ++j)
+      {
+        markupText << eventDoc->mSenders[j] << " \n\n";
+      }
+      markupText << "\n\n";
+    }
+
+    if (!eventDoc->mListeners.empty())
+    {
+      markupText << "**Listeners:** \n\n";
+
+      for (uint j = 0; j < eventDoc->mListeners.size(); ++j)
+      {
+        markupText << eventDoc->mListeners[j] << " \n\n";
+      }
+      markupText << "\n\n";
+    }
+
+    markupText << "\n\n\n";
+  }
+
+  WriteStringRangeToFile(filePath, markupText.ToString());
+}
+
+// this output will not be perfect since there is no way to get ALL send and receive
+void WriteExceptionList(Zero::DocGeneratorConfig& config)
+{
+  String filePath = BuildString(config.mMarkupDirectory, "\\ExceptionList.rst");
+
+  // get outta here with that nonexistent file
+  if (!FileExists(config.mExceptionsFile.c_str()))
+  {
+    printf("%s does not exist.", config.mExceptionsFile.c_str());
+    return;
+  }
+
+  CreateDirectoryAndParents(config.mMarkupDirectory);
+
+  // actually load event list now. (If this fails it probably means the file is mis-formatted)
+  ExceptionDocList exceptionListDoc;
+  LoadFromDataFile(exceptionListDoc, config.mExceptionsFile);
+
+  Array<ExceptionDoc> &exceptionList = exceptionListDoc.mExceptions;
+
+
+  // do the fancy string building to put this markup file together
+  StringBuilder markupText;
+
+  markupText << "Zero Exceptions\n";
+  markupText << "=================================\n";
+
+  for (uint i = 0; i < exceptionList.size(); ++i)
+  {
+    ExceptionDoc &exceptDoc = exceptionList[i];
+
+    markupText << "**Class:** " << exceptDoc.mClass <<"\n\n";
+
+    markupText << "**Function:** " << exceptDoc.mFunction << "\n\n";
+
+    markupText << "**Message:** " << exceptDoc.mMsg << "\n\n";
+    markupText << "\n\n\n";
+  }
+
+  WriteStringRangeToFile(filePath, markupText.ToString());
+}
+
 }

@@ -105,24 +105,24 @@ void AddEdge(DocDfaState* from, DocDfaState* to, char c)
   from->mEdges[c].mEdgeID = c;
 }
 
-//void AddListOfmEdges(DocDfaState* from, DocDfaState* to) {}
+//void AddListOfEdges(DocDfaState* from, DocDfaState* to) {}
 
 template <typename First = char>
-void AddListOfmEdges(DocDfaState* from, DocDfaState* to, const First& first)
+void AddListOfEdges(DocDfaState* from, DocDfaState* to, const First& first)
 {
   AddEdge(from, to, first);
 }
 
 template <typename First, typename... Rest>
-void AddListOfmEdges(DocDfaState* from, DocDfaState* to, const First& first, const Rest&... rest)
+void AddListOfEdges(DocDfaState* from, DocDfaState* to, const First& first, const Rest&... rest)
 {
   // recursive call using pack expansion syntax
   AddEdge(from, to, first);
-  AddListOfmEdges<Rest...>(from, to, rest...);
+  AddListOfEdges<Rest...>(from, to, rest...);
 }
 
 
-void AddmDefaultEdge(DocDfaState* from, DocDfaState* to)
+void AddDefaultEdge(DocDfaState* from, DocDfaState* to)
 {
   from->mDefault = to;
 }
@@ -136,17 +136,17 @@ DocDfaState* CreateLangDfa(void)
 
   DocDfaState *whitespace = AddState(DocTokenType::Whitespace);
 
-  AddListOfmEdges(root, whitespace, WHITESPACE);
-  AddListOfmEdges(whitespace, whitespace, WHITESPACE);
+  AddListOfEdges(root, whitespace, WHITESPACE);
+  AddListOfEdges(whitespace, whitespace, WHITESPACE);
 
   /////Identifier = [a-zA-Z_][a-zA-Z0-9_]*              /////
 
   DocDfaState *identifier1 = AddState(DocTokenType::Identifier);
   DocDfaState *identifier2 = AddState(DocTokenType::Identifier);
 
-  AddListOfmEdges(root, identifier1, LETTERS, '_');
-  AddListOfmEdges(identifier1, identifier2, LETTERS, NUMBERS, '_');
-  AddListOfmEdges(identifier2, identifier2, LETTERS, NUMBERS, '_');
+  AddListOfEdges(root, identifier1, LETTERS, '_');
+  AddListOfEdges(identifier1, identifier2, LETTERS, NUMBERS, '_');
+  AddListOfEdges(identifier2, identifier2, LETTERS, NUMBERS, '_');
 
   /////Pointer/Reference = [&*]*                        /////
   DocDfaState *pointer = AddState(DocTokenType::Pointer);
@@ -154,6 +154,11 @@ DocDfaState* CreateLangDfa(void)
 
   AddEdge(root, pointer, '*');
   AddEdge(root, reference, '&');
+
+  /////Pound = #                                        /////
+  DocDfaState *pound = AddState(DocTokenType::Pound);
+
+  AddEdge(root, pound, '#');
 
   /////GreaterThan/LessThan = (<|>)                     /////
 
@@ -163,7 +168,7 @@ DocDfaState* CreateLangDfa(void)
   AddEdge(root, LessThan, '<');
   AddEdge(root, GreaterThan, '>');
 
-  /////Scope Resolution                               /////
+  /////Scope Resolution                                 /////
 
   DocDfaState *Invalid = AddState(DocTokenType::Invalid);
   DocDfaState *ScopeRes = AddState(DocTokenType::ScopeResolution);
@@ -183,12 +188,51 @@ DocDfaState* CreateLangDfa(void)
 
   AddEdge(root, comma, ',');
 
+  /////Semicolon                                       /////
+  DocDfaState *semicolon = AddState(DocTokenType::Semicolon);
+
+  AddEdge(root, semicolon, ';');
+
   /////Brackets                                        /////
   DocDfaState *bracketO = AddState(DocTokenType::OpenBracket);
   DocDfaState *bracketC = AddState(DocTokenType::CloseBracket);
 
   AddEdge(root, bracketO, '[');
   AddEdge(root, bracketC, ']');
+
+  DocDfaState *curlOpen = AddState(DocTokenType::OpenCurly);
+  DocDfaState *curlClose = AddState(DocTokenType::CloseCurly);
+
+  AddEdge(root, curlOpen, '{');
+  AddEdge(root, curlClose, '}');
+
+  /////comments                                       /////
+  DocDfaState *comment = AddState(DocTokenType::Comment);
+
+
+  AddEdge(root, Invalid, '/');
+  AddEdge(Invalid, comment, '/');
+  AddDefaultEdge(comment, comment);
+
+
+  /////Quotes                                         /////
+
+  DocDfaState *stringLiteralStart = AddState(DocTokenType::Invalid);
+  DocDfaState *stringLiteral1 = AddState(DocTokenType::Invalid);
+  DocDfaState *stringEscapeCharacter = AddState(DocTokenType::Invalid);
+  DocDfaState *stringLiteralEnd = AddState(DocTokenType::StringLiteral);
+
+  // possible edges from open quote
+  AddEdge(root, stringLiteralStart, '\"');
+  stringLiteralStart->mDefault = stringLiteral1;
+  AddEdge(stringLiteralStart, stringLiteralEnd, '\"');
+  AddEdge(stringLiteralStart, stringEscapeCharacter, '\\');
+
+  // possible edges for the rest of the string
+  AddEdge(stringLiteral1, stringEscapeCharacter, '\\');
+  AddListOfEdges(stringEscapeCharacter, stringLiteral1, 'n', 'r', 't', '\"');
+  stringLiteral1->mDefault = stringLiteral1;
+  AddEdge(stringLiteral1, stringLiteralEnd, '\"');
 
   return root;
 }
@@ -198,6 +242,12 @@ DocDfaState* CreateLangDfa(void)
 ////////////////////////////////////////////////////////////
 
 DocToken::DocToken() : mEnumTokenType(DocTokenType::EnumCount) {}
+
+DocToken::DocToken(StringParam text, DocTokenType::Enum type)
+  : mText(text)
+  , mEnumTokenType(type)
+{
+}
 
 void DocToken::Serialize(Serializer& stream)
 {

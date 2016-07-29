@@ -14,6 +14,8 @@
 #include "Platform\FileSystem.hpp"
 #include "TinyXmlHelpers.hpp"
 
+#include <Engine/Documentation.hpp>
+
 namespace Zero
 {
 
@@ -65,6 +67,142 @@ namespace Zero
   ////////////////////////////////////////////////////////////////////////
   // Helpers
   ////////////////////////////////////////////////////////////////////////
+
+  String GetArgumentIfString(TypeTokens &fnCall, uint argPos)
+  {
+    uint start = (uint)-1;
+    // get first OpenParen index
+    for (uint i = 0; i < fnCall.size(); ++i)
+    {
+      if (fnCall[i].mEnumTokenType == DocTokenType::OpenParen)
+      {
+        start = i;
+        break;
+      }
+    }
+
+    // nope out of here if we did not find a starting paren
+    if (start == (uint)-1)
+      return "";
+
+    int parenCount = 0;
+    uint argCount = 0;
+    // start iterating from the character after that to the end
+    for (uint i = start; i < fnCall.size(); ++i)
+    {
+      DocToken &currToken = fnCall[i];
+
+      // if we hit an OpenParen
+      if (currToken.mEnumTokenType == DocTokenType::OpenParen)
+      {
+        // add it to our open paren counter and continue
+        ++parenCount;
+        continue;
+      }
+      // if we hit a CloseParen
+      else if (currToken.mEnumTokenType == DocTokenType::CloseParen)
+      {
+        // subtract from our paren counter and continue
+        --parenCount;
+        continue;
+      }
+      // if parenCount is greater then one since we count the first one
+      //just skip this token by continuing
+      if (parenCount > 1)
+        continue;
+
+      // if token is a comma
+      if (currToken.mEnumTokenType == DocTokenType::Comma)
+      {
+        // add it to our arg counter
+        ++argCount;
+        // if arg counter is equal to argPos
+        if (argCount == argPos)
+        {
+          // check if prev token is a string
+          // if it is, return it
+          // otherwise return an empty string
+          if (fnCall[i - 1].mEnumTokenType == DocTokenType::StringLiteral)
+            return fnCall[i - 1].mText;
+          return "";
+        }
+      }
+    }
+    return "";
+  }
+
+  String GetCodeFromDocumentFile(TiXmlDocument *doc)
+  {
+    StringBuilder codeBuilder;
+
+    // grab the class
+    TiXmlElement* cppDef = doc->FirstChildElement(gElementTags[eDOXYGEN])
+      ->FirstChildElement(gElementTags[eCOMPOUNDDEF]);
+
+    TiXmlElement *programList = GetFirstNodeOfChildType(cppDef, "programlisting")->ToElement();
+
+    TiXmlNode *firstCodeline = GetFirstNodeOfChildType(programList, gElementTags[eCODELINE]);
+    TiXmlNode *endCodeline = GetEndNodeOfChildType(programList, gElementTags[eCODELINE]);
+
+    for (TiXmlNode *codeline = firstCodeline;
+      codeline != endCodeline;
+      codeline = codeline->NextSibling())
+    {
+      StringBuilder lineBuilder;
+
+      GetTextFromAllChildrenNodesRecursivly(codeline, &lineBuilder);
+
+      if (lineBuilder.GetSize() == 0)
+        continue;
+
+      String codeString = lineBuilder.ToString();
+
+      if (codeString[0] == '#' ||
+        (codeString.size() > 1 && codeString[0] == '/' && codeString[1] == '/'))
+      {
+        continue;
+      }
+
+      codeBuilder << codeString;
+    }
+
+    return codeBuilder.ToString();
+  }
+
+  String GetDoxyfileNameFromSourceFileName(StringParam filename)
+  {
+    StringBuilder builder;
+
+    builder << '_';
+
+    uint extensionLocation = filename.FindLastOf('.');
+
+    String extension = filename.sub_string(extensionLocation + 1, 3);
+
+    if (extension != "cpp" && extension != "hpp")
+      return "";
+
+    bool prevLowercase = false;
+
+    for(uint i = 0; i < extensionLocation; ++i)
+    {
+      char c = filename[i];
+
+      if (IsUpper(c) && prevLowercase)
+        builder << '_';
+
+      prevLowercase = IsLower(c);
+
+      builder << (char)ToLower(c);
+    }
+
+    builder << "_8" << extension;
+
+    builder << ".xml";
+
+    return builder.ToString();
+  }
+
   String TrimTypeTokens(const TypeTokens &tokens)
   {
     StringBuilder builder;
@@ -141,13 +279,45 @@ namespace Zero
     }
   }
 
+  void GetTextFromAllChildrenNodesRecursivly(TiXmlNode* node, StringBuilder* output)
+  {
+    // just keep trodding our way down the node structure until we get every single text node
+    // (I am tired of edge cases making us miss text so this is the brute force hammer)
+    for (TiXmlNode *child = node->FirstChild(); child != nullptr; child = child->NextSibling())
+    {
+      if (child->Type() != TiXmlNode::TEXT)
+      {
+        GetTextFromAllChildrenNodesRecursivly(child, output);
+        continue;
+      }
+
+      output->Append(child->Value());
+      output->Append(" ");
+    }
+  }
+
   void GetTextFromChildrenNodes(TiXmlNode* node, StringBuilder* output)
   {
     TiXmlElement* element = node->ToElement();
 
     TiXmlNode* firstNode = GetFirstNodeOfChildType(element, gElementTags[eTYPE]);
 
+    if (firstNode)
+    {
+      DebugBreak();
+    }
+
     TiXmlNode* endNode = GetEndNodeOfChildType(element, gElementTags[eTYPE]);
+
+    if (!firstNode)
+    {
+      TiXmlNode* firstNode = GetFirstNodeOfChildType(element, gElementTags[eHIGHLIGHT]);
+
+      if (firstNode != nullptr)
+        DebugBreak();
+
+      TiXmlNode* endNode = GetEndNodeOfChildType(element, gElementTags[eHIGHLIGHT]);
+    }
 
     if (firstNode == nullptr)
     {
@@ -699,6 +869,8 @@ namespace Zero
 
     newClass->mName = className;
 
+    newClass->mParentLibrary = this;
+
     return newClass;
   }
 
@@ -821,9 +993,10 @@ namespace Zero
   void RawDocumentationLibrary::Serialize(Serializer& stream)
   {
     SerializeName(mClassPaths);
+    SerializeName(mExceptions);
   }
 
-  bool RawDocumentationLibrary::LoadFromDocumentationDirectory(StringRef directory)
+  bool RawDocumentationLibrary::LoadFromDocumentationDirectory(StringParam directory)
   {
     WriteLog("loading raw documentation library from directory: %s\n\n", directory.c_str());
 
@@ -842,6 +1015,7 @@ namespace Zero
         continue;
 
       RawClassDoc* newClass = new RawClassDoc;
+      newClass->mParentLibrary = this;
       mClasses.push_back(newClass);
 
       if (!LoadFromDataFile(*newClass, libPath, DataFileFormat::Text, true))
@@ -862,7 +1036,7 @@ namespace Zero
     return true;
   }
 
-  bool RawDocumentationLibrary::LoadFromDoxygenDirectory(StringRef doxyPath)
+  bool RawDocumentationLibrary::LoadFromDoxygenDirectory(StringParam doxyPath)
   {
     WriteLog("Loading Classes from Doxygen Class XML Files at: %s\n\n", doxyPath.c_str());
 
@@ -914,7 +1088,7 @@ namespace Zero
     return false;
   }
   
-  bool RawDocumentationLibrary::LoadFromSkeletonFile(StringRef doxyPath,
+  bool RawDocumentationLibrary::LoadFromSkeletonFile(StringParam doxyPath,
     const DocumentationLibrary &library)
   {
     // first add all the classes by name to the library
@@ -935,10 +1109,46 @@ namespace Zero
     return !library.mClasses.empty();
   }
 
-  void RawDocumentationLibrary::LoadIgnoreList(String absPath)
+  void RawDocumentationLibrary::LoadIgnoreList(StringParam absPath)
   {
     if (!LoadFromDataFile(mIgnoreList, absPath, DataFileFormat::Text, true))
       Error("Unable to load ignore list: %s\n", absPath);
+  }
+
+  void RawDocumentationLibrary::LoadEventsList(StringParam absPath)
+  {
+    if (!LoadFromDataFile(mEvents, absPath, DataFileFormat::Text, true))
+      Error("Unable to load events list: %s\n", absPath);
+  }
+
+  void RawDocumentationLibrary::SaveEventListToFile(StringParam absPath)
+  {
+    CreateDirectoryAndParents(absPath.sub_string(0, absPath.FindLastOf('\\')));
+
+    SaveToDataFile(mEvents, absPath);
+  }
+
+  void RawDocumentationLibrary::SaveExceptionListToFile(StringParam absPath)
+  {
+    CreateDirectoryAndParents(absPath.sub_string(0, absPath.FindLastOf('\\')));
+
+    SaveToDataFile(mExceptions, absPath);
+  }
+
+  RawClassDoc *RawDocumentationLibrary::GetClassByName(StringParam name,Array<String> &namespaces)
+  {
+    if (mClassMap.containsKey(name))
+      return mClassMap[name];
+
+    forRange(StringRef nameSpace, namespaces.all())
+    {
+      String newKey = BuildString(nameSpace, name);
+
+      if (mClassMap.containsKey(newKey))
+        return mClassMap[newKey];
+
+    }
+    return nullptr;
   }
 
   ////////////////////////////////////////////////////////////////////////
@@ -1142,6 +1352,8 @@ namespace Zero
     SerializeName(mName);
     SerializeName(mNamespace);
     SerializeName(mRelativePath);
+    SerializeName(mHeaderFile);
+    SerializeName(mBodyFile);
     SerializeName(mBaseClass);
     SerializeName(mDescription);
     SerializeName(mTypedefs);
@@ -1366,36 +1578,139 @@ namespace Zero
     return true;
   }
 
+  // param number technically starts at 1 since 0 means no param for this fn
+  bool FillEventInformation(StringParam fnTokenName, uint paramNum, bool listeningFn, 
+    EventDocList &libEventList, RawClassDoc *classDoc, TypeTokens &tokens)
+  {
+    if (tokens.contains(DocToken(fnTokenName)))
+    {
+      uint i = 0;
+      uint commaCount = 0;
+      for (; i < tokens.size() && commaCount < paramNum; ++i)
+      {
+        if (tokens[i].mEnumTokenType == DocTokenType::Comma)
+        {
+          ++commaCount;
+        }
+      }
+
+      if (commaCount == paramNum)
+      {
+        // i - 2 because i is currently at 1 past the comma index
+        StringRef eventName = tokens[i - 2].mText;
+
+        EventDoc *eventDoc = nullptr;
+
+        if (libEventList.mEventMap.containsKey(eventName))
+        {
+          eventDoc = libEventList.mEventMap[eventName];
+          if (listeningFn)
+          {
+            eventDoc->mListeners.push_back(classDoc->mName);
+            classDoc->mEventsListened.push_back(eventDoc);
+          }
+          else
+          {
+            eventDoc->mSenders.push_back(classDoc->mName);
+            classDoc->mEventsSent.push_back(eventDoc);
+          }
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  // param number technically starts at 1 since 0 means no param for this fn
+  // need to give this some newfangled way to detect what function we are in
+  bool RawClassDoc::FillErrorInformation(StringParam fnTokenName, uint paramNum,
+    ExceptionDocList &libExcList, StringRef fnName, TypeTokens &tokens)
+  {
+    if (tokens.contains(DocToken(fnTokenName)))
+    {
+      
+
+      String param = GetArgumentIfString(tokens, paramNum);
+
+      /*
+      uint i = 0;
+      uint commaCount = 0;
+
+      for (; i < tokens.size() && commaCount < paramNum; ++i)
+      {
+        if (tokens[i].mEnumTokenType == DocTokenType::Comma)
+        {
+          ++commaCount;
+        }
+      }
+
+      if (commaCount == paramNum)
+      {
+        ExceptionDoc &errorDoc = libExcList.mExceptions.push_back();
+
+        // i - 2 because i is currently at 1 past the comma index
+        errorDoc.mMsg = tokens[i - 2].mText;
+        errorDoc.mFunction = fnName;
+        errorDoc.mClass = mName;
+
+        return true;
+      }
+      */
+    
+      if (!param.empty())
+      {
+        ExceptionDoc &errorDoc = libExcList.mExceptions.push_back();
+
+        errorDoc.mMsg = param;
+        errorDoc.mFunction = fnName;
+        errorDoc.mClass = mName;
+
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   void RawClassDoc::LoadEventsFromCppDoc(TiXmlDocument *doc)
   {
-    ParseCodelinesInDoc(doc, [](RawClassDoc *classDoc, StringParam codeString) {
+    ParseCodelinesInDoc(doc, [](RawClassDoc *classDoc, StringParam codeString) 
+    {
+      EventDocList &libEventList = classDoc->mParentLibrary->mEvents;
+
+      ExceptionDocList &libExcList = classDoc->mParentLibrary->mExceptions;
+
       TypeTokens tokens;
 
-      if (codeString.Contains("BindEvent("))
+      FillTokensFromString(DocLangDfa::Get(), codeString, &tokens);
+
+      // the next block is all of the send and recieve event fns we want to parse
+      // if boolean argument is false, it is a send function, otherwise, recieve
+
+      if (FillEventInformation("DispatchEvent", 1, false, libEventList, classDoc, tokens))
       {
-        FillTokensFromString(DocLangDfa::Get(), codeString, &tokens);
-
-        EventDoc *eventDoc = new EventDoc;
-
-        classDoc->mEvents.push_back(eventDoc);
-
-        for (uint i = 0; i < tokens.size(); ++i)
-        {
-          // if we found the events namespace node, the node two up from here is event
-          if (tokens[i].mText == "Events")
-          {
-            i += 2;
-            eventDoc->mName = tokens[i].mText;
-          }
-          // we know the event is the first param so it should come before the comma
-          else if (tokens[i].mText == ",")
-          {
-            ++i;
-            if (tokens[i].mEnumTokenType == DocTokenType::Identifier)
-              eventDoc->mType = tokens[i].mText;
-            return;
-          }
-        }
+      }
+      // only found whern we search outside of bound types
+      else if (FillEventInformation("CreateCollisionEvent", 3, false, libEventList, classDoc, tokens))
+      {
+      }
+      else if (FillEventInformation("Dispatch", 1, false, libEventList, classDoc, tokens))
+      {
+      }
+      // SendButtonEvent(event, Events::LockStepGamepadUp, false);
+      else if (FillEventInformation("SendButtonEvent", 2, false, libEventList, classDoc, tokens))
+      {
+      }
+      // mLockStep->QueueSyncedEvent(Events::LockStepKeyUp, &syncedEvent); (sends)
+      else if (FillEventInformation("QueueSyncedEvent", 1, false, libEventList, classDoc, tokens))
+      {
+      }
+      else if (FillEventInformation("Connect", 2, true, libEventList, classDoc, tokens))
+      {
+      }
+      else if (FillEventInformation("ConnectThisTo", 2, true, libEventList, classDoc, tokens))
+      {
       }
     });
   }
@@ -1443,26 +1758,185 @@ namespace Zero
       codeline != endCodeline;
       codeline = codeline->NextSibling())
     {
-      TiXmlElement *child = codeline->FirstChildElement();
-
-      if (!child || !child->FirstChild())
-        continue;
-
       StringBuilder builder;
 
-      GetTextFromChildrenNodes(child, &builder);
+      GetTextFromAllChildrenNodesRecursivly(codeline, &builder);
 
       String codeString = builder.ToString();
+
       fn(this, codeString);
     }
   }
 
+  // this function assumes we are not contained within scope
+  bool isFunctionDefinition(TypeTokens &tokens)
+  {
+    if (tokens.contains(DocToken(";", DocTokenType::Semicolon))
+      ||tokens.contains(DocToken("#", DocTokenType::Pound)))
+    {
+      return false;
+    }
+
+    if (tokens.contains(DocToken("(", DocTokenType::OpenParen)))
+      return true;
+
+    return false;
+  }
+
+  String getStringFromFnTokenList(TypeTokens &tokens)
+  {
+    for (uint i = 0; i < tokens.size(); ++i)
+    {
+      DocToken &token = tokens[i];
+
+      if (token.mEnumTokenType == DocTokenType::OpenParen)
+      {
+        if (i == 0)
+        {
+          return "";
+        }
+        return tokens[i - 1].mText;
+      }
+    }
+    return "";
+  }
+
+  void RawClassDoc::ParseFnCodelinesInDoc(TiXmlDocument *doc)
+  {
+    // might want to maintain a static list of files we have already processed so we do
+    // not end up doubling up documentation for classes that are implemented in the same
+    //file.
+
+    //if (mName == "ShaderGraphSocket")
+    //  DebugBreak();
+
+    EventDocList &libEventList = mParentLibrary->mEvents;
+
+    ExceptionDocList &libExcList = mParentLibrary->mExceptions;
+
+    // grab the class
+    TiXmlElement* cppDef = doc->FirstChildElement(gElementTags[eDOXYGEN])
+      ->FirstChildElement(gElementTags[eCOMPOUNDDEF]);
+
+    TiXmlElement *programList = GetFirstNodeOfChildType(cppDef, "programlisting")->ToElement();
+
+    TiXmlNode *firstCodeline = GetFirstNodeOfChildType(programList, gElementTags[eCODELINE]);
+    TiXmlNode *endCodeline = GetEndNodeOfChildType(programList, gElementTags[eCODELINE]);
+
+    String currFn = "";
+    RawClassDoc *currClass = this;
+
+    Array<String> namespaces;
+    namespaces.push_back("Zero");
+    namespaces.push_back("Zilch");
+
+    // the majority of this loop is just getting the current function
+    for (TiXmlNode *codeline = firstCodeline;
+      codeline != endCodeline;
+      codeline = codeline->NextSibling())
+    {
+      StringBuilder builder;
+
+      GetTextFromAllChildrenNodesRecursivly(codeline, &builder);
+
+      if (builder.GetSize() <= 0)
+        continue;
+
+      String codeString = builder.ToString();
+
+      TypeTokens tokens;
+
+      FillTokensFromString(DocLangDfa::Get(), codeString, &tokens);
+
+
+      // does the current line have a pound? Then just continue.
+      if (tokens[0].mEnumTokenType == DocTokenType::Pound)
+        continue;
+
+      // have a semicolon?
+      if (tokens.contains(DocToken(";", DocTokenType::Semicolon)))
+      {
+        // check if it is one of the lines we are looking for
+        if (currFn.empty())
+          continue;
+        // otherwise, we are going to look for any exceptions, and save it if we find one
+        else if (FillErrorInformation("ErrorIf", 2, libExcList, currFn, tokens))
+        {
+        }
+        else if (FillErrorInformation("Error", 1, libExcList, currFn, tokens))
+        {
+        }
+        else if (FillErrorInformation("FatalEngineError", 1, libExcList, currFn, tokens))
+        {
+        }
+        // once we are done, continue
+        continue;
+      }
+
+      // does it have '::'?
+      for (uint i = 0; i < tokens.size(); ++i)
+      {
+        DocToken &currToken = tokens[i];
+
+        if (currToken.mEnumTokenType != DocTokenType::ScopeResolution)
+          continue;
+
+        DocToken &lhs = tokens[i - 1];
+        DocToken &rhs = tokens[i + 1];
+
+
+        RawClassDoc *docClass = mParentLibrary->GetClassByName(lhs.mText, namespaces);
+        // check if whatever is to the left of that is a known classname
+        if (docClass)
+        {
+          currClass = docClass;
+        }
+
+        // see if the function exists
+        if (currClass->mMethodMap.containsKey(rhs.mText))
+        {
+          currFn = rhs.mText;
+        }
+        //TODO: in the event of multiple of the '::', do this same check for each one
+      }
+    }
+  }
+
+
+
+  void RemoveDuplicates(Array<String> &stringList)
+  {
+    for (uint i = 1; i < stringList.size(); ++i)
+    {
+      // get rid of duplicates
+      if (stringList[i] == stringList[i - 1])
+      {
+        stringList.eraseAt(i);
+        --i;
+      }
+    }
+
+  }
+
   void RawClassDoc::SortAndPruneEventArray(void)
   {
+    EventDocList &libEventList = mParentLibrary->mEvents;
+
+    for (uint i = 0; i < libEventList.mEvents.size(); ++i)
+    {
+      sort(libEventList.mEvents[i]->mSenders.all());
+      sort(libEventList.mEvents[i]->mListeners.all());
+      RemoveDuplicates(libEventList.mEvents[i]->mSenders);
+      RemoveDuplicates(libEventList.mEvents[i]->mListeners);
+    }
+    if (mEvents.empty())
+      return;
+
     sort(mEvents.all(), [](EventDoc *lhs, EventDoc * rhs)
     {
       return lhs->mName < rhs->mName;
     });
+
     // we have to get rid of duplicates in case event was defined and bound in same class
     for (uint i = 1; i < mEvents.size(); ++i)
     {
@@ -1515,38 +1989,25 @@ namespace Zero
 
   bool RawClassDoc::LoadEvents(String doxName, String doxyPath)
   {
-    // have to use an array because the fn wants one even though we should get 1 file
-    Array<String> files;
+    String filename = GetDoxyfileNameFromSourceFileName(mBodyFile);
 
-    //String path = BuildString(doxyPath, mRelativePath.sub_string(2, mRelativePath.FindFirstOf('\\')));
+    filename = GetFileWithExactName(doxyPath, filename);
 
-    GetFilesWithPartialName(doxyPath, BuildString(doxName, "_8cpp"), &files);
-
-    String exactFile = "";
-
-    if (files.size() > 1)
-    {
-      files.clear();
-      exactFile = GetFileWithExactName(doxyPath, BuildString(doxName, "_8cpp.xml"));
-    }
-
-    if (files.empty())
-    {
-      if (exactFile == "")
-        return false;
-      files.push_back(exactFile);
-    }
+    if (filename.empty())
+      return false;
 
     TiXmlDocument cppDoc;
 
-    if (!cppDoc.LoadFile(files[0].c_str()))
+    if (!cppDoc.LoadFile(filename.c_str()))
     {
-      WriteLog("Failed to load file: %s\n", files[0].c_str());
+      WriteLog("Failed to load file: %s\n", filename.c_str());
       // still return true since we did load the class doc
       return false;
     }
 
     LoadEventsFromCppDoc(&cppDoc);
+
+    ParseFnCodelinesInDoc(&cppDoc);
 
     // could also load from hpp but it turns out you get everything you need from cpp
 
@@ -1619,6 +2080,9 @@ namespace Zero
         mDescription = DoxyToString(pSection->ToElement(), gElementTags[ePARA]).Trim();
       }
 
+      // TODO: ADD PART WHERE WE CHECK FIRST MEMBER FOR BODY LOCATION
+        // KEEP CHECKING UNTIL WE FIND A CPP
+
       // loop over all members of this section
       for (TiXmlNode* pMemberDef = pSection->FirstChild()
         ; pMemberDef != 0
@@ -1660,6 +2124,39 @@ namespace Zero
           }
           else
           {
+            if (mBodyFile.empty())
+            {
+              TiXmlNode *locationNode = GetFirstNodeOfChildType(memberElement, "location");
+
+              if (locationNode)
+              {
+                TiXmlElement *locElement = locationNode->ToElement();
+
+                const char *attString = locElement->Attribute("file");
+
+                if (attString)
+                {
+                  mHeaderFile = attString;
+
+                  // since this path is going to be from doxygen it will have correct slashes
+                  uint pos = mHeaderFile.FindLastOf('/');
+
+                  mHeaderFile = mHeaderFile.sub_string(pos + 1, mHeaderFile.size());
+                }
+
+                attString = locElement->Attribute("bodyfile");
+
+                if (attString)
+                {
+                  mBodyFile = attString;
+
+                  uint pos = mBodyFile.FindLastOf('/');
+
+                  mBodyFile = mBodyFile.sub_string(pos + 1, mBodyFile.size());
+                }
+              }
+            }
+
             mMethods.push_back(new RawMethodDoc(memberElement, pMemberDef));
             break;
           }

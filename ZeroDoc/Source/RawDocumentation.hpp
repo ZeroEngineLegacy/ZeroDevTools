@@ -25,8 +25,20 @@ namespace Zero
   class RawTypedefLibrary;
   class RawNamespaceDoc;
   class IgnoreList;
+  class RawDocumentationLibrary;
 
   ///// HELPERS ///// 
+  ///Gets all of the text from all the children nodes below this
+  void GetTextFromAllChildrenNodesRecursivly(TiXmlNode* node, StringBuilder* output);
+  ///Gets argument at pos if it is a string, otherwise returns empty
+  String GetArgumentIfString(TypeTokens &fnCall, uint argPos);
+
+  ///Adds all codelines in a document to the stringbuilder passed for output
+  String GetCodeFromDocumentFile(TiXmlDocument *doc);
+
+  ///make doxyfile string from source file name
+  String GetDoxyfileNameFromSourceFileName(StringParam fileName);
+
   ///turns token list to string placing spaces after qualifiers
   String TrimTypeTokens(const TypeTokens& tokens);
 
@@ -83,6 +95,7 @@ namespace Zero
   bool DocComparePtrFn(const T& lhs, const T& rhs);
 
   ///// CLASSES /////
+
   class IgnoreList : public Object
   {
   public:
@@ -295,6 +308,8 @@ namespace Zero
     ///calls passed in function on every docline until scope ends
     void ParseCodelinesInDoc(TiXmlDocument *doc, void(*fn)(RawClassDoc *,StringParam));
 
+    void ParseFnCodelinesInDoc(TiXmlDocument *doc);
+
     ///sorts the event array and removes duplicates
     void SortAndPruneEventArray(void);
 
@@ -314,11 +329,14 @@ namespace Zero
     ///replaces typedef'd types with the underlying type
     void NormalizeAllTypes(RawTypedefLibrary* defLib);
 
-    ///grabs meta database and loads tangs and events from meta
+    ///grabs meta database and loads tags and events from meta
     void LoadEventsAndTagsFromMeta(void);
 
     ///generates key fror classmap that incorperates namespace into classname
     String GenerateMapKey(void);
+
+    bool FillErrorInformation(StringParam fnTokenName, uint paramNum,
+      ExceptionDocList &libExcList, StringRef fnName, TypeTokens &tokens);
 
     ///// PUBLIC DATA ///// 
 
@@ -333,6 +351,10 @@ namespace Zero
 
     Array<EventDoc*> mEvents;
 
+    Array<EventDoc*> mEventsSent;
+
+    Array<EventDoc*> mEventsListened;
+
     Array<String> mFriends;
 
     Array<String> mTags;
@@ -345,6 +367,13 @@ namespace Zero
 
     // relative to root of source directory
     String mRelativePath;
+
+    // path to file where function was implemented
+    String mBodyFile;
+
+    String mHeaderFile;
+
+    RawDocumentationLibrary *mParentLibrary;
 
   private:
     ///// PRIVATE METHODS ///// 
@@ -390,17 +419,28 @@ namespace Zero
     void NormalizeAllTypes(RawTypedefLibrary* defLib);
 
     ///load the doc library from the documentation directory (abs path)
-    bool LoadFromDocumentationDirectory(StringRef directory);
+    bool LoadFromDocumentationDirectory(StringParam directory);
 
     ///loads all the documentation from the entire doxygen directory minus ignored files
-    bool LoadFromDoxygenDirectory(StringRef doxyPath);
+    bool LoadFromDoxygenDirectory(StringParam doxyPath);
 
     ///loads list of classes, tags, and events from skeleton documentation library
     ///returns false if list of classes was empty (i.e. there was nothing to load)
-    bool LoadFromSkeletonFile(StringRef doxyPath, const DocumentationLibrary &library);
+    bool LoadFromSkeletonFile(StringParam doxyPath, const DocumentationLibrary &library);
 
     ///loads the ignore list from the file at absPath
-    void LoadIgnoreList(String absPath);
+    void LoadIgnoreList(StringParam absPath);
+
+    ///loads the events list from the file at absPath
+    void LoadEventsList(StringParam absPath);
+
+    void SaveEventListToFile(StringParam absPath);
+
+    void SaveExceptionListToFile(StringParam absPath);
+
+    ///each namespace passed will be tried,
+    ///combinations of namespaces must be passed explicitly
+    RawClassDoc *GetClassByName(StringParam name, Array<String> &namespaces);
 
     ///// PUBLIC DATA ///// 
     HashMap<String, RawClassDoc*> mClassMap;
@@ -410,6 +450,10 @@ namespace Zero
     Array<String> mClassPaths;
 
     IgnoreList mIgnoreList;
+
+    EventDocList mEvents;
+
+    ExceptionDocList mExceptions;
   };
 
 

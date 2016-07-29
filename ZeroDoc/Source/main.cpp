@@ -37,6 +37,7 @@ trimmedOutput - Overrides default location for trimmed documentation. Used to lo
 trimmedTypedefFile - Path to typedef file used to replace types specifically for the trimmed output file.\n\n\
 markupDirectory - Path to location where all markup files will be saved.\n\n\
 commandListFile - Path to location to save the command list markup file.\n\n\
+eventsFile - path to file containing list of events which is loaded and filled out.\n\n\
 "
   );
 }
@@ -107,6 +108,11 @@ void RunDocumentationGenerator(DocGeneratorConfig &config)
 
     library->mIgnoreList.SortList();
 
+    if (config.mZeroEventsFile.size())
+    {
+      library->LoadEventsList(config.mZeroEventsFile);
+      library->mEvents.BuildMap();
+    }
 
     // if zerodocfile then get list of classes from it
     if (config.mZeroDocFile.size() > 0)
@@ -193,6 +199,15 @@ void RunDocumentationGenerator(DocGeneratorConfig &config)
       library->GenerateCustomDocumentationFiles(config.mOutputDirectory);
       tdLibrary.GenerateTypedefDataFile(config.mOutputDirectory);
     }
+
+    if (config.mEventsOutputLocation.size())
+    {
+      library->SaveEventListToFile(config.mEventsOutputLocation);
+    }
+    if (config.mExceptionsFile.size())
+    {
+      library->SaveExceptionListToFile(config.mExceptionsFile);
+    }
   }
 
   /////// Trimmed Documentation ///////
@@ -264,12 +279,22 @@ int main(int argc, char* argv[])
   Zero::RunDocumentationGenerator(config);
 
   if (!config.mMarkupDirectory.empty())
+  {
     WriteOutMarkup(config);
 
-  if (!config.mCommandListFile.empty())
-  {
-    WriteCommandReference(config);
+    if (!config.mEventsOutputLocation.empty())
+    {
+      WriteEventList(config);
+    }
+
+    if (!config.mExceptionsFile.empty())
+    {
+      WriteExceptionList(config);
+    }
   }
+
+  if (!config.mCommandListFile.empty())
+    WriteCommandReference(config);
 
   return 0;
 }

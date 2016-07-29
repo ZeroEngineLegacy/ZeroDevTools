@@ -36,6 +36,7 @@ static const char *DocKeywords[DocTokenType::EnumCount - DocTokenType::KeywordSt
   "INVALID_KEYWORD"
 };
 
+
 namespace Zero
 {
   class DocToken;
@@ -54,7 +55,11 @@ namespace Zero
     String mText;
     DocTokenType::Enum mEnumTokenType;
 
+    ///defaults to an invalid type
     DocToken();
+    ///takes text and assumes tp
+    DocToken(StringParam text, DocTokenType::Enum type = DocTokenType::Identifier);
+
 
     void Serialize(Serializer& stream);
     bool operator==(const DocToken& right);

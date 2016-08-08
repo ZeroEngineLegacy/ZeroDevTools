@@ -335,7 +335,7 @@ namespace Zero
     ///generates key fror classmap that incorperates namespace into classname
     String GenerateMapKey(void);
 
-    bool FillErrorInformation(StringParam fnTokenName, uint paramNum,
+    void FillErrorInformation(StringParam fnTokenName,
       ExceptionDocList &libExcList, StringRef fnName, TypeTokens &tokens);
 
     ///// PUBLIC DATA ///// 

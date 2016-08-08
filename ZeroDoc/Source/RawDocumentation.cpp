@@ -1622,55 +1622,49 @@ namespace Zero
     return false;
   }
 
+  String buildExceptionText(StringParam exceptionName, StringParam exceptionText)
+  {
+    StringBuilder builder;
+
+    forRange(char c, exceptionName.all())
+    {
+      if (c != '"')
+        builder.Append(c);
+    }
+
+    if (!exceptionName.empty() && !exceptionText.empty())
+      builder.Append(": ");
+
+    forRange(char c, exceptionText.all())
+    {
+      if (c != '"')
+        builder.Append(c);
+    }
+
+    return builder.ToString();
+  }
+
   // param number technically starts at 1 since 0 means no param for this fn
   // need to give this some newfangled way to detect what function we are in
-  bool RawClassDoc::FillErrorInformation(StringParam fnTokenName, uint paramNum,
+  void RawClassDoc::FillErrorInformation(StringParam fnTokenName,
     ExceptionDocList &libExcList, StringRef fnName, TypeTokens &tokens)
   {
     if (tokens.contains(DocToken(fnTokenName)))
     {
-      
+      String firstParam = GetArgumentIfString(tokens, 1);
+      String secondParam = GetArgumentIfString(tokens, 2);
 
-      String param = GetArgumentIfString(tokens, paramNum);
-
-      /*
-      uint i = 0;
-      uint commaCount = 0;
-
-      for (; i < tokens.size() && commaCount < paramNum; ++i)
-      {
-        if (tokens[i].mEnumTokenType == DocTokenType::Comma)
-        {
-          ++commaCount;
-        }
-      }
-
-      if (commaCount == paramNum)
+      if (!firstParam.empty() || !secondParam.empty())
       {
         ExceptionDoc &errorDoc = libExcList.mExceptions.push_back();
 
-        // i - 2 because i is currently at 1 past the comma index
-        errorDoc.mMsg = tokens[i - 2].mText;
+        String exceptionText = buildExceptionText(firstParam, secondParam);
+
+        errorDoc.mException = exceptionText;
         errorDoc.mFunction = fnName;
         errorDoc.mClass = mName;
-
-        return true;
-      }
-      */
-    
-      if (!param.empty())
-      {
-        ExceptionDoc &errorDoc = libExcList.mExceptions.push_back();
-
-        errorDoc.mMsg = param;
-        errorDoc.mFunction = fnName;
-        errorDoc.mClass = mName;
-
-        return true;
       }
     }
-
-    return false;
   }
 
   void RawClassDoc::LoadEventsFromCppDoc(TiXmlDocument *doc)
@@ -1860,15 +1854,8 @@ namespace Zero
         if (currFn.empty())
           continue;
         // otherwise, we are going to look for any exceptions, and save it if we find one
-        else if (FillErrorInformation("ErrorIf", 2, libExcList, currFn, tokens))
-        {
-        }
-        else if (FillErrorInformation("Error", 1, libExcList, currFn, tokens))
-        {
-        }
-        else if (FillErrorInformation("FatalEngineError", 1, libExcList, currFn, tokens))
-        {
-        }
+        FillErrorInformation("DoNotifyException", libExcList, currFn, tokens);
+
         // once we are done, continue
         continue;
       }

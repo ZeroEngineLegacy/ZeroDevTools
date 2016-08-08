@@ -362,7 +362,8 @@ void WriteExceptionList(Zero::DocGeneratorConfig& config)
 
     markupText << "**Function:** " << exceptDoc.mFunction << "\n\n";
 
-    markupText << "**Message:** " << exceptDoc.mMsg << "\n\n";
+    markupText << "**Exception:** " << exceptDoc.mException << "\n\n";
+
     markupText << "\n\n\n";
   }
 

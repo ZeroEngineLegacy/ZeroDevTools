@@ -136,6 +136,15 @@ void WriteClass(String directory, ClassDoc& classDoc,DocumentationLibrary &lib, 
         << methodDoc->mName << methodDoc->mParameters << "\n\n";
 
       classMarkup << "\t" << methodDoc->mDescription << "\n\n";
+
+      if (!methodDoc->mPossibleExceptionThrows.empty())
+      {
+        classMarkup << "\t *Possible Notify Exceptions:* \n\n";
+        forRange(ExceptionDoc *exDoc, methodDoc->mPossibleExceptionThrows.all())
+        {
+          classMarkup << "\t\t" << exDoc->mTitle <<": " << exDoc->mMessage << "\n\n";
+        }
+      }
     }
     if (!IterClass->mBaseClass.empty() && lib.mClassMap.containsKey(IterClass->mBaseClass))
     {
@@ -171,9 +180,7 @@ void WriteClass(String directory, ClassDoc& classDoc,DocumentationLibrary &lib, 
 
   String text = classMarkup.ToString();
 
-
   WriteStringRangeToFile(fullPath, text);
-
 }
 
 void WriteOutMarkup(Zero::DocGeneratorConfig& config)
@@ -328,6 +335,7 @@ void WriteEventList(Zero::DocGeneratorConfig& config)
 }
 
 // this output will not be perfect since there is no way to get ALL send and receive
+#if 0
 void WriteExceptionList(Zero::DocGeneratorConfig& config)
 {
   String filePath = BuildString(config.mMarkupDirectory, "\\ExceptionList.rst");
@@ -369,5 +377,6 @@ void WriteExceptionList(Zero::DocGeneratorConfig& config)
 
   WriteStringRangeToFile(filePath, markupText.ToString());
 }
+#endif
 
 }

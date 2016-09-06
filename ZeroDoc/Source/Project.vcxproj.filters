@@ -25,9 +25,6 @@
     <ClInclude Include="Logging.hpp">
       <Filter>Source</Filter>
     </ClInclude>
-    <ClInclude Include="DocTypeParser.hpp">
-      <Filter>Source</Filter>
-    </ClInclude>
     <ClInclude Include="RawDocumentation.hpp">
       <Filter>Source</Filter>
     </ClInclude>
@@ -35,6 +32,15 @@
       <Filter>Source</Filter>
     </ClInclude>
     <ClInclude Include="MarkupWriter.hpp">
+      <Filter>Source</Filter>
+    </ClInclude>
+    <ClInclude Include="MacroDatabase.hpp">
+      <Filter>Source</Filter>
+    </ClInclude>
+    <ClInclude Include="DocTypeTokens.hpp">
+      <Filter>Source</Filter>
+    </ClInclude>
+    <ClInclude Include="DocTypeParser.hpp">
       <Filter>Source</Filter>
     </ClInclude>
   </ItemGroup>
@@ -57,13 +63,19 @@
     <ClCompile Include="Logging.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="DocTypeParser.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
     <ClCompile Include="RawDocumentation.cpp">
       <Filter>Source</Filter>
     </ClCompile>
     <ClCompile Include="MarkupWriter.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="MacroDatabase.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="DocTypeTokens.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="DocTypeParser.cpp">
       <Filter>Source</Filter>
     </ClCompile>
   </ItemGroup>

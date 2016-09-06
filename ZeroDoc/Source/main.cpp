@@ -7,6 +7,7 @@
 #include "DocConfiguration.hpp"
 #include "RawDocumentation.hpp"
 #include "MarkupWriter.hpp"
+#include "MacroDatabase.hpp"
 
 namespace Zero
 {
@@ -44,6 +45,9 @@ eventsFile - path to file containing list of events which is loaded and filled o
 
 bool ValidateConfig(DocGeneratorConfig &config)
 {
+  if (config.mRunMacroTest > -1)
+    return true;
+
   // we have to output something
   if (!config.mCreateTrimmed && config.mOutputDirectory.empty() && config.mMarkupDirectory.empty())
   {
@@ -136,10 +140,10 @@ void RunDocumentationGenerator(DocGeneratorConfig &config)
       }
     }
     // if we arn't loading a typedef file, load from doxygen
-    if (!config.mLoadTypedefs)
-    {
-      tdLibrary.LoadTypedefsFromDocLibrary(*library);
-    }
+    //if (!config.mLoadTypedefs)
+    //{
+    //  tdLibrary.LoadTypedefsFromDocLibrary(*library);
+    //}
     library->Build();
     library->FillOverloadDescriptions();
   }
@@ -154,8 +158,8 @@ void RunDocumentationGenerator(DocGeneratorConfig &config)
 
     if (config.mLoadTypedefs)
       tdLibrary.LoadFromFile(config.mTypedefLibraryFile);
-    else
-      tdLibrary.LoadTypedefsFromDocLibrary(*library);
+    //else
+    //  tdLibrary.LoadTypedefsFromDocLibrary(*library);
   }
 
   if (config.mLoadTypedefsFromDoxygen)
@@ -204,10 +208,10 @@ void RunDocumentationGenerator(DocGeneratorConfig &config)
     {
       library->SaveEventListToFile(config.mEventsOutputLocation);
     }
-    if (config.mExceptionsFile.size())
-    {
-      library->SaveExceptionListToFile(config.mExceptionsFile);
-    }
+    //if (config.mExceptionsFile.size())
+    //{
+    //  library->SaveExceptionListToFile(config.mExceptionsFile);
+    //}
   }
 
   /////// Trimmed Documentation ///////
@@ -276,6 +280,11 @@ int main(int argc, char* argv[])
     return 0;
   }
 
+  if (config.mRunMacroTest > -1)
+  {
+    return (int)!Zero::RunMacroTests(config.mRunMacroTest);
+  }
+
   Zero::RunDocumentationGenerator(config);
 
   if (!config.mMarkupDirectory.empty())
@@ -287,10 +296,10 @@ int main(int argc, char* argv[])
       WriteEventList(config);
     }
 
-    if (!config.mExceptionsFile.empty())
-    {
-      WriteExceptionList(config);
-    }
+    //if (!config.mExceptionsFile.empty())
+    //{
+    //  WriteExceptionList(config);
+    //}
   }
 
   if (!config.mCommandListFile.empty())

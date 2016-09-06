@@ -8,5 +8,5 @@ void WriteCommandReference(Zero::DocGeneratorConfig& config);
 
 void WriteEventList(Zero::DocGeneratorConfig& config);
 
-void WriteExceptionList(Zero::DocGeneratorConfig& config);
+//void WriteExceptionList(Zero::DocGeneratorConfig& config);
 }

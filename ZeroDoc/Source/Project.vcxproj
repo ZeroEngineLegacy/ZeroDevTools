@@ -71,6 +71,8 @@
     <ClInclude Include="DocConfiguration.hpp" />
     <ClInclude Include="DebugPrint.hpp" />
     <ClInclude Include="DocTypeParser.hpp" />
+    <ClInclude Include="DocTypeTokens.hpp" />
+    <ClInclude Include="MacroDatabase.hpp" />
     <ClInclude Include="MarkupWriter.hpp" />
     <ClInclude Include="RawDocumentation.hpp" />
     <ClInclude Include="Logging.hpp" />
@@ -81,6 +83,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DocTypeParser.cpp" />
+    <ClCompile Include="DocTypeTokens.cpp" />
+    <ClCompile Include="MacroDatabase.cpp" />
     <ClCompile Include="MarkupWriter.cpp" />
     <ClCompile Include="RawDocumentation.cpp" />
     <ClCompile Include="Logging.cpp" />

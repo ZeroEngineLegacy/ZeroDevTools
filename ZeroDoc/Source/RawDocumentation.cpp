@@ -13,56 +13,12 @@
 #include "Serialization/Simple.hpp"
 #include "Platform\FileSystem.hpp"
 #include "TinyXmlHelpers.hpp"
+#include "MacroDatabase.hpp"
 
 #include <Engine/Documentation.hpp>
 
 namespace Zero
 {
-
-  // change this to macro magic later
-  enum gElementTagsEnum
-  {
-    eDOXYGEN,
-    eBASECOMPOUNDREF,
-    eCOMPOUNDDEF,
-    eMEMBERDEF,
-    eMEMBER,
-    eBRIEFDESCRIPTION,
-    ePARA,
-    ePARAM,
-    eKIND,
-    eNAME,
-    eARGSSTRING,
-    eTYPE,
-    eREF,
-    eDECLNAME,
-    eDEFINITION,
-    eCODELINE,
-    eHIGHLIGHT,
-    eSECTIONDEF,
-    eINVALID_TAG
-  };
-  
-  const char* gElementTags[eINVALID_TAG] = {
-    "doxygen",
-    "basecompoundref",
-    "compounddef",
-    "memberdef",
-    "member",
-    "briefdescription",
-    "para",
-    "param",
-    "kind",
-    "name",
-    "argsstring",
-    "type",
-    "ref",
-    "declname",
-    "definition",
-    "codeline",
-    "highlight",
-    "sectiondef"
-  };
 
   ////////////////////////////////////////////////////////////////////////
   // Helpers
@@ -150,7 +106,7 @@ namespace Zero
     {
       StringBuilder lineBuilder;
 
-      GetTextFromAllChildrenNodesRecursivly(codeline, &lineBuilder);
+      GetTextFromAllChildrenNodesRecursively(codeline, &lineBuilder);
 
       if (lineBuilder.GetSize() == 0)
         continue;
@@ -264,22 +220,22 @@ namespace Zero
   }
 
   // gets Text from a Text type node or a ref to a Text type node
-  const char* GetTextFromNode(TiXmlNode* node)
-  {
-    if (!node)
-      return nullptr;
+  //const char* GetTextFromNode(TiXmlNode* node)
+  //{
+  //  if (!node)
+  //    return nullptr;
+  //
+  //  if (node->Type() == TiXmlNode::TEXT)
+  //    return node->ToText()->Value();
+  //  else //Check if it has a child, if it does assume ref
+  //  {
+  //    TiXmlNode* child = node->FirstChild();
+  //
+  //    return child ? node->FirstChild()->ToText()->Value() : nullptr;
+  //  }
+  //}
 
-    if (node->Type() == TiXmlNode::TEXT)
-      return node->ToText()->Value();
-    else //Check if it has a child, if it does assume ref
-    {
-      TiXmlNode* child = node->FirstChild();
-
-      return child ? node->FirstChild()->ToText()->Value() : nullptr;
-    }
-  }
-
-  void GetTextFromAllChildrenNodesRecursivly(TiXmlNode* node, StringBuilder* output)
+  void GetTextFromAllChildrenNodesRecursively(TiXmlNode* node, StringBuilder* output)
   {
     // just keep trodding our way down the node structure until we get every single text node
     // (I am tired of edge cases making us miss text so this is the brute force hammer)
@@ -287,13 +243,22 @@ namespace Zero
     {
       if (child->Type() != TiXmlNode::TEXT)
       {
-        GetTextFromAllChildrenNodesRecursivly(child, output);
+        GetTextFromAllChildrenNodesRecursively(child, output);
         continue;
       }
 
       output->Append(child->Value());
       output->Append(" ");
     }
+  }
+
+  String GetTextFromAllChildrenNodesRecursively(TiXmlNode* node)
+  {
+    StringBuilder output;
+
+    GetTextFromAllChildrenNodesRecursively(node, &output);
+
+    return output.ToString();
   }
 
   void GetTextFromChildrenNodes(TiXmlNode* node, StringBuilder* output)
@@ -362,11 +327,9 @@ namespace Zero
             eleChild != nullptr;
             eleChild = eleChild->NextSibling())
           {
-            output->Append(GetTextFromNode(eleChild));
+            output->Append(GetTextFromAllChildrenNodesRecursively(eleChild));
             output->Append(" ");
-
           }
-
         }
       }
     }
@@ -406,11 +369,7 @@ namespace Zero
     if (!typeNode)
       return;
 
-    for (TiXmlNode* node = typeNode->FirstChild(); node != nullptr; node = node->NextSibling())
-    {
-      output->Append(GetTextFromNode(node));
-      output->Append(" ");
-    }
+    GetTextFromAllChildrenNodesRecursively(typeNode, output);
   }
 
 
@@ -993,7 +952,6 @@ namespace Zero
   void RawDocumentationLibrary::Serialize(Serializer& stream)
   {
     SerializeName(mClassPaths);
-    SerializeName(mExceptions);
   }
 
   bool RawDocumentationLibrary::LoadFromDocumentationDirectory(StringParam directory)
@@ -1040,9 +998,12 @@ namespace Zero
   {
     WriteLog("Loading Classes from Doxygen Class XML Files at: %s\n\n", doxyPath.c_str());
 
+    MacroDatabase::Get()->mDoxyPath = doxyPath;
+
     Array<String> classFilepaths;
 
     GetFilesWithPartialName(doxyPath, "class_", mIgnoreList, &classFilepaths);
+    GetFilesWithPartialName(doxyPath, "struct_", mIgnoreList, &classFilepaths);
 
     // for each filepath
     for (uint i = 0; i < classFilepaths.size(); ++i)
@@ -1062,7 +1023,7 @@ namespace Zero
       TiXmlElement* compoundName = doc.FirstChildElement(gElementTags[eDOXYGEN])
         ->FirstChildElement(gElementTags[eCOMPOUNDDEF])->FirstChildElement("compoundname");
 
-      String className = GetTextFromNode(compoundName->FirstChild());
+      String className = GetTextFromAllChildrenNodesRecursively(compoundName);
 
       if (mIgnoreList.NameIsOnIgnoreList(className))
       {
@@ -1071,7 +1032,7 @@ namespace Zero
 
       TypeTokens tokens;
 
-      FillTokensFromString(DocLangDfa::Get(), className, &tokens);
+      AppendTokensFromString(DocLangDfa::Get(), className, &tokens);
 
       className = tokens.back().mText;
       
@@ -1083,6 +1044,10 @@ namespace Zero
     if (mClasses.size() != 0)
     {
       printf("\n...Done Loading Classes from Doxygen Class XML Files\n\n");
+      printf("\nExpanding and parsing any macros found in Doxygen XML Files...\n\n");
+      MacroDatabase::Get()->ProcessMacroCalls();
+      printf("\n...Done processing macros found in Doxygen XML Files\n\n");
+
       return true;
     }
     return false;
@@ -1091,6 +1056,9 @@ namespace Zero
   bool RawDocumentationLibrary::LoadFromSkeletonFile(StringParam doxyPath,
     const DocumentationLibrary &library)
   {
+    MacroDatabase *macroDb = MacroDatabase::Get();
+
+    macroDb->mDoxyPath = doxyPath;
     // first add all the classes by name to the library
     forRange(ClassDoc *classDoc, library.mClasses.all())
     {
@@ -1106,7 +1074,17 @@ namespace Zero
       newClassDoc->LoadFromDoxygen(doxyPath);
     }
 
-    return !library.mClasses.empty();
+
+    if (mClasses.size() != 0)
+    {
+      printf("\n...Done Loading Classes from Doxygen Class XML Files\n\n");
+      printf("\nExpanding and parsing any macros found in Doxygen XML Files...\n\n");
+      MacroDatabase::Get()->ProcessMacroCalls();
+      printf("\n...Done processing macros found in Doxygen XML Files\n\n");
+
+      return true;
+    }
+    return false;
   }
 
   void RawDocumentationLibrary::LoadIgnoreList(StringParam absPath)
@@ -1126,13 +1104,6 @@ namespace Zero
     CreateDirectoryAndParents(absPath.sub_string(0, absPath.FindLastOf('\\')));
 
     SaveToDataFile(mEvents, absPath);
-  }
-
-  void RawDocumentationLibrary::SaveExceptionListToFile(StringParam absPath)
-  {
-    CreateDirectoryAndParents(absPath.sub_string(0, absPath.FindLastOf('\\')));
-
-    SaveToDataFile(mExceptions, absPath);
   }
 
   RawClassDoc *RawDocumentationLibrary::GetClassByName(StringParam name,Array<String> &namespaces)
@@ -1183,7 +1154,7 @@ namespace Zero
     StringBuilder retTypeStr;
     BuildFullTypeString(element, &retTypeStr);
 
-    FillTokensFromString(DocLangDfa::Get(), retTypeStr.ToString(), mTokens);
+    AppendTokensFromString(DocLangDfa::Get(), retTypeStr.ToString(), mTokens);
   }
 
   ////////////////////////////////////////////////////////////////////////
@@ -1209,7 +1180,7 @@ namespace Zero
     String defString = definitionNode->ToElement()->GetText();
 
     // lets send this down the tokenizer like an adult instead of what we were doing
-    FillTokensFromString(DocLangDfa::Get(), defString, &mDefinition);
+    AppendTokensFromString(DocLangDfa::Get(), defString, &mDefinition);
 
     // get rid of the first token that just says 'typedef'
     mDefinition.pop_front();
@@ -1644,11 +1615,31 @@ namespace Zero
     return builder.ToString();
   }
 
+  void RawClassDoc::AddIfNewException(StringParam fnName, ExceptionDoc *errorDoc)
+  {
+    RawMethodDoc *currFn = mMethodMap[fnName][0];
+
+    forRange(ExceptionDoc *doc, currFn->mPossibleExceptionThrows.all())
+    {
+      if (doc->mTitle == errorDoc->mTitle && doc->mMessage == errorDoc->mMessage)
+      {
+        delete errorDoc;
+        return;
+      }
+    }
+
+    mMethodMap[fnName][0]->mPossibleExceptionThrows.push_back(errorDoc);
+  }
+
   // param number technically starts at 1 since 0 means no param for this fn
   // need to give this some newfangled way to detect what function we are in
-  void RawClassDoc::FillErrorInformation(StringParam fnTokenName,
-    ExceptionDocList &libExcList, StringRef fnName, TypeTokens &tokens)
+  void RawClassDoc::FillErrorInformation(StringParam fnTokenName, StringRef fnName, TypeTokens &tokens)
   {
+    if (!mMethodMap.containsKey(fnName))
+    {
+      return;
+    }
+
     if (tokens.contains(DocToken(fnTokenName)))
     {
       String firstParam = GetArgumentIfString(tokens, 1);
@@ -1656,13 +1647,16 @@ namespace Zero
 
       if (!firstParam.empty() || !secondParam.empty())
       {
-        ExceptionDoc &errorDoc = libExcList.mExceptions.push_back();
+        ExceptionDoc *errorDoc = new ExceptionDoc();
 
         String exceptionText = buildExceptionText(firstParam, secondParam);
 
-        errorDoc.mException = exceptionText;
-        errorDoc.mFunction = fnName;
-        errorDoc.mClass = mName;
+        errorDoc->mTitle = firstParam.empty() ? "[variable]" : firstParam;
+        errorDoc->mMessage = secondParam.empty() ? "[variable]" : secondParam;
+
+        //TODO: actually make sure we find the correct overload instead of the first one
+
+        AddIfNewException(fnName, errorDoc);
       }
     }
   }
@@ -1673,11 +1667,9 @@ namespace Zero
     {
       EventDocList &libEventList = classDoc->mParentLibrary->mEvents;
 
-      ExceptionDocList &libExcList = classDoc->mParentLibrary->mExceptions;
-
       TypeTokens tokens;
 
-      FillTokensFromString(DocLangDfa::Get(), codeString, &tokens);
+      AppendTokensFromString(DocLangDfa::Get(), codeString, &tokens);
 
       // the next block is all of the send and recieve event fns we want to parse
       // if boolean argument is false, it is a send function, otherwise, recieve
@@ -1716,7 +1708,7 @@ namespace Zero
 
       if (!codeString.empty())
       {
-        FillTokensFromString(DocLangDfa::Get(), codeString, &tokens);
+        AppendTokensFromString(DocLangDfa::Get(), codeString, &tokens);
 
         for (uint i = 0; i < tokens.size(); ++i)
         {
@@ -1754,7 +1746,7 @@ namespace Zero
     {
       StringBuilder builder;
 
-      GetTextFromAllChildrenNodesRecursivly(codeline, &builder);
+      GetTextFromAllChildrenNodesRecursively(codeline, &builder);
 
       String codeString = builder.ToString();
 
@@ -1800,13 +1792,7 @@ namespace Zero
     // might want to maintain a static list of files we have already processed so we do
     // not end up doubling up documentation for classes that are implemented in the same
     //file.
-
-    //if (mName == "ShaderGraphSocket")
-    //  DebugBreak();
-
     EventDocList &libEventList = mParentLibrary->mEvents;
-
-    ExceptionDocList &libExcList = mParentLibrary->mExceptions;
 
     // grab the class
     TiXmlElement* cppDef = doc->FirstChildElement(gElementTags[eDOXYGEN])
@@ -1831,7 +1817,7 @@ namespace Zero
     {
       StringBuilder builder;
 
-      GetTextFromAllChildrenNodesRecursivly(codeline, &builder);
+      GetTextFromAllChildrenNodesRecursively(codeline, &builder);
 
       if (builder.GetSize() <= 0)
         continue;
@@ -1840,8 +1826,10 @@ namespace Zero
 
       TypeTokens tokens;
 
-      FillTokensFromString(DocLangDfa::Get(), codeString, &tokens);
+      AppendTokensFromString(DocLangDfa::Get(), codeString, &tokens);
 
+      if (tokens.empty())
+        continue;
 
       // does the current line have a pound? Then just continue.
       if (tokens[0].mEnumTokenType == DocTokenType::Pound)
@@ -1854,7 +1842,7 @@ namespace Zero
         if (currFn.empty())
           continue;
         // otherwise, we are going to look for any exceptions, and save it if we find one
-        FillErrorInformation("DoNotifyException", libExcList, currFn, tokens);
+        FillErrorInformation("DoNotifyException", currFn, tokens);
 
         // once we are done, continue
         continue;
@@ -2030,6 +2018,8 @@ namespace Zero
 
   bool RawClassDoc::LoadFromXmlDoc(TiXmlDocument* doc)
   {
+    MacroDatabase *macroDb = MacroDatabase::Get();
+
     // grab the class
     TiXmlElement* classDef = doc->FirstChildElement(gElementTags[eDOXYGEN])
       ->FirstChildElement(gElementTags[eCOMPOUNDDEF]);
@@ -2037,10 +2027,10 @@ namespace Zero
     // get the namespace for the class
     TiXmlElement* compoundName = classDef->FirstChildElement("compoundname");
 
-    String classNamespace = GetTextFromNode(compoundName->FirstChild());
+    String classNamespace = GetTextFromAllChildrenNodesRecursively(compoundName->FirstChild());
 
     TypeTokens namespaceTokens;
-    FillTokensFromString(DocLangDfa::Get(), classNamespace, &namespaceTokens);
+    AppendTokensFromString(DocLangDfa::Get(), classNamespace, &namespaceTokens);
 
     mNamespace.GetNamesFromTokens(namespaceTokens);
 
@@ -2066,9 +2056,6 @@ namespace Zero
       {
         mDescription = DoxyToString(pSection->ToElement(), gElementTags[ePARA]).Trim();
       }
-
-      // TODO: ADD PART WHERE WE CHECK FIRST MEMBER FOR BODY LOCATION
-        // KEEP CHECKING UNTIL WE FIND A CPP
 
       // loop over all members of this section
       for (TiXmlNode* pMemberDef = pSection->FirstChild()
@@ -2109,7 +2096,7 @@ namespace Zero
             mFriends.push_back(GetElementValue(memberElement, gElementTags[eNAME]));
             break;
           }
-          else
+          else // function
           {
             if (mBodyFile.empty())
             {
@@ -2126,7 +2113,7 @@ namespace Zero
                   mHeaderFile = attString;
 
                   // since this path is going to be from doxygen it will have correct slashes
-                  uint pos = mHeaderFile.FindLastOf('/');
+                  uint pos = mHeaderFile.FindLastOf(cDirectorySeparatorChar);
 
                   mHeaderFile = mHeaderFile.sub_string(pos + 1, mHeaderFile.size());
                 }
@@ -2137,14 +2124,21 @@ namespace Zero
                 {
                   mBodyFile = attString;
 
-                  uint pos = mBodyFile.FindLastOf('/');
+                  uint pos = mBodyFile.FindLastOf(cDirectorySeparatorChar);
 
                   mBodyFile = mBodyFile.sub_string(pos + 1, mBodyFile.size());
                 }
               }
             }
-
-            mMethods.push_back(new RawMethodDoc(memberElement, pMemberDef));
+            // if it has no return type and is not a constructor, pass it to macro paser
+            if (fnIsMacroCall(memberElement, pMemberDef))
+            {
+              macroDb->SaveMacroCallFromClass(this, memberElement, pMemberDef);
+            }
+            else
+            {
+              mMethods.push_back(new RawMethodDoc(memberElement, pMemberDef));
+            }
             break;
           }
 
@@ -2158,6 +2152,23 @@ namespace Zero
     Build();
     mDescription = CleanRedundantSpacesInDesc(mDescription);
     return true;
+  }
+
+  bool RawClassDoc::fnIsMacroCall(TiXmlElement* element, TiXmlNode* currMethod)
+  {
+    String name = GetElementValue(element, gElementTags[eNAME]);
+    // this means it is a constructor or deconstructor
+    if (name == mName || BuildString("~", mName) == name)
+    {
+      return false;
+    }
+
+    StringBuilder retTypeStr;
+
+    BuildFullTypeString(element, &retTypeStr);
+
+    // if it is empty, that means we are a macro so return true
+    return retTypeStr.ToString().empty();
   }
 
   bool RawClassDoc::loadDoxyfile(StringParam doxyPath, TiXmlDocument& doc)
@@ -2330,7 +2341,7 @@ namespace Zero
 
     BuildFullTypeString(element, &retTypeStr);
 
-    FillTokensFromString(DocLangDfa::Get(), retTypeStr.ToString(), mReturnTokens);
+    AppendTokensFromString(DocLangDfa::Get(), retTypeStr.ToString(), mReturnTokens);
 
     TiXmlNode* firstElement = GetFirstNodeOfChildType(element, gElementTags[ePARAM]);
 
@@ -2343,7 +2354,6 @@ namespace Zero
 
       // create the Parameter doc
       RawMethodDoc::Parameter* parameterDoc = new RawMethodDoc::Parameter;
-
 
       // get the name of this arguement
       parameterDoc->mName = GetElementValue(paramElement, gElementTags[eDECLNAME]);
@@ -2358,7 +2368,7 @@ namespace Zero
       StringBuilder paramName;
       BuildFullTypeString(paramElement, &paramName);
 
-      FillTokensFromString(DocLangDfa::Get(), paramName.ToString(), parameterDoc->mTokens);
+      AppendTokensFromString(DocLangDfa::Get(), paramName.ToString(), parameterDoc->mTokens);
 
       // get brief description
       TiXmlNode* brief = GetFirstNodeOfChildType(paramElement, gElementTags[eBRIEFDESCRIPTION]);
@@ -2403,6 +2413,8 @@ namespace Zero
     trimMethod->mName = mName;
 
     trimMethod->mDescription = mDescription;
+
+    trimMethod->mPossibleExceptionThrows = mPossibleExceptionThrows;
 
     StringBuilder paramBuilder;
     paramBuilder.Append('(');
@@ -2524,11 +2536,11 @@ namespace Zero
       TiXmlElement* compoundName = namespaceDef->FirstChildElement("compoundname");
 
       // get the string out of the compoundName node
-      String namespaceName = GetTextFromNode(compoundName->FirstChild());
+      String namespaceName = GetTextFromAllChildrenNodesRecursively(compoundName->FirstChild());
 
       TypeTokens namespaceTokens;
 
-      FillTokensFromString(DocLangDfa::Get(), namespaceName, &namespaceTokens);
+      AppendTokensFromString(DocLangDfa::Get(), namespaceName, &namespaceTokens);
 
       TiXmlNode* firstSectDef = GetFirstNodeOfChildType(namespaceDef, gElementTags[eSECTIONDEF]);
       TiXmlNode* endSectDef = GetEndNodeOfChildType(namespaceDef, gElementTags[eSECTIONDEF]);
@@ -2563,7 +2575,7 @@ namespace Zero
         // get the name to make sure we don't already have a typedef by this name
         TiXmlNode* nameNode = GetFirstNodeOfChildType(node->ToElement(), gElementTags[eNAME]);
 
-        String mName = GetTextFromNode(nameNode);
+        String mName = GetTextFromAllChildrenNodesRecursively(nameNode);
 
         RawTypedefDoc* newDoc = &mTypedefArray.push_back();
 

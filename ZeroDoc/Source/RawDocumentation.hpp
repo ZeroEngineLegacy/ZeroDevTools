@@ -13,11 +13,57 @@
 #include <Engine/EngineStandard.hpp>
 #include <Engine/Documentation.hpp>
 #include "..\TinyXml\tinyxml.h"
-#include "DocTypeParser.hpp"
+#include "DocTypeTokens.hpp"
 
 #define WriteLog(...) DocLogger::Get()->Write(__VA_ARGS__)
 namespace Zero
 {
+  // change this to macro magic later
+  enum gElementTagsEnum
+  {
+    eDOXYGEN,
+    eBASECOMPOUNDREF,
+    eCOMPOUNDDEF,
+    eMEMBERDEF,
+    eMEMBER,
+    eBRIEFDESCRIPTION,
+    ePARA,
+    ePARAM,
+    eKIND,
+    eNAME,
+    eARGSSTRING,
+    eTYPE,
+    eREF,
+    eDECLNAME,
+    eDEFINITION,
+    eCODELINE,
+    eHIGHLIGHT,
+    eSECTIONDEF,
+    eINVALID_TAG
+  };
+
+  static const char* gElementTags[eINVALID_TAG] = {
+    "doxygen",
+    "basecompoundref",
+    "compounddef",
+    "memberdef",
+    "member",
+    "briefdescription",
+    "para",
+    "param",
+    "kind",
+    "name",
+    "argsstring",
+    "type",
+    "ref",
+    "declname",
+    "definition",
+    "codeline",
+    "highlight",
+    "sectiondef"
+  };
+
+
   ///// FORWARD DEC ///// 
   class RawTypedefDoc;
   class RawMethodDoc;
@@ -28,8 +74,12 @@ namespace Zero
   class RawDocumentationLibrary;
 
   ///// HELPERS ///// 
-  ///Gets all of the text from all the children nodes below this
-  void GetTextFromAllChildrenNodesRecursivly(TiXmlNode* node, StringBuilder* output);
+  ///Gets all of the text from the passed in node and all its children, text is added to output
+  void GetTextFromAllChildrenNodesRecursively(TiXmlNode* node, StringBuilder* output);
+
+  ///Get text from passed in node and all of its children and returns it as a string
+  String GetTextFromAllChildrenNodesRecursively(TiXmlNode* node);
+
   ///Gets argument at pos if it is a string, otherwise returns empty
   String GetArgumentIfString(TypeTokens &fnCall, uint argPos);
 
@@ -52,7 +102,7 @@ namespace Zero
   void CullAllSpacesFromString(StringRef str, StringBuilder* output);
 
   ///gets value text from node, does assume node it of type ref or text
-  const char* GetTextFromNode(TiXmlNode* node);
+  //const char* GetTextFromNode(TiXmlNode* node);
 
   ///gets text from children type nodes
   void GetTextFromChildrenNodes(TiXmlNode* node, StringBuilder* output);
@@ -77,6 +127,9 @@ namespace Zero
   ///get files in directory that have partial string in them, but ignores anything in ignoreList
   void GetFilesWithPartialName(StringParam basePath, StringParam partialName,
     IgnoreList &ignoreList, Array<String>* output);
+
+  ///recusivly search directory for file with exact name passed in
+  String GetFileWithExactName(StringParam basePath, StringParam exactName);
 
   ///gets rid of any duplicate spaces that doxygen left in descriptions
   String CleanRedundantSpacesInDesc(StringParam description);
@@ -195,6 +248,7 @@ namespace Zero
 
     TypeTokens* mReturnTokens;
     Array<Parameter*> mParsedParameters;
+    Array<ExceptionDoc *> mPossibleExceptionThrows;
 
     String mName;
     String mDescription;
@@ -299,7 +353,7 @@ namespace Zero
     ///looks for bindevent macro calls in cpp docs
     void LoadEventsFromCppDoc(TiXmlDocument *doc);
 
-    ///looks for defineevent macro calls in hpp docs
+    ///looks for notifyException macro calls in hpp docs
     void LoadEventsFromHppDoc(TiXmlDocument *doc);
 
     ///loads events for class with doxName in the doxyPath
@@ -335,8 +389,9 @@ namespace Zero
     ///generates key fror classmap that incorperates namespace into classname
     String GenerateMapKey(void);
 
-    void FillErrorInformation(StringParam fnTokenName,
-      ExceptionDocList &libExcList, StringRef fnName, TypeTokens &tokens);
+    void FillErrorInformation(StringParam fnTokenName, StringRef fnName, TypeTokens &tokens);
+
+    void AddIfNewException(StringParam fnName, ExceptionDoc *errorDoc);
 
     ///// PUBLIC DATA ///// 
 
@@ -377,6 +432,9 @@ namespace Zero
 
   private:
     ///// PRIVATE METHODS ///// 
+    ///tests if a function is actually a macro call (assumes you pass it valid funciton doc)
+    bool fnIsMacroCall(TiXmlElement* element, TiXmlNode* currMethod);
+
     ///loads the Doxy xml file into doc. Returns False on failure to load
     bool loadDoxyfile(StringParam doxyPath, TiXmlDocument& doc);
 
@@ -436,8 +494,6 @@ namespace Zero
 
     void SaveEventListToFile(StringParam absPath);
 
-    void SaveExceptionListToFile(StringParam absPath);
-
     ///each namespace passed will be tried,
     ///combinations of namespaces must be passed explicitly
     RawClassDoc *GetClassByName(StringParam name, Array<String> &namespaces);
@@ -452,8 +508,6 @@ namespace Zero
     IgnoreList mIgnoreList;
 
     EventDocList mEvents;
-
-    ExceptionDocList mExceptions;
   };
 
 

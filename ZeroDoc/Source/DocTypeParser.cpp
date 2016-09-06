@@ -1,388 +1,494 @@
 #include "Precompiled.hpp"
 
 #include "DocTypeParser.hpp"
-
-#define LETTERS 'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W',\
-                 'X','Y','Z','a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t',\
-                 'u','v','w','x','y','z'
-#define NUMBERS '0','1','2','3','4','5','6','7','8','9'
-#define WHITESPACE ' ','\r','\n','\t'
-
-#define INVALID_TOKEN 0
+#include "MacroDatabase.hpp"
 
 namespace Zero
 {
-  static Zero::UnsortedMap<Zero::String, DocTokenType::Enum> *DocTypeStringEnumMap;
+  ////////////////////
+  //The Macro Toolbox (tm)
+  ////////////////////
+#define Make_Node(NodeType) UniquePointer<NodeType> node = new NodeType;
 
-  static bool verboseFlag = false;
+#define Get_Statements while (node->mStatements.push_back(this->Statement()));
 
-  ////////////////////////////////////////////////////////////
-  //////////Helpers
-  ////////////////////////////////////////////////////////////
+#define Accept_Rule node.Release()
 
-  void SetVerboseFlag(void)
+
+  ////////////////////////////////////////////////////////////////////////
+  // DocTypeParser (helpers)
+  ////////////////////////////////////////////////////////////////////////
+  bool DocTypeParser::accept(DocTokenType::Enum type)
   {
-    verboseFlag = true;
-  }
-
-  //Builds a string from a list of tokens
-  String ConvertTokenListToString(const TypeTokens& tokens)
-  {
-    StringBuilder builder;
-
-    for (uint i = 0; i < tokens.size(); ++i)
+    // automatically return false if we are at the end of the token stream
+    if (mIndex >= mTokens.size())
     {
-      builder.Append(tokens[i].mText);
-      builder.Append(" ");
+      return false;
     }
-    return builder.ToString();
+
+    // since we are not at the end, check if the token matches, if it does move index forward
+    if (type == mTokens[mIndex].mEnumTokenType)
+    {
+      //PrintRule::AcceptedToken(mTokens[mIndex]);
+      ++mIndex;
+      return true;
+    }
+
+    return false;
   }
 
-  void FillTokensFromString(DocDfaState* startingState, StringRef str, TypeTokens *output)
+  bool DocTypeParser::accept(DocTokenType::Enum type, DocToken*& token)
   {
-    const char *stream = str.c_str();
-    // Read until we exhaust the stream
-    while (*stream != '\0')
+    // automatically return false if we are at the end of the token stream
+    if (mIndex >= mTokens.size())
     {
-      DocToken token;
-      ReadToken(startingState, stream, token);
+      return false;
+    }
 
-      stream += token.mText.size();
+    // since we are not at the end, check if the token matches, if it does move index forward
+    if (type == mTokens[mIndex].mEnumTokenType)
+    {
+     // PrintRule::AcceptedToken(mTokens[mIndex]);
 
-      if (token.mText.size() == 0)
+      // HERE is the new addition with this accept, we copy the token over
+      token = &mTokens[mIndex];
+
+      ++mIndex;
+      return true;
+    }
+
+    return false;
+  }
+
+  ////
+  //Bool expects
+  ////
+  bool DocTypeParser::expect(DocTokenType::Enum type)
+  {
+    if (accept(type))
+    {
+      return true;
+    }
+
+    throw ParsingException();
+  }
+
+
+  bool DocTypeParser::expect(DocTokenType::Enum type, String errorMsg)
+  {
+    if (accept(type))
+    {
+      return true;
+    }
+
+    throw ParsingException(errorMsg);
+  }
+
+  bool DocTypeParser::expect(bool expected)
+  {
+    if (expected)
+      return true;
+
+    throw ParsingException();
+  }
+
+  bool DocTypeParser::expect(bool expected, String errorMsg)
+  {
+    if (expected)
+    {
+      return true;
+    }
+
+    throw ParsingException(errorMsg);
+  }
+
+  ////
+  //Token out expects
+  ////
+  void DocTypeParser::expect(DocTokenType::Enum type, DocToken*& output)
+  {
+    if (accept(type, output))
+    {
+      return;
+    }
+
+    throw ParsingException();
+  }
+
+  void DocTypeParser::expect(DocTokenType::Enum type, String errorMsg, DocToken*& output)
+  {
+    if (accept(type, output))
+    {
+      return;
+    }
+
+    throw ParsingException(errorMsg);
+  }
+
+  ////
+  //Template type expects
+  ////
+  template < typename T >
+  T DocTypeParser::expect(T expectedValue)
+  {
+    if (expectedValue)
+      return expectedValue;
+
+    throw ParsingException();
+  }
+
+  template < typename T >
+  T DocTypeParser::expect(T expectedValue, String errorMsg)
+  {
+    if (expectedValue)
+      return expectedValue;
+
+    throw ParsingException(errorMsg);
+  }
+
+
+  ////////////////////////////////////////////////////////////////////////
+  // DocTypeParser (rules)
+  ////////////////////////////////////////////////////////////////////////
+  //--------------------------------------------------------------------------------Block
+  // Block = (Function|BlockNode|CallNode)*
+  UniquePointer<BlockNode> DocTypeParser::Block(void)
+  {
+    Make_Node(BlockNode);
+
+    for (;;)
+    {
+      UniquePointer<AbstractNode> newNode = Function();
+
+      if (!newNode)
       {
-        if (verboseFlag)
-          printf("Skipping one character of input: '%s'\n", stream);
-        ++stream;
+        newNode = Call();
       }
-      else if (token.mEnumTokenType == DocTokenType::Whitespace)
+
+
+      if (newNode != nullptr)
       {
+        node->mGlobals.push_back(newNode.Release());
         continue;
       }
-      else if (output != nullptr)
-      {
-        output->push_back(token);
-      }
-    }
-  }
-
-  void InitializeTokens(void)
-  {
-    DocTypeStringEnumMap = new Zero::UnsortedMap<Zero::String, DocTokenType::Enum>();
-
-    for (uint i = 0; i < DocTokenType::EnumCount; ++i)
-    {
-      (*DocTypeStringEnumMap)[DocTokenTypes[i]] = (DocTokenType::Enum)i;
-    }
-  }
-
-////////////////////////////////////////////////////////////
-//////////DFA
-////////////////////////////////////////////////////////////
-
-bool Zero::DocDfaEdge::operator==(const DocDfaEdge& rhs) const
-{
-  return mChild == rhs.mChild && mEdgeID == rhs.mEdgeID;
-}
-
-DocDfaState* AddState(int acceptingToken)
-{
-  DocDfaState *newState = new DocDfaState();
-
-  newState->mTokenTypeID = static_cast<DocTokenType::Enum>(acceptingToken);
-
-  newState->mDefault = nullptr;
-
-  return newState;
-}
-
-void AddEdge(DocDfaState* from, DocDfaState* to, char c)
-{
-  //DocDfaEdge *newEdge = new DocDfaEdge();
-
-  // add edge to the parent
-  from->mEdges[c].mChild = to;
-  from->mEdges[c].mEdgeID = c;
-}
-
-//void AddListOfEdges(DocDfaState* from, DocDfaState* to) {}
-
-template <typename First = char>
-void AddListOfEdges(DocDfaState* from, DocDfaState* to, const First& first)
-{
-  AddEdge(from, to, first);
-}
-
-template <typename First, typename... Rest>
-void AddListOfEdges(DocDfaState* from, DocDfaState* to, const First& first, const Rest&... rest)
-{
-  // recursive call using pack expansion syntax
-  AddEdge(from, to, first);
-  AddListOfEdges<Rest...>(from, to, rest...);
-}
-
-
-void AddDefaultEdge(DocDfaState* from, DocDfaState* to)
-{
-  from->mDefault = to;
-}
-
-DocDfaState* CreateLangDfa(void)
-{
-  //first create the starting node
-  DocDfaState* root = AddState(0);
-
-  /////Whitespace = [ \r\n\t]+                          /////
-
-  DocDfaState *whitespace = AddState(DocTokenType::Whitespace);
-
-  AddListOfEdges(root, whitespace, WHITESPACE);
-  AddListOfEdges(whitespace, whitespace, WHITESPACE);
-
-  /////Identifier = [a-zA-Z_][a-zA-Z0-9_]*              /////
-
-  DocDfaState *identifier1 = AddState(DocTokenType::Identifier);
-  DocDfaState *identifier2 = AddState(DocTokenType::Identifier);
-
-  AddListOfEdges(root, identifier1, LETTERS, '_');
-  AddListOfEdges(identifier1, identifier2, LETTERS, NUMBERS, '_');
-  AddListOfEdges(identifier2, identifier2, LETTERS, NUMBERS, '_');
-
-  /////Pointer/Reference = [&*]*                        /////
-  DocDfaState *pointer = AddState(DocTokenType::Pointer);
-  DocDfaState *reference = AddState(DocTokenType::Reference);
-
-  AddEdge(root, pointer, '*');
-  AddEdge(root, reference, '&');
-
-  /////Pound = #                                        /////
-  DocDfaState *pound = AddState(DocTokenType::Pound);
-
-  AddEdge(root, pound, '#');
-
-  /////GreaterThan/LessThan = (<|>)                     /////
-
-  DocDfaState *LessThan = AddState(DocTokenType::LessThan);
-  DocDfaState *GreaterThan = AddState(DocTokenType::GreaterThan);
-
-  AddEdge(root, LessThan, '<');
-  AddEdge(root, GreaterThan, '>');
-
-  /////Scope Resolution                                 /////
-
-  DocDfaState *Invalid = AddState(DocTokenType::Invalid);
-  DocDfaState *ScopeRes = AddState(DocTokenType::ScopeResolution);
-
-  AddEdge(root, Invalid, ':');
-  AddEdge(Invalid, ScopeRes, ':');
-
-  /////Parenthesis                                     /////
-  DocDfaState *openParen = AddState(DocTokenType::OpenParen);
-  DocDfaState *closeParen = AddState(DocTokenType::CloseParen);
-
-  AddEdge(root, openParen, '(');
-  AddEdge(root, closeParen, ')');
-
-  /////Comma                                           /////
-  DocDfaState *comma = AddState(DocTokenType::Comma);
-
-  AddEdge(root, comma, ',');
-
-  /////Semicolon                                       /////
-  DocDfaState *semicolon = AddState(DocTokenType::Semicolon);
-
-  AddEdge(root, semicolon, ';');
-
-  /////Brackets                                        /////
-  DocDfaState *bracketO = AddState(DocTokenType::OpenBracket);
-  DocDfaState *bracketC = AddState(DocTokenType::CloseBracket);
-
-  AddEdge(root, bracketO, '[');
-  AddEdge(root, bracketC, ']');
-
-  DocDfaState *curlOpen = AddState(DocTokenType::OpenCurly);
-  DocDfaState *curlClose = AddState(DocTokenType::CloseCurly);
-
-  AddEdge(root, curlOpen, '{');
-  AddEdge(root, curlClose, '}');
-
-  /////comments                                       /////
-  DocDfaState *comment = AddState(DocTokenType::Comment);
-
-
-  AddEdge(root, Invalid, '/');
-  AddEdge(Invalid, comment, '/');
-  AddDefaultEdge(comment, comment);
-
-
-  /////Quotes                                         /////
-
-  DocDfaState *stringLiteralStart = AddState(DocTokenType::Invalid);
-  DocDfaState *stringLiteral1 = AddState(DocTokenType::Invalid);
-  DocDfaState *stringEscapeCharacter = AddState(DocTokenType::Invalid);
-  DocDfaState *stringLiteralEnd = AddState(DocTokenType::StringLiteral);
-
-  // possible edges from open quote
-  AddEdge(root, stringLiteralStart, '\"');
-  stringLiteralStart->mDefault = stringLiteral1;
-  AddEdge(stringLiteralStart, stringLiteralEnd, '\"');
-  AddEdge(stringLiteralStart, stringEscapeCharacter, '\\');
-
-  // possible edges for the rest of the string
-  AddEdge(stringLiteral1, stringEscapeCharacter, '\\');
-  AddListOfEdges(stringEscapeCharacter, stringLiteral1, 'n', 'r', 't', '\"');
-  stringLiteral1->mDefault = stringLiteral1;
-  AddEdge(stringLiteral1, stringLiteralEnd, '\"');
-
-  return root;
-}
-
-////////////////////////////////////////////////////////////
-//////////DocToken
-////////////////////////////////////////////////////////////
-
-DocToken::DocToken() : mEnumTokenType(DocTokenType::EnumCount) {}
-
-DocToken::DocToken(StringParam text, DocTokenType::Enum type)
-  : mText(text)
-  , mEnumTokenType(type)
-{
-}
-
-void DocToken::Serialize(Serializer& stream)
-{
-  SerializeName(mText);
-  String Type = DocTokenTypes[mEnumTokenType];
-  SerializeName(Type);
-  mEnumTokenType = (*DocTypeStringEnumMap)[Type.c_str()];
-}
-
-bool DocToken::operator==(const DocToken& right)
-{
-  return mText == right.mText;
-}
-
-////////////////////////////////////////////////////////////
-//////////ParsingFunctions
-////////////////////////////////////////////////////////////
-
-int checkForKeyword(const char*stream, int tokenLen)
-{
-  char token[50] = { '\0' };
-  int index = 0;
-  for (; stream[index] != '\0'; ++index)
-  {
-    if (stream[index] == ' ')
-    {
       break;
     }
+
+    return Accept_Rule;
   }
 
-  strncpy(token, stream, tokenLen);
-
-  index = 0;
-  for (const char *keyword : DocKeywords)
+  // check for macro expansion, create a new code block if one is found
+  void BlockNode::AddToClassDoc(RawClassDoc* doc)
   {
-    if (std::strcmp(keyword, token) == 0)
-      return DocTokenType::KeywordStart + 1 + index;
-
-    ++index;
-  }
-  return DocTokenType::Identifier;
-}
-
-DocDfaEdge *FindEdge(DocDfaState *state, char c)
-{
-  if (!state->mEdges.containsKey(c))
-    return NULL;
-
-  return &state->mEdges[c];
-}
-
-void CheckForKeyword(DocToken& outToken)
-{
-  for (uint i = 0; i < DocTokenType::EnumCount - DocTokenType::KeywordStart; ++i)
-  {
-    if (outToken.mText == DocKeywords[i])
+    forRange(AbstractNode *node, mGlobals.all())
     {
-      outToken.mEnumTokenType = static_cast<DocTokenType::Enum>(DocTokenType::KeywordStart + 1 + i);
+      node->AddToClassDoc(doc);
     }
   }
-}
 
-
-void ReadToken(DocDfaState* startingState, const char* stream, DocToken& outToken)
-{
-  DocDfaState *currState = startingState;
-  DocDfaState *acceptingState = nullptr;
-
-  int tokenLen = 0;
-  int acceptedTokenLen = 0;
-  for (const char *nextChar = stream; *nextChar != '\0'; ++nextChar, ++tokenLen)
+  ////////////////////
+  //Call to get parsed block
+  ////////////////////
+  UniquePointer<BlockNode> ParseBlock(TypeTokens& tokens)
   {
-    if (currState->mTokenTypeID != 0)
+    DocTypeParser parser(tokens);
+
+    UniquePointer<BlockNode> retVal;
+    try
     {
-      acceptingState = currState;
-      acceptedTokenLen = tokenLen;
+      retVal = parser.Block();
+    }
+    catch (ParsingException &e)
+    {
+      // for now do nothing  but break
+      Error(e.what());
     }
 
-    DocDfaEdge *foundEdge = FindEdge(currState, *nextChar);
+    return retVal.Release();
+  }
 
-    if (foundEdge == nullptr)
+  //--------------------------------------------------------------------------------Call
+  //callNode = <Comment>? <Identifier> <OpenParentheses> 
+  //(Parameter (<Comma> Parameter)*)? <CloseParentheses>
+  CallNode* DocTypeParser::Call(void)
+  {
+    DocToken *comment = nullptr;
+
+    accept(DocTokenType::Comment, comment);
+
+    DocToken *name;
+
+    accept(DocTokenType::Identifier, name);
+
+    if (!name)
+      return nullptr;
+
+    Make_Node(CallNode);
+
+    node->mComment = comment;
+
+    node->mName = name;
+
+
+    expect(DocTokenType::OpenParen, "Expected OpenParentheses for call");
+
+    DocToken *arg;
+    
+
+    if (accept(DocTokenType::Identifier, arg) || accept(DocTokenType::StringLiteral, arg))
     {
-      // first, check for a mDefault edge
-      if (currState->mDefault != nullptr)
+      node->mArguments.push_back(arg);
+
+      while (accept(DocTokenType::Comma))
       {
-        currState = currState->mDefault;
-
-        continue;
+        arg = nullptr;
+        expect(accept(DocTokenType::Identifier, arg) || accept(DocTokenType::StringLiteral, arg)
+          , "Expected parameter after comma, did you leave a trailing comma?");
+        node->mArguments.push_back(arg);
       }
+    }
 
-      // if no mDefault, check for last accepting state
-      if (acceptingState != nullptr)
-      {
-        // just return the accepting token
-        outToken.mEnumTokenType = acceptingState->mTokenTypeID;
-       // outToken.id = outToken.mEnumTokenType;
-        outToken.mText = String(stream, acceptedTokenLen);
+    expect(DocTokenType::CloseParen, "Expected CloseParentheses after parameter list");
 
-        CheckForKeyword(outToken);
-        return;
-      }
+    // just eat the semicolon because macros are gonna macro sometimes
+    accept(DocTokenType::Semicolon);
 
-      // if both are false, return invalid token
-      outToken.mEnumTokenType = DocTokenType::Invalid;
-      //outToken.id = outToken.mEnumTokenType;
-      outToken.mText = String(stream, tokenLen);
+    return Accept_Rule;
+  }
+
+  // check for macro expansion, create a new code block if one is found
+  void CallNode::AddToClassDoc(RawClassDoc* doc)
+  {
+    if (mComment == nullptr)
       return;
 
-    } //otherwise, we found an edge
+    TypeTokens commentTokens;
 
-      // traverse to that node and get the next character
-    currState = foundEdge->mChild;
+    AppendTokensFromString(DocLangDfa::Get(), mComment->mText, &commentTokens);
+
+    // if it is blank it does not even contain the MAcroComment keyword
+    if (commentTokens.size() < 1)
+      return;
+
+    // check for a macro comment directive
+    if (commentTokens[0].mText != "MacroComment")
+      return;
+
+    MacroCall call;
+
+    call.mClass = doc;
+
+    // parse any options in the comment really quick
+    call.ParseOptions(commentTokens);
+
+    // copy over any arguments that were passed to the macro call
+    forRange(DocToken* token, mArguments.all())
+    {
+      call.mMacroArgs.push_back(token->mText);
+    }
+
+    MacroDatabase* database = MacroDatabase::Get();
+
+    // just return out if we do not load the macro
+    if (!call.LoadMacroWithName(mName->mText))
+      return;
+
+    // expand our new call
+    call.ExpandCall();
+
+    UniquePointer<BlockNode> parsedMacro = ParseBlock(call.mExpandedMacro);
+
+    // Will recurse again if more macros are present
+    if (parsedMacro)
+      parsedMacro->AddToClassDoc(doc);
   }
-  if (currState->mTokenTypeID != 0)
+
+  //--------------------------------------------------------------------------------Function
+  // FunctionDec = <Comment>? Type <Identifier> 
+  //  <OpenParentheses> (Parameter (<Comma> Parameter)*)?  <CloseParentheses> <keyword>?
+  FunctionNode* DocTypeParser::Function(void)
   {
-    acceptingState = currState;
-    acceptedTokenLen = tokenLen;
+    unsigned startIndex = mIndex;
+
+    DocToken *comment = nullptr;
+
+    accept(DocTokenType::Comment, comment);
+
+    UniquePointer<TypeNode> retType = Type();
+
+    if (!retType)
+      return nullptr;
+
+    Make_Node(FunctionNode);
+
+    node->mComment = comment;
+
+    node->mReturnType = retType.Release();
+
+    // we are going to reset the index to before
+    if (!accept(DocTokenType::Identifier, node->mName))
+    {
+      mIndex = startIndex;
+      return nullptr;
+    }
+
+    expect(DocTokenType::OpenParen, "Expected OpenParentheses for parameter specification");
+
+    UniquePointer<ParameterNode> param = Parameter();
+    if (param)
+    {
+      node->mParameters.push_back(param.Release());
+
+      while (accept(DocTokenType::Comma))
+      {
+        param = Parameter();
+        expect(param != nullptr, "Expected parameter after comma, did you leave a trailing comma?");
+        node->mParameters.push_back(param.Release());
+      }
+    }
+
+    expect(DocTokenType::CloseParen, "Expected CloseParentheses after parameter list");
+
+    // eat any trailing identifiers, they would have been thrown away anyway
+    while (accept(DocTokenType::Identifier) || accept(DocTokenType::ConstQualifier)) {}
+
+    // because macros you can totally not have a semicolon if you are a jerk
+    accept(DocTokenType::Semicolon);
+
+    return Accept_Rule;
   }
 
-  if (acceptingState != nullptr)
+  void FunctionNode::AddToClassDoc(RawClassDoc *doc)
   {
-    // just return the accepting token
-    outToken.mEnumTokenType = acceptingState->mTokenTypeID;
-    //outToken.id = outToken.mEnumTokenType;
-    outToken.mText = String(stream, acceptedTokenLen);
+    RawMethodDoc* newMethod = new RawMethodDoc();
 
-    CheckForKeyword(outToken);
+    if (mComment)
+    {
+      newMethod->mDescription = mComment->mText;
+    }
+
+    newMethod->mName = mName->mText;
+
+    CopyArrayOfTokenPtrToTypeTokens(mReturnType->mTokens, newMethod->mReturnTokens);
+
+    // since param needs to save to the method doc we will implement it here
+    forRange(ParameterNode *param, mParameters.all())
+    {
+      RawMethodDoc::Parameter *newParam = new RawMethodDoc::Parameter;
+
+      CopyArrayOfTokenPtrToTypeTokens(param->mType->mTokens, newParam->mTokens);
+
+      newParam->mName = param->mName->mText;
+
+      newMethod->mParsedParameters.push_back(newParam);
+    }
+
+    doc->mMethods.push_back(newMethod);
+
+    doc->mMethodMap[newMethod->mName].append(newMethod);
   }
-  else
+
+  //--------------------------------------------------------------------------------Parameter
+  // Parameter = Type <Identifier>
+  UniquePointer<ParameterNode> DocTypeParser::Parameter(void)
   {
-    // if both are false, return invalid token
-    outToken.mEnumTokenType = DocTokenType::Invalid;
-    //outToken.id = outToken.mEnumTokenType;
-    outToken.mText = String(stream, tokenLen);
-  }
-}
+    UniquePointer<TypeNode> type = Type();
 
+    if (!type)
+      return nullptr;
+
+    Make_Node(ParameterNode);
+
+    expect(DocTokenType::Identifier, "Expected identifier for parameter", node->mName);
+
+    node->mType = type.Release();
+
+    return Accept_Rule;
+  }
+
+  void ParameterNode::AddToClassDoc(RawClassDoc* doc)
+  {
+    Error("ParameterNodes should never directly be added to doc, \
+should be automatically added by FunctionNode instead");
+  }
+
+  //--------------------------------------------------------------------------------TypeNode
+  //// Type = NamedType | FunctionType
+  UniquePointer<TypeNode> DocTypeParser::Type(void)
+  {
+    UniquePointer<TypeNode> node = NamedType();
+
+    if (node == nullptr)
+    {
+      node = FunctionType();
+    }
+
+    return Accept_Rule;
+  }
+
+  void TypeNode::AddToClassDoc(RawClassDoc* doc)
+  {
+    Error("TypeNodes should never directly be added to doc");
+  }
+
+  // NOTE: Ignoring namespace for now
+  //NamedType = Namespace*<Identifier> <Asterisk>* <Ampersand>?
+  UniquePointer<TypeNode> DocTypeParser::NamedType(void)
+  {
+    DocToken *currToken = nullptr;
+
+    accept(DocTokenType::StaticQualifier);
+
+    Make_Node(TypeNode);
+
+    if (accept(DocTokenType::ConstQualifier, currToken))
+    {
+      node->mTokens.push_back(currToken);
+    }
+
+    if (!accept(DocTokenType::Identifier, currToken) 
+      && !accept(DocTokenType::Void, currToken))
+    {
+      if (!node->mTokens.empty())
+        throw ParsingException("Invalid Const Qualifier Found");
+
+      return nullptr;
+    }
+
+
+    node->mTokens.push_back(currToken);
+
+    while (accept(DocTokenType::Pointer, currToken))
+    {
+      node->mTokens.push_back(currToken);
+    }
+
+    if (accept(DocTokenType::Reference, currToken))
+    {
+      node->mTokens.push_back(currToken);
+    }
+
+    return Accept_Rule;
+  }
+
+  // FunctionType = Type <Asterisk>+ <Ampersand>? 
+  //   <OpenParentheses> Type (<Comma> Type)* <CloseParentheses>
+  UniquePointer<TypeNode> DocTypeParser::FunctionType(void)
+  {
+    //TODO: I got lazy, do this later future me!
+    return nullptr;
+  }
+
+
+  ////////////////////////////////////////////////////////////////////////
+  // ParsingException
+  ////////////////////////////////////////////////////////////////////////
+  ParsingException::ParsingException() : mError("ParsingException Occured"){}
+
+  ParsingException::ParsingException(StringParam error) : mError(error) {}
+
+  const char* ParsingException::what() const
+  {
+    return mError.c_str();
+  }
 }

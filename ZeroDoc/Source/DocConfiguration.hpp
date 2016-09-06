@@ -45,6 +45,9 @@ struct DocGeneratorConfig
   ///where to output the command list
   String mCommandListFile;
 
+  ///what macro test to run, if -1, no tests will be run, if max(int), all tests will run
+  int mRunMacroTest;
+
   ///// Raw Bools /////
   ///if true, we will replace any typedefs in documentation with the underlying type
   bool mReplaceTypes;
@@ -54,7 +57,7 @@ struct DocGeneratorConfig
   bool mLoadTypedefsFromDoxygen;
   ///if true, some extra parsing information will be logged/output
   bool mVerbose;
-  ///if true, we tag everything we load as unbout types
+  ///if true, we tag everything we load as unbound types
   bool mTagAllAsUnbound;
   ///if true, we will print the help text then exit
   bool mHelp;
@@ -69,8 +72,10 @@ inline DocGeneratorConfig LoadConfigurations(StringMap& params)
 {
   DocGeneratorConfig config;
 
-  ///// Load Raw Options /////
+  ///// Load Macro Options /////
+  config.mRunMacroTest = GetStringValue<int>(params, "runMacroTest", -1);
 
+  ///// Load Raw Options /////
   config.mReplaceTypes = GetStringValue<bool>(params, "replaceTypes", false);
   config.mLoadTypedefs = GetStringValue<bool>(params, "loadTypedefs", false);
   config.mLoadTypedefsFromDoxygen = GetStringValue<bool>(params, "loadTypedefsFromDoxygen", false);

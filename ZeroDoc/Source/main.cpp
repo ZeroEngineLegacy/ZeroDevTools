@@ -8,6 +8,7 @@
 #include "RawDocumentation.hpp"
 #include "MarkupWriter.hpp"
 #include "MacroDatabase.hpp"
+#include "MacroDocTests.hpp"
 
 namespace Zero
 {

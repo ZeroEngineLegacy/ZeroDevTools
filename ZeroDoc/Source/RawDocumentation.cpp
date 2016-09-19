@@ -177,12 +177,9 @@ namespace Zero
 
   DocDfaState* DocLangDfa::Get(void)
   {
-    static DocDfaState* instance;
+    static DocDfaState *instance;
 
-    if (!instance)
-      instance = CreateLangDfa();
-
-    return instance;
+    return instance ? instance : instance = CreateLangDfa();
   }
 
   // returns first child of element with value containing tag type 'type'
@@ -782,9 +779,9 @@ namespace Zero
 
   DocLogger* DocLogger::Get(void)
   {
-    static DocLogger* logger;
+    static DocLogger logger;
 
-    return logger ? logger : logger = new DocLogger;
+    return &logger;
   }
 
   ////////////////////////////////////////////////////////////////////////
@@ -998,7 +995,7 @@ namespace Zero
   {
     WriteLog("Loading Classes from Doxygen Class XML Files at: %s\n\n", doxyPath.c_str());
 
-    MacroDatabase::Get()->mDoxyPath = doxyPath;
+    MacroDatabase::GetInstance()->mDoxyPath = doxyPath;
 
     Array<String> classFilepaths;
 
@@ -1045,7 +1042,7 @@ namespace Zero
     {
       printf("\n...Done Loading Classes from Doxygen Class XML Files\n\n");
       printf("\nExpanding and parsing any macros found in Doxygen XML Files...\n\n");
-      MacroDatabase::Get()->ProcessMacroCalls();
+      MacroDatabase::GetInstance()->ProcessMacroCalls();
       printf("\n...Done processing macros found in Doxygen XML Files\n\n");
 
       return true;
@@ -1056,7 +1053,7 @@ namespace Zero
   bool RawDocumentationLibrary::LoadFromSkeletonFile(StringParam doxyPath,
     const DocumentationLibrary &library)
   {
-    MacroDatabase *macroDb = MacroDatabase::Get();
+    MacroDatabase *macroDb = MacroDatabase::GetInstance();
 
     macroDb->mDoxyPath = doxyPath;
     // first add all the classes by name to the library
@@ -1079,7 +1076,7 @@ namespace Zero
     {
       printf("\n...Done Loading Classes from Doxygen Class XML Files\n\n");
       printf("\nExpanding and parsing any macros found in Doxygen XML Files...\n\n");
-      MacroDatabase::Get()->ProcessMacroCalls();
+      MacroDatabase::GetInstance()->ProcessMacroCalls();
       printf("\n...Done processing macros found in Doxygen XML Files\n\n");
 
       return true;
@@ -1128,6 +1125,7 @@ namespace Zero
   RawVariableDoc::RawVariableDoc(void) 
   {
     mTokens = new TypeTokens; 
+    mProperty = false;
   }
   RawVariableDoc::~RawVariableDoc(void) 
   {
@@ -1316,6 +1314,20 @@ namespace Zero
   void RawClassDoc::LoadFromSkeleton(const ClassDoc &skeleClass)
   {
     mTags = skeleClass.mTags;
+
+    forRange(PropertyDoc *prop, skeleClass.mProperties.all())
+    {
+      RawVariableDoc *newVar = new RawVariableDoc();
+
+      newVar->mName = prop->mName;
+      newVar->mDescription = prop->mDescription;
+
+      newVar->mTokens = new TypeTokens;
+      newVar->mTokens->push_back(DocToken(prop->mType));
+
+      newVar->mProperty = true;
+      mVariables.push_back(newVar);
+    }
   }
 
   void RawClassDoc::Serialize(Serializer& stream)
@@ -1410,6 +1422,7 @@ namespace Zero
   void RawClassDoc::FillTrimmedClass(ClassDoc* trimClass)
   {
     trimClass->mName = mName;
+
     trimClass->mBaseClass = mBaseClass;
     trimClass->mDescription = mDescription;
     trimClass->mEventsSent = mEvents;
@@ -1426,6 +1439,9 @@ namespace Zero
     {
       RawVariableDoc* rawVar = mVariables[i];
 
+      if (!rawVar->mProperty)
+        continue;
+
       PropertyDoc* trimProp = new PropertyDoc;
 
       // trim off the leading 'm' if it has one
@@ -1438,7 +1454,7 @@ namespace Zero
 
       trimProp->mType = TrimTypeTokens(*rawVar->mTokens);
 
-      trimClass ->mPropertiesMap[trimProp->mName] = trimProp;
+      trimClass->mPropertiesMap[trimProp->mName] = trimProp;
     }
 
     // for each method
@@ -1459,8 +1475,8 @@ namespace Zero
         StringRange propName = trimMethod->mName.sub_string(3, trimMethod->mName.size());
 
         // check if a corresponding property already exists
-        if (trimClass->mPropertiesMap.containsKey(propName)
-          && trimClass->mPropertiesMap[propName]->mType == trimMethod->mReturnType)
+        if (trimClass->mPropertiesMap.containsKey(propName))
+          //&& trimClass->mPropertiesMap[propName]->mType == trimMethod->mReturnType)
         {
           // if prop exists, make sure we are returning the same type
           PropertyDoc *prop = trimClass->mPropertiesMap[propName];
@@ -1508,9 +1524,9 @@ namespace Zero
         // we only care if this is already a property and has no description
         // we can do this since methods will be in alphebetical order so
         // all the 'set's with come after the 'is' and 'get's
-        if (trimClass->mPropertiesMap.containsKey(propName) && 
-          trimMethod->mParameterList.size() == 1 &&
-          trimMethod->mParameterList[0]->mType == trimClass->mPropertiesMap[propName]->mType)
+        if (trimClass->mPropertiesMap.containsKey(propName))
+          //&& trimMethod->mParameterList.size() == 1
+          //&& trimMethod->mParameterList[0]->mType == trimClass->mPropertiesMap[propName]->mType)
         {
           if (trimClass->mPropertiesMap[propName]->mDescription.empty())
             trimClass->mPropertiesMap[propName]->mDescription = trimMethod->mDescription;
@@ -2018,7 +2034,7 @@ namespace Zero
 
   bool RawClassDoc::LoadFromXmlDoc(TiXmlDocument* doc)
   {
-    MacroDatabase *macroDb = MacroDatabase::Get();
+    MacroDatabase *macroDb = MacroDatabase::GetInstance();
 
     // grab the class
     TiXmlElement* classDef = doc->FirstChildElement(gElementTags[eDOXYGEN])
@@ -2133,6 +2149,8 @@ namespace Zero
             // if it has no return type and is not a constructor, pass it to macro paser
             if (fnIsMacroCall(memberElement, pMemberDef))
             {
+              //if (this->mName == "NetPropertyConfig")
+              //  DebugBreak();
               macroDb->SaveMacroCallFromClass(this, memberElement, pMemberDef);
             }
             else

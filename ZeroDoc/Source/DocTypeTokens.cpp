@@ -213,6 +213,11 @@ DocDfaState* CreateLangDfa(void)
   AddEdge(root, pound, '#');
   AddEdge(pound, concat, '#');
 
+  /////DollarSign = $                                   /////
+  DocDfaState *dollarSign = AddState(DocTokenType::DollarSign);
+
+  AddEdge(root, dollarSign, '$');
+
   /////GreaterThan/LessThan = (<|>)                     /////
 
   DocDfaState *LessThan = AddState(DocTokenType::LessThan);

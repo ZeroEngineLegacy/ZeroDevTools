@@ -1,198 +1,209 @@
 #pragma once
 
-#include "DocTypeTokens.hpp"
 #include "RawDocumentation.hpp"
+#include "DocTypeTokens.hpp"
 
 namespace Zero
 {
-  class Visitor;
+    class Visitor;
 
-  class Type;
-  class Variable;
-  class Function;
+    class Type;
+    class Variable;
+    class Function;
 
-  class BlockNode;
-  class FunctionNode;
-  class CallNode;
-  class ParameterNode;
-  class TypeNode;
-  class StatementNode;
+    class BlockNode;
+    class FunctionNode;
+    class CallNode;
+    class ParameterNode;
+    class TypeNode;
+    class StatementNode;
 
-  UniquePointer<BlockNode> ParseBlock(TypeTokens& tokens);
+    ///Parses block of code pointed to by tokens and returns the initial block for parsed code
+    UniquePointer<BlockNode> ParseBlock(TypeTokens* tokens);
 
-  class DocTypeParser
-  {
-  public:
+    ///Replaces any MacroComment options used in comment if it exists in the macro expansion scope
+    void DoCommentVariableReplacements(TypeTokens &comment);
 
-    explicit DocTypeParser(TypeTokens& tokens, int index = 0) 
-      : mTokens(tokens), mIndex(index) {}
-
-
-    ////////////////////
-    //Rules
-    ////////////////////
-
-    UniquePointer<BlockNode> Block(void);
-
-    FunctionNode* Function(void);
-
-    CallNode* Call(void);
-
-    UniquePointer<ParameterNode> Parameter(void);
-
-    UniquePointer<TypeNode> SpecifiedType(void);
-
-    UniquePointer<TypeNode> Type(void);
-
-    UniquePointer<TypeNode> NamedType(void);
-
-    UniquePointer<TypeNode> FunctionType(void);
-
-    UniquePointer<StatementNode> Statement(void);
-
-    UniquePointer<StatementNode> DelimitedStatement(void);
-
-    UniquePointer<StatementNode> FreeStatement(void);
+    ///contains the grammar for interpreting tokens into useful language constructs 
+    class DocTypeParser
+    {
+    public:
+      ///Parser requires being constructed with a token list and optionally an index into tokens
+      explicit DocTypeParser(TypeTokens& tokens, int index = 0)
+        : mTokens(tokens), mIndex(index) {}
 
 
-  private:
-    ////////////////////
-    //Helpers
-    ////////////////////
+      ////////////////////
+      //Rules
+      ////////////////////
 
-    bool accept(DocTokenType::Enum type);
-    bool accept(DocTokenType::Enum type, DocToken*& token);
+      ///Creates and returns a block node if a block of code exists
+      UniquePointer<BlockNode> Block(void);
 
-    // token type output
-    template <typename T>
-    T expect(T expectedValue);
-    template <typename T>
-    T expect(T expectedValue, String errorMsg);
+      ///Creates and returns a FunctionNode if a function call exists at index
+      FunctionNode* Function(void);
 
-    // bool output
-    bool expect(DocTokenType::Enum type);
-    bool expect(DocTokenType::Enum type, String errorMsg);
-    bool expect(bool expected);
-    bool expect(bool expected, String errorMsg);
+      ///Creates and Returns a CallNode if there is a macro call
+      CallNode* Call(void);
 
-    // token name output
-    void expect(DocTokenType::Enum type, DocToken*& output);
-    void expect(DocTokenType::Enum type, String errorMsg, DocToken*& output);
+      ///Used by Function And Call to get any parameters that exists in Function or Macro call
+      UniquePointer<ParameterNode> Parameter(void);
 
-    ////////////////////
-    //Data
-    ////////////////////
+      ///Returns a TypeNode if a NamedType or a FunctionType node exists
+      UniquePointer<TypeNode> Type(void);
 
-    TypeTokens& mTokens;
+      ///Returns a TypeNode if we have an identifier that can have a namespace and pointer/ref
+      UniquePointer<TypeNode> NamedType(void);
 
-    unsigned mIndex;
-  };
+      ///TODO: currently not implemented because no documented macros seem to have need yet
+      UniquePointer<TypeNode> FunctionType(void);
 
-  class AbstractNode
-  {
-  public:
-    AbstractNode() {};
+    private:
+      ////////////////////
+      //Helpers
+      ////////////////////
 
-    // documentation that should never be written to classDoc should override this to throw
-    virtual void AddToClassDoc(RawClassDoc *doc) = 0;
+      ///Will iterate past a token of type 'type' and return true if it exists
+      bool accept(DocTokenType::Enum type);
+      ///Will iterate past a token of type 'type' and return true if it exists at token
+      bool accept(DocTokenType::Enum type, DocToken*& token);
 
-   };
+      ///Will iterate past a token with expectedValue if it exists and throw if it does not
+      template <typename T>
+      T expect(T expectedValue);
 
-  class BlockNode : public AbstractNode
-  {
-  public:
-    // FunctionNode
-    Array<UniquePointer<AbstractNode> > mGlobals;
+      ///Will iterate past token with expectedValue if it exists and throw errorMsg if it does not
+      template <typename T>
+      T expect(T expectedValue, String errorMsg);
 
-    virtual void AddToClassDoc(RawClassDoc *doc) override;
-  };
+      // bool output
 
-  class StatementNode : public AbstractNode
-  {
-  public:
+      ///Will iterate past a token of type if it exists and throw if it does not
+      bool expect(DocTokenType::Enum type);
+      ///Will iterate past a token of type if it exists and throw errorMsg if it does not
+      bool expect(DocTokenType::Enum type, String errorMsg);
+      ///Will iterate past a token of type if it exists and throw if it does not
+      bool expect(bool expected);
+      ///Will iterate past a token of type if it exists and throw errorMsg if it does not
+      bool expect(bool expected, String errorMsg);
 
-    //void Walk(Visitor* visitor, bool visit = true) override;
-    virtual void AddToClassDoc(RawClassDoc *doc) = 0;
+      // token name output
 
-  };
+      ///Same as bool return expect FNs except returns token in 'output'
+      void expect(DocTokenType::Enum type, DocToken*& output);
+      ///Same as bool return expect FNs except returns token in 'output'.
+      void expect(DocTokenType::Enum type, String errorMsg, DocToken*& output);
 
-  class TypeNode : public AbstractNode
-  {
-  public:
-    TypeNode() {};
+      ////////////////////
+      //Data
+      ////////////////////
 
-    //void Walk(Visitor* visitor, bool visit = true) override;
-    virtual void AddToClassDoc(RawClassDoc *doc) override;
+      TypeTokens& mTokens;
 
-    //* Semantic Analysis *//
-    // for ease of extracting info we are going to maintain a list of our tokens
-    Array<DocToken *> mTokens;
-  };
+      unsigned mIndex;
+    };
 
-  class VariableNode : public StatementNode
-  {
-  public:
-    VariableNode() {};
-    DocToken *mName;
-    UniquePointer<TypeNode> mType;
+    class AbstractNode
+    {
+    public:
+      AbstractNode() {};
 
-    // Can be null (gonna ignore this for now)
-    //UniquePointer<ExpressionNode> mInitialValue;
-    virtual void AddToClassDoc(RawClassDoc *doc) = 0;
+      ///documentation that should never be written to classDoc should override this to throw
+      virtual void AddToClassDoc(RawClassDoc *doc) = 0;
+    };
 
-    //* Semantic Analysis *//
-    // The variable node should create the following symbol
-    Variable* mSymbol;
-  };
+    class BlockNode : public AbstractNode
+    {
+    public:
+      ///throws error since BlockNodes have no proper way to be added to class doc
+      virtual void AddToClassDoc(RawClassDoc *doc) override;
 
-  class ParameterNode : public VariableNode
-  {
-  public:
-    //void Walk(Visitor* visitor, bool visit = true) override;
-    virtual void AddToClassDoc(RawClassDoc *doc) override;
+      Array<UniquePointer<AbstractNode> > mGlobals;
+    };
 
-  };
+    class StatementNode : public AbstractNode
+    {
+    public:
+      ///remains pure virtual because if you are calling add to class on this you are wrong
+      virtual void AddToClassDoc(RawClassDoc *doc) = 0;
 
-  class FunctionNode : public AbstractNode
-  {
-  public:
-    FunctionNode() {};
-    DocToken *mName;
-    Array<UniquePointer<ParameterNode> > mParameters;
+    };
 
-    // Can be null
-    UniquePointer<TypeNode> mReturnType;
-    virtual void AddToClassDoc(RawClassDoc *doc) override;
+    class TypeNode : public AbstractNode
+    {
+    public:
+      TypeNode() {};
 
-    DocToken *mComment;
+      ///remains pure virtual because if you are calling add to class on this you are wrong
+      virtual void AddToClassDoc(RawClassDoc *doc) override;
 
-    //void Walk(Visitor* visitor, bool visit = true) override;
+      // for ease of extracting info we are going to maintain a list of our tokens
+      Array<DocToken *> mTokens;
+    };
 
-    //* Semantic Analysis *//
-    // The signature type is filled out first and is used later when we create the Function symbol
-    //Type* mSignatureType;
-    //// The function node should create the following symbol
-    //Function* mSymbol;
-  };
+    class VariableNode : public StatementNode
+    {
+    public:
+      VariableNode() {};
 
-  class CallNode : public StatementNode
-  {
-  public:
-    Array<DocToken *> mArguments;
-    virtual void AddToClassDoc(RawClassDoc *doc) override;
+      ///remains pure virtual because if you are calling add to class on this you are wrong
+      virtual void AddToClassDoc(RawClassDoc *doc) = 0;
 
-    DocToken *mName;
-    DocToken *mComment;
-  };
+      DocToken *mName;
 
-  // Throw this exception type when a parsing error occurrs
-  class ParsingException : public std::exception
-  {
-  public:
-    ParsingException();
-    ParsingException(StringParam error);
-    const char* what() const override;
-    String mError;
-  };
+      UniquePointer<TypeNode> mType;
 
+      // The variable node should create the following symbol
+      Variable* mSymbol;
+    };
+
+    class ParameterNode : public VariableNode
+    {
+    public:
+      ///Throws error becuase this should not be called but can be by mistake easily
+      virtual void AddToClassDoc(RawClassDoc *doc) override;
+
+    };
+
+    class FunctionNode : public AbstractNode
+    {
+    public:
+      FunctionNode() {};
+
+      ///Adds function call to ClassDoc by filling a "RawMethodDoc" class
+      virtual void AddToClassDoc(RawClassDoc *doc) override;
+
+      DocToken *mName;
+
+      Array<UniquePointer<ParameterNode> > mParameters;
+
+      // Can be null
+      UniquePointer<TypeNode> mReturnType;
+
+      String mComment;
+    };
+
+    class CallNode : public StatementNode
+    {
+    public:
+
+      ///Will throw error because if this is called it means there is an unexpanded macro in block
+      virtual void AddToClassDoc(RawClassDoc *doc) override;
+
+      Array<DocToken *> mArguments;
+
+      DocToken *mName;
+
+      String mComment;
+    };
+
+    // Throw this exception type when a parsing error occurrs
+    class ParsingException : public std::exception
+    {
+    public:
+      ParsingException();
+      ParsingException(StringParam error);
+      const char* what() const override;
+      String mError;
+    };
 }

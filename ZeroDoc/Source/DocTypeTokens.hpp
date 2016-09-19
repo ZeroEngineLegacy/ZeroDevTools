@@ -48,12 +48,13 @@ namespace Zero
   ///allocates new typetokens array in out
   void CopyArrayOfTokenPtrToTypeTokens(const Array<DocToken*>& in, TypeTokens*& out);
 
-  // do no know of a more classy way to do this so for now the following fn copy strings 
-
+  ///Hacky function to fix bad formating or extra quotes left in a string token
   void CleanupStringToken(DocToken *String);
+
+  ///Hacky function to fix terrible formatting or extra comment tokens left in comment
   void CleanupCommentToken(DocToken *Comment);
 
-
+  ///Sets the verbose flag for all classes in the file which will cause them to output skipped tokens
   void SetVerboseFlag(void);
 
   // instead of pointing to text stream directly we copy 
@@ -66,13 +67,17 @@ namespace Zero
 
     ///defaults to an invalid type
     DocToken();
-    ///takes text and assumes tp
+
+    ///takes text and assumes Identifier token if no type was passed
     DocToken(StringParam text, DocTokenType::Enum type = DocTokenType::Identifier);
 
+    ///copies a DocToken
     DocToken(const DocToken &cpy);
 
-
+    ///Serializes a DocToken
     void Serialize(Serializer& stream);
+
+    ///Checks both if the type and if the actual text of the two tokens are the same
     bool operator==(const DocToken& right);
   };
 
@@ -84,6 +89,7 @@ namespace Zero
 
     char mEdgeID;
 
+    ///checks if both edges are goint to the same node from the same node
     bool operator==(const DocDfaEdge& rhs) const;
   };
 
@@ -97,9 +103,15 @@ namespace Zero
     DocTokenType::Enum mTokenTypeID;
   };
 
+  ///Sets up enum map for token types
   void InitializeTokens(void);
 
+  ///Creates Dfa starting from a root token
   DocDfaState* CreateLangDfa(void);
+
+  ///Read token starting at startingState and using stream with Dfa to create outToken
   void ReadToken(DocDfaState* startingState, const char* stream, DocToken& outToken);
+
+  ///Appends tokens from str to the end of the TypeTokens in output
   void AppendTokensFromString(DocDfaState* startingState, StringRef str, TypeTokens *output);
 }

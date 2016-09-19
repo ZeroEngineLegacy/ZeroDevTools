@@ -68,6 +68,9 @@ void WriteClass(String directory, ClassDoc& classDoc,DocumentationLibrary &lib, 
     return;
   //printf("Class %s\n", classDoc.Name.c_str());
 
+  //if (classDoc.mName == "NetPropertyConfig")
+  //  DebugBreak();
+
   forRange(String tag, classDoc.mTags.all())
     tagged[tag].push_back(&classDoc);
   

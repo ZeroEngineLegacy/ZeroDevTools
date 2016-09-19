@@ -272,6 +272,8 @@ namespace Zero
 
     String mName;
     String mDescription;
+
+    bool mProperty;
   };
 
 

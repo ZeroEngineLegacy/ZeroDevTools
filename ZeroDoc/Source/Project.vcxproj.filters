@@ -43,6 +43,7 @@
     <ClInclude Include="DocTypeParser.hpp">
       <Filter>Source</Filter>
     </ClInclude>
+    <ClInclude Include="MacroDocTests.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -76,6 +77,9 @@
       <Filter>Source</Filter>
     </ClCompile>
     <ClCompile Include="DocTypeParser.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="MacroDocTests.cpp">
       <Filter>Source</Filter>
     </ClCompile>
   </ItemGroup>

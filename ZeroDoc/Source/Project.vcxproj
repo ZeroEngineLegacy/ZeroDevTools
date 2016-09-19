@@ -73,6 +73,7 @@
     <ClInclude Include="DocTypeParser.hpp" />
     <ClInclude Include="DocTypeTokens.hpp" />
     <ClInclude Include="MacroDatabase.hpp" />
+    <ClInclude Include="MacroDocTests.hpp" />
     <ClInclude Include="MarkupWriter.hpp" />
     <ClInclude Include="RawDocumentation.hpp" />
     <ClInclude Include="Logging.hpp" />
@@ -85,6 +86,7 @@
     <ClCompile Include="DocTypeParser.cpp" />
     <ClCompile Include="DocTypeTokens.cpp" />
     <ClCompile Include="MacroDatabase.cpp" />
+    <ClCompile Include="MacroDocTests.cpp" />
     <ClCompile Include="MarkupWriter.cpp" />
     <ClCompile Include="RawDocumentation.cpp" />
     <ClCompile Include="Logging.cpp" />

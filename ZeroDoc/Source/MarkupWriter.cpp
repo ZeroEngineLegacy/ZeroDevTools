@@ -15,8 +15,10 @@
 
 namespace Zero
 {
-void WriteTagIndices(String outputDir, DocToTags& tagged)
+void WriteTagIndices(String outputDir, DocToTags& tagged, DocumentationLibrary &docLib)
 {
+  String fileName = FilePath::Combine(outputDir, "CodeIndex.rst");
+
   DocRange r = tagged.all();
 
   StringBuilder markup;
@@ -39,6 +41,7 @@ void WriteTagIndices(String outputDir, DocToTags& tagged)
     markup << tag << "\n";
     markup << "----------------------------------" << "\n\n";
 
+    // create the reference list
     forRange(ClassDoc* doc, stuff.all())
     {
         markup << String::Format("*  :doc:`Reference/%s`\n", doc->mName.c_str(), doc->mName.c_str());
@@ -47,7 +50,18 @@ void WriteTagIndices(String outputDir, DocToTags& tagged)
     markup << "\n";
   }
 
-  String fileName = FilePath::Combine(outputDir, "CodeIndex.rst");
+  markup << "\
+.. toctree::\n\
+\t:hidden:\n\
+\t:includehidden:\n\
+\t:name: mastertoc\n\
+\t:maxdepth: 1\n\
+\t:titlesonly:\n\n";
+  //output the doctree
+  forRange(ClassDoc* doc, docLib.mClasses.all())
+  {
+    markup << "Reference/" << doc->mName << "\n";
+  }
 
   String text = markup.ToString();
 
@@ -87,7 +101,7 @@ void WriteOutAllMarkdownFiles(Zero::DocGeneratorConfig& config)
       ClassMarkupWriter::WriteClass(fullPath, classDoc, doc, tagged);
     }
 
-    WriteTagIndices(directory, tagged);
+    WriteTagIndices(directory, tagged, doc);
   }
 
 
@@ -169,8 +183,6 @@ void BaseMarkupWriter::InsertNewSectionHeader(StringRef sectionName)
 void BaseMarkupWriter::InsertCollapsibleSection()
 {
   // all functions that output anything besides headers will probably do this
-  IndentToCurrentLevel();
-
   mOutput << ".. rst-class:: collapsible\n\n";
 }
 
@@ -183,6 +195,12 @@ void ClassMarkupWriter::WriteClass(
   DocumentationLibrary &lib,
   DocToTags& tagged)
 {
+  // first things first, set up the tags for this class
+  forRange(StringRef tag, classDoc->mTags.all())
+  {
+    tagged[tag].push_back(classDoc);
+  }
+
   // do the magic for getting directory and file
   ClassMarkupWriter writer(classDoc->mName, classDoc);
 
@@ -261,10 +279,12 @@ void ClassMarkupWriter::InsertMethod(MethodDoc &method)
   mOutput << ".. cpp:function:: " << method.mReturnType << " " 
     << mName << "::" << method.mName << method.mParameters << "\n\n";
 
-  IndentToCurrentLevel();
-
   if (!method.mDescription.empty())
+  {
+    IndentToCurrentLevel();
+
     mOutput << "\t" << method.mDescription << "\n\n";
+  }
 
   EndIndentSection((*this));
 }
@@ -282,10 +302,12 @@ void ClassMarkupWriter::InsertProperty(PropertyDoc &propDoc)
 
   mOutput << ".. cpp:member:: " <<  propDoc.mType << " " << mName << "::" << propDoc.mName << "\n\n";
 
-  IndentToCurrentLevel();
-
   if (!propDoc.mDescription.empty())
+  {
+    IndentToCurrentLevel();
+
     mOutput << "\t" << propDoc.mDescription << "\n\n";
+  }
 
   EndIndentSection((*this));
 }
@@ -346,7 +368,7 @@ void EventListWriter::WriteEventEntry(StringParam eventEntry, StringParam type)
 
   // #ticks matter around links
   mOutput << ".. include:: EventListDescriptions/" << eventEntry << ".rst\n\n"
-    << ":cpp:class:`" << type <<"`\n\n";
+    << ":cpp:type:`" << type <<"`\n\n";
   //
 }
 

@@ -1328,6 +1328,7 @@ namespace Zero
       newVar->mProperty = true;
       mVariables.push_back(newVar);
     }
+    Build();
   }
 
   void RawClassDoc::Serialize(Serializer& stream)
@@ -1441,6 +1442,8 @@ namespace Zero
 
       if (!rawVar->mProperty)
         continue;
+
+      
 
       PropertyDoc* trimProp = new PropertyDoc;
 
@@ -2034,6 +2037,9 @@ namespace Zero
 
   bool RawClassDoc::LoadFromXmlDoc(TiXmlDocument* doc)
   {
+    // if we already have a list of variables before load it means we know exactly what to save
+    bool onlySaveValidProperteies = !mVariables.empty();
+
     MacroDatabase *macroDb = MacroDatabase::GetInstance();
 
     // grab the class
@@ -2091,7 +2097,12 @@ namespace Zero
         switch (kind->Value()[0])
         {
         case 'v': // if we are a variable
-          mVariables.push_back(new RawVariableDoc(memberElement));
+          // only save the variable if we are saving all varibles or if it is one of our known vals
+          if (!onlySaveValidProperteies
+            || mVariableMap.containsKey(GetElementValue(memberElement, gElementTags[eNAME])))
+          {
+            mVariables.push_back(new RawVariableDoc(memberElement));
+          }
           break;
         case 't': // else if we are a typedef
         {
@@ -2485,8 +2496,7 @@ namespace Zero
     forRange(Parameter* arg, mParsedParameters.all())
     {
       NormalizeTokensFromTypedefs(*arg->mTokens, defLib, classNamespace);
-    }
-    
+    }    
   }
 
   ////////////////////////////////////////////////////////////////////////

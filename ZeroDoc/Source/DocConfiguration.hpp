@@ -65,7 +65,6 @@ struct DocGeneratorConfig
   ///// Trimmed Bools /////
   ///if true, we will output the trimmed documentation files
   bool mCreateTrimmed;
-
 };
 
 inline DocGeneratorConfig LoadConfigurations(StringMap& params)

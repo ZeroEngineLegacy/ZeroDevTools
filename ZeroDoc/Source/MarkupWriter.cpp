@@ -4,17 +4,17 @@
 #include "Platform/FileSystem.hpp"
 #include "Engine/Documentation.hpp"
 #include "Serialization/Simple.hpp"
-#include "Serialization/Text.hpp"
-#include "Pages.hpp"
 #include "Support/FileSupport.hpp"
 #include "Platform/FilePath.hpp"
+#include "MarkupWriter.hpp"
+
+/*
+#include "Serialization/Text.hpp"
+#include "Pages.hpp"
+*/
 
 namespace Zero
 {
-
-typedef HashMap<String, Array<ClassDoc*> > DocToTags;
-typedef DocToTags::range DocRange;
-
 void WriteTagIndices(String outputDir, DocToTags& tagged)
 {
   DocRange r = tagged.all();
@@ -54,332 +54,381 @@ void WriteTagIndices(String outputDir, DocToTags& tagged)
   WriteStringRangeToFile(fileName, text);
 }
 
-
-void WriteClass(String directory, ClassDoc& classDoc,DocumentationLibrary &lib, DocToTags& tagged)
-{
-
-  if ( classDoc.mName.Contains("<")
-    || classDoc.mName.Contains(">")
-    || classDoc.mName.Contains("!")
-    || classDoc.mName.Contains("\'")
-    || classDoc.mName.Contains("\"")
-    || classDoc.mName.empty()
-    )
-    return;
-  //printf("Class %s\n", classDoc.Name.c_str());
-
-  //if (classDoc.mName == "NetPropertyConfig")
-  //  DebugBreak();
-
-  forRange(String tag, classDoc.mTags.all())
-    tagged[tag].push_back(&classDoc);
-  
-  if(classDoc.mTags.empty())
-    tagged["Various"].push_back(&classDoc);
-
-  String outputDir = directory;
-
-  StringBuilder classMarkup;
-
-  classMarkup << classDoc.mName << "\n";
-  classMarkup << "=================================" << "\n";
-    
-  classMarkup << ".. cpp:type:: " << classDoc.mName << "\n\n";
-  
-  classMarkup << classDoc.mDescription << "\n\n";
-
-  if(!classDoc.mBaseClass.empty())
-    classMarkup << "\tBase Class: " << ":cpp:type:`" << classDoc.mBaseClass << "`" << "\n\n";
-
-  ClassDoc *IterClass = &classDoc;
-
-  if (IterClass->mProperties.size())
-    classMarkup << "Properties\n----------\n";
-
-  while (IterClass)
-  {
-    forRange(PropertyDoc* propertyDoc, IterClass->mProperties.all())
-    {
-      if (propertyDoc->mName == "Name" && propertyDoc->mDescription.empty())
-        continue;
-
-      classMarkup << "\t" << ".. cpp:member:: " << propertyDoc->mType << " " << propertyDoc->mName << "\n\n";
-      classMarkup << "\t" << propertyDoc->mDescription << "\n\n";
-    }
-    if (!IterClass->mBaseClass.empty() && lib.mClassMap.containsKey(IterClass->mBaseClass))
-    {
-      IterClass = lib.mClassMap[IterClass->mBaseClass];
-
-      if (!IterClass || IterClass->mProperties.empty())
-      {
-        continue;
-      }
-
-      // The tilde are there so we create a shortened link to the class DO NOT REMOVE
-      classMarkup << "\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n"
-        << "Properties From: :cpp:type:`" << IterClass->mName
-        << "`\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
-    }
-    else
-    {
-      IterClass = nullptr;
-    }
-  }
-
-  IterClass = &classDoc;
-
-  if (IterClass->mMethods.size())
-    classMarkup << "Methods\n----------\n";
-
-  while (IterClass)
-  {
-    forRange(MethodDoc* methodDoc, IterClass->mMethods.all())
-    {
-      classMarkup << "\t" << ".. cpp:function:: " << methodDoc->mReturnType << " "
-        << methodDoc->mName << methodDoc->mParameters << "\n\n";
-
-      classMarkup << "\t" << methodDoc->mDescription << "\n\n";
-
-      if (!methodDoc->mPossibleExceptionThrows.empty())
-      {
-        classMarkup << "\t *Possible Notify Exceptions:* \n\n";
-        forRange(ExceptionDoc *exDoc, methodDoc->mPossibleExceptionThrows.all())
-        {
-          classMarkup << "\t\t" << exDoc->mTitle <<": " << exDoc->mMessage << "\n\n";
-        }
-      }
-    }
-    if (!IterClass->mBaseClass.empty() && lib.mClassMap.containsKey(IterClass->mBaseClass))
-    {
-      IterClass = lib.mClassMap[IterClass->mBaseClass];
-
-      if (!IterClass || IterClass->mMethods.empty())
-      {
-        continue;
-      }
-
-      // The tilde are there so we create a shortened link to the class DO NOT REMOVE
-      classMarkup << "\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n"
-        << "Methods From: :cpp:type:`" << IterClass->mName
-        << "`\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n";      
-    }
-    else
-    {
-      IterClass = nullptr;
-    }
-  }
-
-  Zero::CreateDirectoryAndParents(outputDir);
-
-  String filename = BuildString(classDoc.mName , ".rst");
-
-  String fullPath = FilePath::Combine(outputDir, "Reference");
-
-  CreateDirectoryAndParents(fullPath);
-
-  fullPath = FilePath::Combine(fullPath, filename);
-
-  fullPath = FilePath::Normalize(fullPath);
-
-  String text = classMarkup.ToString();
-
-  WriteStringRangeToFile(fullPath, text);
-}
-
-void WriteOutMarkup(Zero::DocGeneratorConfig& config)
+void WriteOutAllMarkdownFiles(Zero::DocGeneratorConfig& config)
 {
   printf("Mark up\n");
 
-  //Now load the documentation file (the documentation for all the classes)
-  if (!FileExists(config.mTrimmedOutput.c_str()))
+  // check if we are outputting class markup
+  if (FileExists(config.mTrimmedOutput.c_str()))
   {
-    printf("%s does not exist.", config.mTrimmedOutput.c_str());
-    return;
-  }
-  StringRef directory = config.mMarkupDirectory;
+    StringRef directory = config.mMarkupDirectory;
 
-  CreateDirectoryAndParents(directory);
+    CreateDirectoryAndParents(directory);
 
-  DocumentationLibrary doc;
-  LoadFromDataFile(doc, config.mTrimmedOutput);
-  doc.FinalizeDocumentation();
+    DocumentationLibrary doc;
+    LoadFromDataFile(doc, config.mTrimmedOutput);
+    doc.FinalizeDocumentation();
 
-  DocToTags tagged;
+    DocToTags tagged;
 
-  //Upload the class' page to the wiki, making sure to perform the link replacements
-  forRange(ClassDoc* classDoc, doc.mClasses.all())
-  {
-    WriteClass(directory, *classDoc, doc,  tagged);
-  }
-
-  WriteTagIndices(directory, tagged);
-}
-
-
-void WriteCommandReference(Zero::DocGeneratorConfig& config)
-{
-  //StringParam loadFilePath, StringParam outputPath
-
-  String filePath = BuildString(config.mMarkupDirectory, "\\CommandRef.rst");
-
-  // get outta here with that nonexistent file
-  if (!FileExists(config.mCommandListFile.c_str()))
-  {
-    printf("%s does not exist.", config.mCommandListFile.c_str());
-    return;
-  }
-
-  CreateDirectoryAndParents(config.mMarkupDirectory);
-
-  // actually load command list now. (If this fails it probably means the file is mis-formatted)
-  CommandDocList commandListDoc;
-  LoadFromDataFile(commandListDoc, config.mCommandListFile);
-
-  Array<CommandDoc *> &commandList = commandListDoc.mCommands;
-
-  // do the fancy string building to put this markup file together
-  StringBuilder markupText;
-
-  markupText << "Zero Commands\n";
-  markupText << "=================================\n";
-
-  for (uint i = 0; i < commandList.size(); ++i)
-  {
-    CommandDoc *cmdDoc = commandList[i];
-
-    markupText << "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
-    markupText << cmdDoc->mName << "\n";
-    markupText << "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
-
-    if (!cmdDoc->mTags.empty())
+    //Upload the class' page to the wiki, making sure to perform the link replacements
+    forRange(ClassDoc* classDoc, doc.mClasses.all())
     {
-      markupText << "**Tags:** " << cmdDoc->mTags[0];
+      String filename = BuildString(classDoc->mName, ".rst");
 
-      for (uint j = 1; j < cmdDoc->mTags.size(); ++j)
-      {
-        markupText << ", " << cmdDoc->mTags[j];
-      }
-      markupText << "\n\n";
+      String fullPath = FilePath::Combine(directory, "Reference");
+
+      CreateDirectoryAndParents(fullPath);
+
+      fullPath = FilePath::Combine(fullPath, filename);
+
+      fullPath = FilePath::Normalize(fullPath);
+
+      ClassMarkupWriter::WriteClass(fullPath, classDoc, doc, tagged);
     }
 
-    if (!cmdDoc->mShortcut.empty())
-      markupText << "**Shortcut:** " << cmdDoc->mShortcut << "\n\n";
-
-    markupText << cmdDoc->mDescription << "\n\n";
-
-    markupText << "\n\n\n";
+    WriteTagIndices(directory, tagged);
   }
 
-  WriteStringRangeToFile(filePath, markupText.ToString());
+
+  // check if we outputting commands
+  if (!config.mCommandListFile.empty())
+  {
+    String output = FilePath::Combine(config.mMarkupDirectory, "CommandRef.rst");
+    output = FilePath::Normalize(output);
+    CommandRefWriter::WriteCommandRef(config.mCommandListFile, output);
+  }
+
+  // check if we are outputing events
+  if (!config.mEventsOutputLocation.empty())
+  {
+    String output = FilePath::Combine(config.mMarkupDirectory, "EventList.rst");
+    output = FilePath::Normalize(output);
+    EventListWriter::WriteEventList(config.mEventsOutputLocation, output);
+  }
 }
 
-// this output will not be perfect since there is no way to get ALL send and receive
-void WriteEventList(Zero::DocGeneratorConfig& config)
-{
-  String filePath = BuildString(config.mMarkupDirectory, "\\EventList.rst");
 
-  // get outta here with that nonexistent file
-  if (!FileExists(config.mEventsOutputLocation.c_str()))
+////////////////////////////////////////////////////////////////////////
+// Macro Toolbox
+////////////////////////////////////////////////////////////////////////
+// start indent Section
+#define StartIndentSection(x) do {++x.mCurrentIndentationLevel
+// end indent section
+#define EndIndentSection(x) --x.mCurrentIndentationLevel;}while(0)
+
+// start header section
+#define StartHeaderSection(x) if((0)){}else{++x.mCurrentSectionHeaderLevel;
+// end header section
+#define EndHeaderSection(x) --x.mCurrentSectionHeaderLevel;};
+
+////////////////////////////////////////////////////////////////////////
+// BaseMarkupWriter
+////////////////////////////////////////////////////////////////////////
+void BaseMarkupWriter::IndentToCurrentLevel(void)
+{
+  mOutput << String::Repeat('\t', mCurrentIndentationLevel);
+}
+
+void BaseMarkupWriter::WriteOutputToFile(StringRef file)
+{
+  WriteStringRangeToFile(file, mOutput.ToString());
+}
+
+void BaseMarkupWriter::InsertNewUnderline(uint length, uint headerLevel)
+{
+  switch (headerLevel + mCurrentSectionHeaderLevel)
   {
-    printf("%s does not exist.", config.mEventsOutputLocation.c_str());
-    return;
+  case 0:
+    mOutput << String::Repeat('=', length);
+    break;
+  case 1:
+    mOutput << String::Repeat('-', length);
+    break;
+  case 2:
+    mOutput << String::Repeat('^', length);
+    break;
+  case 3:
+    mOutput << String::Repeat('~', length);
+    break;
+    // will create purposfully invalid underline if invalid header level chosen
+  default:
+    mOutput << String::Repeat('?', length);
+    break;
   }
 
-  CreateDirectoryAndParents(config.mMarkupDirectory);
+  mOutput << "\n\n";
+}
+
+void BaseMarkupWriter::InsertNewSectionHeader(StringRef sectionName)
+{
+  mOutput << sectionName << "\n";
+  InsertNewUnderline(sectionName.size());
+}
+
+void BaseMarkupWriter::InsertCollapsibleSection()
+{
+  // all functions that output anything besides headers will probably do this
+  IndentToCurrentLevel();
+
+  mOutput << ".. rst-class:: collapsible\n\n";
+}
+
+////////////////////////////////////////////////////////////////////////
+// ClassMarkupWriter
+////////////////////////////////////////////////////////////////////////
+void ClassMarkupWriter::WriteClass(
+  StringParam outputFile,
+  ClassDoc* classDoc,
+  DocumentationLibrary &lib,
+  DocToTags& tagged)
+{
+  // do the magic for getting directory and file
+  ClassMarkupWriter writer(classDoc->mName, classDoc);
+
+  // top of the file
+  writer.InsertClassRstHeader();
+  StartHeaderSection(writer);
+
+  // Properties
+  writer.mOutput << ".. _Reference" << writer.mName << "Properties:\n\n";
+
+  writer.InsertNewSectionHeader("Properties");
+
+  forRange(PropertyDoc *prop, classDoc->mProperties.all())
+  {
+    writer.InsertProperty(*prop);
+  }
+
+  // Methods
+  writer.mOutput << ".. _Reference" << writer.mName << "Methods:\n\n";
+
+  writer.InsertNewSectionHeader("Methods");
+
+  forRange(MethodDoc *method, classDoc->mMethods.all())
+  {
+    writer.InsertMethod(*method);
+  }
+
+  // bottom of the file
+  EndHeaderSection(writer);
+  writer.InsertClassRstFooter();
+
+  writer.WriteOutputToFile(outputFile);
+}
+
+ClassMarkupWriter::ClassMarkupWriter(StringParam name, ClassDoc* classDoc) 
+  : BaseMarkupWriter(name), mClassDoc(classDoc)
+{
+}
+
+void ClassMarkupWriter::InsertClassRstHeader(void)
+{
+  mOutput << ".. _Reference" << mName << ":\n\n" << ".. rst-class:: searchtitle\n\n";
+
+  InsertNewSectionHeader(mName);
+
+  mOutput << ".. rst-class:: searchdescripton\n\n"
+    << mClassDoc->mDescription << "\n\n"
+    << ".. include:: Description/Action.rst\n\n"
+    << ".. cpp:class:: " << mName;
+
+  if (mBases.size() > 0)
+  {
+    mOutput << " : public " << mBases[0];
+
+    for (uint i = 1; i < mBases.size(); ++i)
+    {
+      mOutput << ", " << mBases[i];
+    }
+  }
+
+  mOutput << "\n\n";
+}
+
+void ClassMarkupWriter::InsertClassRstFooter(void)
+{
+  mOutput << ".. include:: Remarks/" << mName << ".rst\n";
+}
+
+void ClassMarkupWriter::InsertMethod(MethodDoc &method)
+{
+  InsertCollapsibleSection();
+  StartIndentSection((*this));
+
+  IndentToCurrentLevel();
+
+  mOutput << ".. cpp:function:: " << method.mReturnType << " " 
+    << mName << "::" << method.mName << method.mParameters << "\n\n";
+
+  IndentToCurrentLevel();
+
+  if (!method.mDescription.empty())
+    mOutput << "\t" << method.mDescription << "\n\n";
+
+  EndIndentSection((*this));
+}
+
+void ClassMarkupWriter::InsertProperty(PropertyDoc &propDoc)
+{
+  //TODO: we need to figure out why so many things are not properly getting type
+  if (propDoc.mType.empty())
+    return;
+
+  InsertCollapsibleSection();
+  StartIndentSection((*this));
+
+  IndentToCurrentLevel();
+
+  mOutput << ".. cpp:member:: " <<  propDoc.mType << " " << mName << "::" << propDoc.mName << "\n\n";
+
+  IndentToCurrentLevel();
+
+  if (!propDoc.mDescription.empty())
+    mOutput << "\t" << propDoc.mDescription << "\n\n";
+
+  EndIndentSection((*this));
+}
+
+////////////////////////////////////////////////////////////////////////
+// EventListWriter
+////////////////////////////////////////////////////////////////////////
+void EventListWriter::WriteEventList(StringRef eventListFilepath, StringRef outputPath)
+{
+  // load the file if we can
+
+  // get outta here with that nonexistent file
+  if (!FileExists(eventListFilepath))
+  {
+    printf("%s does not exist.", eventListFilepath.c_str());
+    return;
+  }
 
   // actually load event list now. (If this fails it probably means the file is mis-formatted)
   EventDocList eventListDoc;
-  LoadFromDataFile(eventListDoc, config.mEventsOutputLocation);
+  LoadFromDataFile(eventListDoc, eventListFilepath);
 
-  Array<EventDoc *> &eventList = eventListDoc.mEvents;
+  Array<EventDoc *> &eventArray = eventListDoc.mEvents;
 
-  // do the fancy string building to put this markup file together
-  StringBuilder markupText;
+  // create the eventList
+  EventListWriter writer("Event List");
 
-  markupText << "Zero Events\n";
-  markupText << "=================================\n";
+  writer.InsertNewSectionHeader("Event List");
 
-  for (uint i = 0; i < eventList.size(); ++i)
+  // create top of file
+  StartHeaderSection(writer);
+
+  // iterate over all events and insert them
+  forRange(EventDoc *eventDoc, eventArray.all())
   {
-    EventDoc *eventDoc = eventList[i];
-
-
-    markupText << "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
-    markupText << eventDoc->mName << "\n";
-    markupText << "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
-    markupText << "**Type:** " << eventDoc->mType << "\n\n";
-
-    if (!eventDoc->mSenders.empty())
-    {
-      markupText << "**Senders:** \n\n";
-
-      for (uint j = 0; j < eventDoc->mSenders.size(); ++j)
-      {
-        markupText << eventDoc->mSenders[j] << " \n\n";
-      }
-      markupText << "\n\n";
-    }
-
-    if (!eventDoc->mListeners.empty())
-    {
-      markupText << "**Listeners:** \n\n";
-
-      for (uint j = 0; j < eventDoc->mListeners.size(); ++j)
-      {
-        markupText << eventDoc->mListeners[j] << " \n\n";
-      }
-      markupText << "\n\n";
-    }
-
-    markupText << "\n\n\n";
+    writer.WriteEventEntry(eventDoc->mName, eventDoc->mType);
   }
 
-  WriteStringRangeToFile(filePath, markupText.ToString());
+  EndHeaderSection(writer);
+
+  writer.WriteOutputToFile(outputPath);
 }
 
-// this output will not be perfect since there is no way to get ALL send and receive
-#if 0
-void WriteExceptionList(Zero::DocGeneratorConfig& config)
+EventListWriter::EventListWriter(StringParam name) : BaseMarkupWriter(name)
 {
-  String filePath = BuildString(config.mMarkupDirectory, "\\ExceptionList.rst");
+}
 
+/*
+// The tilde are there so we create a shortened link to the class DO NOT REMOVE
+classMarkup << "\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n"
+<< "Properties From: :cpp:type:`" << IterClass->mName
+<< "`\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
+*/
+
+void EventListWriter::WriteEventEntry(StringParam eventEntry, StringParam type)
+{
+  InsertNewSectionHeader(eventEntry);
+
+  // #ticks matter around links
+  mOutput << ".. include:: EventListDescriptions/" << eventEntry << ".rst\n\n"
+    << ":cpp:class:`" << type <<"`\n\n";
+  //
+}
+
+////////////////////////////////////////////////////////////////////////
+// CommandRefWriter
+////////////////////////////////////////////////////////////////////////
+void CommandRefWriter::WriteCommandRef(StringParam commandListFilepath, StringRef outputPath)
+{
+  // load the file
   // get outta here with that nonexistent file
-  if (!FileExists(config.mExceptionsFile.c_str()))
+  if (!FileExists(commandListFilepath))
   {
-    printf("%s does not exist.", config.mExceptionsFile.c_str());
+    printf("%s does not exist.", commandListFilepath.c_str());
     return;
   }
 
-  CreateDirectoryAndParents(config.mMarkupDirectory);
-
   // actually load event list now. (If this fails it probably means the file is mis-formatted)
-  ExceptionDocList exceptionListDoc;
-  LoadFromDataFile(exceptionListDoc, config.mExceptionsFile);
+  CommandDocList cmdListDoc;
+  LoadFromDataFile(cmdListDoc, commandListFilepath);
 
-  Array<ExceptionDoc> &exceptionList = exceptionListDoc.mExceptions;
+  Array<CommandDoc *> &cmdArray = cmdListDoc.mCommands;
 
+  // create the command writer
+  CommandRefWriter writer("Zero Commands");
 
-  // do the fancy string building to put this markup file together
-  StringBuilder markupText;
+  // create top of file
+  writer.InsertNewSectionHeader("Zero Commands");
 
-  markupText << "Zero Exceptions\n";
-  markupText << "=================================\n";
+  StartHeaderSection(writer);
 
-  for (uint i = 0; i < exceptionList.size(); ++i)
+  // iterate over all commands and insert them
+  forRange(CommandDoc *cmdDoc, cmdArray.all())
   {
-    ExceptionDoc &exceptDoc = exceptionList[i];
-
-    markupText << "**Class:** " << exceptDoc.mClass <<"\n\n";
-
-    markupText << "**Function:** " << exceptDoc.mFunction << "\n\n";
-
-    markupText << "**Exception:** " << exceptDoc.mException << "\n\n";
-
-    markupText << "\n\n\n";
+    writer.WriteCommandEntry(*cmdDoc);
   }
 
-  WriteStringRangeToFile(filePath, markupText.ToString());
+  EndHeaderSection(writer);
+
+  writer.WriteOutputToFile(outputPath);
 }
-#endif
+
+CommandRefWriter::CommandRefWriter(StringParam name) : BaseMarkupWriter(name)
+{
+}
+
+void CommandRefWriter::WriteCommandEntry(const CommandDoc &cmdDoc)
+{
+  InsertNewSectionHeader(cmdDoc.mName);
+
+  if (!cmdDoc.mDescription.empty())
+    mOutput << cmdDoc.mDescription << "\n\n";
+
+  StartHeaderSection((*this));
+  InsertNewSectionHeader("Tags");
+
+  if (cmdDoc.mTags.empty())
+  {
+    mOutput << "**No Tags**\n\n";
+  }
+  else
+  {
+    // actually list tags
+    forRange(StringRef tag, cmdDoc.mTags.all())
+    {
+      mOutput << "*\t" << tag << "\n\n";
+    }
+  }
+
+  InsertNewSectionHeader("Shortcut");
+
+  if (cmdDoc.mShortcut.empty())
+  {
+    mOutput << "**No Keyboard Shortcut**\n\n";
+  }
+  else
+  {
+    mOutput << "*\t" << cmdDoc.mShortcut << "\n\n";
+  }
+
+  mOutput << ".. include:: CommandPageExtensions/" << cmdDoc.mName << ".rst\n\n";
+
+  EndHeaderSection((*this));
+}
 
 }

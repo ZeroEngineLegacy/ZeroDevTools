@@ -290,21 +290,9 @@ int main(int argc, char* argv[])
 
   if (!config.mMarkupDirectory.empty())
   {
-    WriteOutMarkup(config);
-
-    if (!config.mEventsOutputLocation.empty())
-    {
-      WriteEventList(config);
-    }
-
-    //if (!config.mExceptionsFile.empty())
-    //{
-    //  WriteExceptionList(config);
-    //}
+    Zero::WriteOutAllMarkdownFiles(config);
   }
 
-  if (!config.mCommandListFile.empty())
-    WriteCommandReference(config);
 
   return 0;
 }

@@ -10,7 +10,8 @@
 namespace Zero
 {
 
-///super basic test that checks if we can expand trivial macros properly
+
+/// super basic test that checks if we can expand trivial macros properly
 bool doTest0(void)
 {
   // For Test0
@@ -44,7 +45,8 @@ bool doTest0(void)
 
   return exampleOutputTokens == testCall.mExpandedMacro;
 }
-///this not only is a more complex Test0, it also tests MacroComment option extraction
+
+/// this not only is a more complex Test0, it also tests MacroComment option extraction
 bool doTest1(void)
 {
   MacroDatabase::GetInstance()->mMacroExpandStack.clear();
@@ -127,7 +129,8 @@ bool doTest1(void)
   return testStatus;
 }
 
-///Test2 checks if we handle the "strigify" macro operator correctly
+
+/// Test2 checks if we handle the "strigify" macro operator correctly
 bool doTest2(void)
 {
   MacroDatabase::GetInstance()->mMacroExpandStack.clear();
@@ -158,7 +161,8 @@ bool doTest2(void)
   return testCall.mExpandedMacro == exampleOutputTokens;
 }
 
-///Test3 tests if we do macro concatination correctly
+
+/// Test3 tests if we do macro concatination correctly
 bool doTest3(void)
 {
   MacroDatabase::GetInstance()->mMacroExpandStack.clear();
@@ -365,7 +369,8 @@ are considered changed during change detection\"";
   return testClass->mMethods.size() == 22;
 }
 
-///Test6 is just like Test5 except it also tests MacroComment option passing two layers deep
+
+/// Test6 is just like Test5 except it also tests MacroComment option passing two layers deep
 bool doTest6(void)
 {
   MacroDatabase::GetInstance()->mMacroExpandStack.clear();

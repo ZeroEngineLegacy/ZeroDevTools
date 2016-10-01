@@ -12,19 +12,19 @@ struct DocGeneratorConfig
 
   /// required if parseDoxygen flag is set
   String mDoxygenPath;
-  ///this gets us the doc file that zilch will fill out from the engine meta
+  /// this gets us the doc file that zilch will fill out from the engine meta
   String mZeroDocFile;
-  ///defaults to file in rawDocDirectory honestly it should always be with a documentation folder
+  /// defaults to file in rawDocDirectory honestly it should always be with a documentation folder
   String mTypedefLibraryFile;
-  ///where the documentation should output
+  /// where the documentation should output
   String mOutputDirectory;
-  ///defaults to where it should be in the output directory
+  /// defaults to where it should be in the output directory
   String mRawDocDirectory;
-  ///file containing list of files/directores to ignore
+  /// file containing list of files/directores to ignore
   String mIgnoreFile;
-  ///a skeleton doc file that we ignore anything it has documented
+  /// a skeleton doc file that we ignore anything it has documented
   String mIgnoreSkeletonDocFile;
-  ///where to output our log of warnings/errors
+  /// where to output our log of warnings/errors
   String mLogFile;
   /// this is the events file zero outputs
   String mZeroEventsFile;
@@ -34,36 +34,37 @@ struct DocGeneratorConfig
   String mExceptionsFile;
 
   ///// Trimmed Strings /////
-  ///defaults to trimdoc.data in the output directory
+  /// defaults to trimdoc.data in the output directory
   String mTrimmedOutput;
-  ///where to load the trimmed typedef doclib location
+  /// where to load the trimmed typedef doclib location
   String mTrimmedTypedefFile;
 
   ///// Markup Strings /////
-  ///what directory to output all the markup files to
+  /// what directory to output all the markup files to
   String mMarkupDirectory;
-  ///where to output the command list
+  /// where to output the command list
   String mCommandListFile;
 
-  ///what macro test to run, if -1, no tests will be run, if max(int), all tests will run
+  /// what macro test to run, if -1, no tests will be run, if max(int), all tests will run
   int mRunMacroTest;
 
   ///// Raw Bools /////
-  ///if true, we will replace any typedefs in documentation with the underlying type
+  /// if true, we will replace any typedefs in documentation with the underlying type
   bool mReplaceTypes;
-  ///if true, we will load typedefs from the output directory before doing any doc parsing
+  /// if true, we will load typedefs from the output directory before doing any doc parsing
   bool mLoadTypedefs;
-  ///if true, we will load our typedefs info in a seperate pass over doxygen namespace docs
+  /// if true, we will load our typedefs info in a seperate pass over doxygen namespace docs
   bool mLoadTypedefsFromDoxygen;
-  ///if true, some extra parsing information will be logged/output
+  /// if true, some extra parsing information will be logged/output
   bool mVerbose;
-  ///if true, we tag everything we load as unbound types
+  /// if true, we tag everything we load as unbound types
   bool mTagAllAsUnbound;
-  ///if true, we will print the help text then exit
+  /// if true, we will print the help text then exit
   bool mHelp;
 
   ///// Trimmed Bools /////
-  ///if true, we will output the trimmed documentation files
+  
+  // if true, we will output the trimmed documentation files
   bool mCreateTrimmed;
 };
 

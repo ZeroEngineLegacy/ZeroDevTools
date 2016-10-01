@@ -374,7 +374,7 @@ namespace Zero
     return SaveMacroFromDoxyfile(&macroFile, name, uniqueId);
   }
 
-  ///searches codelines for the definition of the macro we are looking for, then saves it
+  /// searches codelines for the definition of the macro we are looking for, then saves it
   MacroData* MacroDatabase::SaveMacroFromDoxyfile(TiXmlDocument* macroFile,
     StringParam name, StringParam id)
   {

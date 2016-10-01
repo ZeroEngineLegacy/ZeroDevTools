@@ -19,27 +19,32 @@ void PrintHelp(void)
   printf(
 "\
 Usage: [-flags] [-option \"argument\"]\n\
-flags:\n\
-replaceTypes - Replaces types in documentation with definitions of types in the typedef library.\n\n\
-loadTypedefs - Flag tells the program that you are going to load typedefs from Documentation.\n\n\
-loadTypedefsFromDoxygen - Tells program you are going to load typedefs from Doxygen xml files.\n\n\
-verbose - Tells program to output some additional information during parsing.\n\n\
-tagAllAsUnbound - Gives every single class loaded the unbound tag.\n\n\
-createTrimmed - Tells program to create a new trimmed doc file for output.\n\n\
-\noptions:\n\
-doxyPath - If set, path passed in is used as path to load all doxygen documentation from, by default doxygen is not loaded.\n\n\
-zeroDocFile - If set, zero doc file will be used to generate a list of class names to try to find and parse.\n\n\
-output - Location to output the raw documentation files for both classes and typedefs.\n\n\
-rawDocDirectory - Used to load class and typedef raw documentation, used when 'replaceTypes' is set.\n\n\
-typedefsFile - Used to override the path to load the raw typedef documentation file when 'replaceTypes' is set.\n\n\
-ignoreFile - Location to file with list of paths and class names to ignore. When searching/loading. \n\n\
-ignoreSkeletonFile - Location to DocumentationLibrary. All classes in the library will not be saved during any steps.\n\n\
-logFile - Path to file where most console output is duplicated with timestamps.\n\n\
-trimmedOutput - Overrides default location for trimmed documentation. Used to load and saved trimmed documentation.\n\n\
-trimmedTypedefFile - Path to typedef file used to replace types specifically for the trimmed output file.\n\n\
-markupDirectory - Path to location where all markup files will be saved.\n\n\
-commandListFile - Path to location to save the command list markup file.\n\n\
-eventsFile - path to file containing list of events which is loaded and filled out.\n\n\
+Flags:\n\
+replaceTypes - if true, we will replace any typedefs in documentation with the underlying type\n\n\
+loadTypedefs - if true, we will load typedefs from the output directory before doing any doc parsing\n\n\
+loadTypedefsFromDoxygen - if true, we will load our typedefs info in a seperate pass over doxygen namespace docs\n\n\
+verbose - if true, some extra parsing information will be logged/output\n\n\
+tagAllAsUnbound - if true, we tag everything we load as unbound types\n\n\
+help - if true, we will print the help text then exit\n\n\
+createTrimmed - if true, we will output the trimmed documentation files\n\n\
+\n\n\
+Options:\n\n\
+doxygenPath - required if parseDoxygen flag is set\n\n\
+zeroDocFile - this gets us the doc file that zilch will fill out from the engine meta\n\n\
+typedefLibraryFile - defaults to file in rawDocDirectory honestly it should always be with a documentation folder\n\n\
+outputDirectory - where the documentation should output\n\n\
+rawDocDirectory - defaults to where it should be in the output directory\n\n\
+ignoreFile - file containing list of files/directores to ignore\n\n\
+ignoreSkeletonDocFile - a skeleton doc file that we ignore anything it has documented\n\n\
+logFile - where to output our log of warnings/errors\n\n\
+zeroEventsFile - this is the events file zero outputs\n\n\
+eventsOutputLocation - this is the event list that we generate\n\n\
+exceptionsFile - this is the exceptions file that we generate\n\n\
+trimmedOutput - defaults to trimdoc.data in the output directory\n\n\
+trimmedTypedefFile - where to load the trimmed typedef doclib location\n\n\
+markupDirectory - what directory to output all the markup files to\n\n\
+commandListFile - where to output the command list\n\n\
+runMacroTest - what macro test to run, if -1, no tests will be run, if max(int), all tests will run\n\n\
 "
   );
 }

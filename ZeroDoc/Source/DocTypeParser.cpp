@@ -50,7 +50,7 @@ bool DocTypeParser::accept(DocTokenType::Enum type)
   // since we are not at the end, check if the token matches, if it does move index forward
   if (type == mTokens[mIndex].mEnumTokenType)
   {
-    //PrintRule::AcceptedToken(mTokens[mIndex]);
+
     ++mIndex;
     return true;
   }
@@ -475,7 +475,7 @@ ld be automatically added by FunctionNode instead");
 }
 
 //--------------------------------------------------------------------------------TypeNode
-//// Type = NamedType | FunctionType
+/// Type = NamedType | FunctionType
 UniquePointer<TypeNode> DocTypeParser::Type(void)
 {
   UniquePointer<TypeNode> node = NamedType();
@@ -537,7 +537,7 @@ UniquePointer<TypeNode> DocTypeParser::NamedType(void)
 //   <OpenParentheses> Type (<Comma> Type)* <CloseParentheses>
 UniquePointer<TypeNode> DocTypeParser::FunctionType(void)
 {
-  //TODO: I got lazy, do this later future me!
+  // not supporting this for now, has not come up and seems annoying
   return nullptr;
 }
 

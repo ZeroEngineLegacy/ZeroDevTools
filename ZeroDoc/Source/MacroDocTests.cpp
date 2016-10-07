@@ -30,15 +30,15 @@ bool doTest0(void)
   // init the Macro
   MacroData testMacro(simpleArgPassingTestString);
 
-  testMacro.mParameters.push_back("A");
-  testMacro.mParameters.push_back("B");
+  testMacro.mParameters.PushBack("A");
+  testMacro.mParameters.PushBack("B");
 
 
   // init the MacroCall (we are cheating a bunch since parsing relies to heavy on xml
   MacroCall testCall;
   testCall.mClass = nullptr;
-  testCall.mMacroArgs.push_back("unsigned");
-  testCall.mMacroArgs.push_back("potato");
+  testCall.mMacroArgs.PushBack("unsigned");
+  testCall.mMacroArgs.PushBack("potato");
   testCall.mMacro = &testMacro;
 
   testCall.ExpandCall();
@@ -49,7 +49,7 @@ bool doTest0(void)
 /// this not only is a more complex Test0, it also tests MacroComment option extraction
 bool doTest1(void)
 {
-  MacroDatabase::GetInstance()->mMacroExpandStack.clear();
+  MacroDatabase::GetInstance()->mMacroExpandStack.Clear();
   // For Test1
   String AnchorAccessorsMacroTestString =
     "#define DeclareAnchorAccessors(ConstraintType, anchor)                                  \\\
@@ -102,15 +102,15 @@ bool doTest1(void)
 
   // init the Macro
   MacroData testMacro(AnchorAccessorsMacroTestString);
-  testMacro.mParameters.push_back("ConstraintType");
-  testMacro.mParameters.push_back("anchor");
+  testMacro.mParameters.PushBack("ConstraintType");
+  testMacro.mParameters.PushBack("anchor");
 
 
   // init the MacroCall (we are cheating a bunch since parsing relies to heavy on xml)
   MacroCall testCall;
   testCall.mClass = nullptr;
-  testCall.mMacroArgs.push_back("PositionJoint");
-  testCall.mMacroArgs.push_back("mAnchors");
+  testCall.mMacroArgs.PushBack("PositionJoint");
+  testCall.mMacroArgs.PushBack("mAnchors");
   testCall.mMacro = &testMacro;
 
   // this part tests mostly just what we tested in test0
@@ -133,7 +133,7 @@ bool doTest1(void)
 /// Test2 checks if we handle the "strigify" macro operator correctly
 bool doTest2(void)
 {
-  MacroDatabase::GetInstance()->mMacroExpandStack.clear();
+  MacroDatabase::GetInstance()->mMacroExpandStack.Clear();
 
   // For Test2
   String stringifyTestString =
@@ -149,11 +149,11 @@ bool doTest2(void)
 
   // init the Macro
   MacroData testMacro(stringifyTestString);
-  testMacro.mParameters.push_back("Str");
+  testMacro.mParameters.PushBack("Str");
 
   // init the MacroCall (we are cheating a bunch since parsing relies to heavy on xml)
   MacroCall testCall;
-  testCall.mMacroArgs.push_back("defaultValue");
+  testCall.mMacroArgs.PushBack("defaultValue");
   testCall.mMacro = &testMacro;
 
   testCall.ExpandCall();
@@ -165,7 +165,7 @@ bool doTest2(void)
 /// Test3 tests if we do macro concatination correctly
 bool doTest3(void)
 {
-  MacroDatabase::GetInstance()->mMacroExpandStack.clear();
+  MacroDatabase::GetInstance()->mMacroExpandStack.Clear();
 
   // For Test3
   String concatTestString =
@@ -181,13 +181,13 @@ bool doTest3(void)
 
   // init the macro
   MacroData testMacro(concatTestString);
-  testMacro.mParameters.push_back("A");
-  testMacro.mParameters.push_back("B");
+  testMacro.mParameters.PushBack("A");
+  testMacro.mParameters.PushBack("B");
 
   // init the MacroCall (we are cheating a bunch since parsing relies to heavy on xml)
   MacroCall testCall;
-  testCall.mMacroArgs.push_back("Super");
-  testCall.mMacroArgs.push_back("Rad");
+  testCall.mMacroArgs.PushBack("Super");
+  testCall.mMacroArgs.PushBack("Rad");
   testCall.mMacro = &testMacro;
 
   testCall.ExpandCall();
@@ -198,7 +198,7 @@ bool doTest3(void)
 /// Test4 uses actual code to see if simple macro expand works on larger example (codename: Davis Testcase)
 bool doTest4(void)
 {
-  MacroDatabase::GetInstance()->mMacroExpandStack.clear();
+  MacroDatabase::GetInstance()->mMacroExpandStack.Clear();
 
   // From Test1
   String AnchorAccessorsMacroTestString =
@@ -252,15 +252,15 @@ bool doTest4(void)
 
   // init the Macro
   MacroData testMacro(AnchorAccessorsMacroTestString);
-  testMacro.mParameters.push_back("ConstraintType");
-  testMacro.mParameters.push_back("anchor");
+  testMacro.mParameters.PushBack("ConstraintType");
+  testMacro.mParameters.PushBack("anchor");
 
   // init the MacroCall (we are cheating a bunch since parsing relies to heavy on xml)
   MacroCall testCall;
   RawClassDoc *testClass = new RawClassDoc("testClass");
   testCall.mClass = testClass;
-  testCall.mMacroArgs.push_back("PositionJoint");
-  testCall.mMacroArgs.push_back("mAnchors");
+  testCall.mMacroArgs.PushBack("PositionJoint");
+  testCall.mMacroArgs.PushBack("mAnchors");
   testCall.mMacro = &testMacro;
 
   // this part tests mostly just what we tested in test0
@@ -273,16 +273,16 @@ bool doTest4(void)
   bool retVal = true;
 
   // check if the class has all of the functions it should
-  retVal &= testClass->mMethodMap.containsKey("GetLocalPointA")
-    && testClass->mMethodMap.containsKey("SetLocalPointA")
-    && testClass->mMethodMap.containsKey("GetLocalPointB")
-    && testClass->mMethodMap.containsKey("SetLocalPointB")
-    && testClass->mMethodMap.containsKey("GetWorldPointA")
-    && testClass->mMethodMap.containsKey("SetWorldPointA")
-    && testClass->mMethodMap.containsKey("GetWorldPointB")
-    && testClass->mMethodMap.containsKey("SetWorldPointB")
-    && testClass->mMethodMap.containsKey("SetWorldPoints")
-    && testClass->mMethodMap.containsKey("ObjectLinkPointUpdated");
+  retVal &= testClass->mMethodMap.ContainsKey("GetLocalPointA")
+    && testClass->mMethodMap.ContainsKey("SetLocalPointA")
+    && testClass->mMethodMap.ContainsKey("GetLocalPointB")
+    && testClass->mMethodMap.ContainsKey("SetLocalPointB")
+    && testClass->mMethodMap.ContainsKey("GetWorldPointA")
+    && testClass->mMethodMap.ContainsKey("SetWorldPointA")
+    && testClass->mMethodMap.ContainsKey("GetWorldPointB")
+    && testClass->mMethodMap.ContainsKey("SetWorldPointB")
+    && testClass->mMethodMap.ContainsKey("SetWorldPoints")
+    && testClass->mMethodMap.ContainsKey("ObjectLinkPointUpdated");
 
   return retVal;
 }
@@ -290,7 +290,7 @@ bool doTest4(void)
 // Tests if macro expand and concat work on a non-trivial code example(codename: Andrew Testcase)
 bool doTest5(void)
 {
-  MacroDatabase::GetInstance()->mMacroExpandStack.clear();
+  MacroDatabase::GetInstance()->mMacroExpandStack.Clear();
 
   String AndrewMacroTestString0 = "\
 #define DeclareVariantGetSetForArithmeticTypes(property)       \\\
@@ -336,13 +336,13 @@ are considered changed during change detection\"";
 
 
   MacroData *testMacro0 = new MacroData(AndrewMacroTestString0);
-  testMacro0->mParameters.push_back("property");
+  testMacro0->mParameters.PushBack("property");
   testMacro0->mName = "DeclareVariantGetSetForArithmeticTypes";
 
   MacroData *testMacro1 = new MacroData(AndrewMacroTestString1);
-  testMacro1->mParameters.push_back("property");
-  testMacro1->mParameters.push_back("typeName");
-  testMacro1->mParameters.push_back("type");
+  testMacro1->mParameters.PushBack("property");
+  testMacro1->mParameters.PushBack("typeName");
+  testMacro1->mParameters.PushBack("type");
   testMacro1->mName = "DeclareVariantGetSetForType";
 
   MacroDatabase &database = *MacroDatabase::GetInstance();
@@ -355,25 +355,25 @@ are considered changed during change detection\"";
   RawClassDoc *testClass = new RawClassDoc("testClass");
   testCall.mClass = testClass;
 
-  testCall.mMacroArgs.push_back("DeltaThreshold");
+  testCall.mMacroArgs.PushBack("DeltaThreshold");
   testCall.mMacro = testMacro0;
 
   testCall.ExpandCall();
 
   testCall.AddExpandedMacroDocToRawClass();
 
-  database.mMacrosByName.clear();
+  database.mMacrosByName.Clear();
   delete testMacro0;
   delete testMacro1;
   // since the next test really tests the macro comments, checking we got all methods is fine
-  return testClass->mMethods.size() == 22;
+  return testClass->mMethods.Size() == 22;
 }
 
 
 /// Test6 is just like Test5 except it also tests MacroComment option passing two layers deep
 bool doTest6(void)
 {
-  MacroDatabase::GetInstance()->mMacroExpandStack.clear();
+  MacroDatabase::GetInstance()->mMacroExpandStack.Clear();
 
   // bringing back the andrew case to test variable passing
 
@@ -424,13 +424,13 @@ type Get##property##typeName() const";
 /// verb : \"Dueling\",";
 
   MacroData *testMacro0 = new MacroData(AndrewMacroTestString0);
-  testMacro0->mParameters.push_back("property");
+  testMacro0->mParameters.PushBack("property");
   testMacro0->mName = "DeclareVariantGetSetForArithmeticTypes";
 
   MacroData *testMacro1 = new MacroData(AndrewMacroTestString1);
-  testMacro1->mParameters.push_back("property");
-  testMacro1->mParameters.push_back("typeName");
-  testMacro1->mParameters.push_back("type");
+  testMacro1->mParameters.PushBack("property");
+  testMacro1->mParameters.PushBack("typeName");
+  testMacro1->mParameters.PushBack("type");
   testMacro1->mName = "DeclareVariantGetSetForType";
 
   MacroDatabase &database = *MacroDatabase::GetInstance();
@@ -442,21 +442,21 @@ type Get##property##typeName() const";
   MacroCall testCall0;
   testCall0.mClass = testClass;
   testCall0.mMacro = testMacro0;
-  testCall0.mMacroArgs.push_back("DeltaThreshold");
+  testCall0.mMacroArgs.PushBack("DeltaThreshold");
   testCall0.AddOption("comment", "DeltaThreshold probably does stuff");
   testCall0.AddOption("verb", "TWEEKING");
 
   MacroCall testCall1;
   testCall1.mClass = testClass;
   testCall1.mMacro = testMacro0;
-  testCall1.mMacroArgs.push_back("QuantizationRangeMin");
+  testCall1.mMacroArgs.PushBack("QuantizationRangeMin");
   testCall1.AddOption("comment", "QuantizationRangeMin is gibberish to me");
   testCall1.AddOption("verb", "EATING");
 
   MacroCall testCall2;
   testCall2.mClass = testClass;
   testCall2.mMacro = testMacro0;
-  testCall2.mMacroArgs.push_back("QuantizationRangeMax");
+  testCall2.mMacroArgs.PushBack("QuantizationRangeMax");
   testCall2.AddOption("comment", "I think I am trying way to hard at writing this test case");
   testCall2.AddOption("verb", "DUELING");
 
@@ -472,7 +472,7 @@ type Get##property##typeName() const";
 
   static const int methodCount = 66;
 
-  if (testClass->mMethods.size() != methodCount)
+  if (testClass->mMethods.Size() != methodCount)
     return false;
 
   // if we had all the methods, make sure the comments are correct (oh god there are 66)

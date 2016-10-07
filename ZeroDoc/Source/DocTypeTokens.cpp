@@ -21,30 +21,30 @@ namespace Zero
   ////////////////////////////////////////////////////////////
   void CleanupStringToken(DocToken *str)
   {
-    if (str->mText.size() < 2 || str->mText[0] != '"')
+    if (str->mText.SizeInBytes() < 2 || str->mText.c_str()[0] != '"')
       return;
 
-    str->mText = str->mText.sub_string(1, str->mText.size() - 2);
+    str->mText = str->mText.SubStringFromByteIndices(1, str->mText.SizeInBytes() - 2);
   }
   void CleanupCommentToken(DocToken *comment)
   {
     String& text = comment->mText;
 
     // single line comment
-    if (text[1] == '/')
+    if (text.c_str()[1] == '/')
     {
-      if (text.size() < 2)
+      if (text.SizeInBytes() < 2)
         return;
 
-      text = text.sub_string(2, text.size());
+      text = text.SubStringFromByteIndices(2, text.SizeInBytes());
     }
     // block comment
     else
     {
-      if (text.size() < 4 || text[1] != '*')
+      if (text.SizeInBytes() < 4 || text.c_str()[1] != '*')
         return;
       
-      text = text.sub_string(2, text.size() - 4);
+      text = text.SubStringFromByteIndices(2, text.SizeInBytes() - 4);
     }
   }
 
@@ -58,7 +58,7 @@ namespace Zero
   {
     StringBuilder builder;
 
-    for (uint i = 0; i < tokens.size(); ++i)
+    for (uint i = 0; i < tokens.Size(); ++i)
     {
       builder.Append(tokens[i].mText);
       builder.Append(" ");
@@ -69,9 +69,9 @@ namespace Zero
   void CopyArrayOfTokenPtrToTypeTokens(const Array<DocToken*>& in, TypeTokens*& out)
   {
     out = new TypeTokens();
-    forRange(DocToken *tokenPtr, in.all())
+    forRange(DocToken *tokenPtr, in.All())
     {
-      out->push_back(*tokenPtr);
+      out->PushBack(*tokenPtr);
     }
   }
 
@@ -85,9 +85,9 @@ namespace Zero
       DocToken token;
       ReadToken(startingState, stream, token);
 
-      stream += token.mText.size();
+      stream += token.mText.SizeInBytes();
 
-      if (token.mText.size() == 0)
+      if (token.mText.SizeInBytes() == 0)
       {
         if (verboseFlag)
           printf("Skipping one character of input: '%s'\n", stream);
@@ -108,7 +108,7 @@ namespace Zero
           CleanupStringToken(&token);
         }
 
-        output->push_back(token);
+        output->PushBack(token);
       }
     }
 
@@ -384,7 +384,7 @@ int checkForKeyword(const char*stream, int tokenLen)
 
 DocDfaEdge *FindEdge(DocDfaState *state, char c)
 {
-  if (!state->mEdges.containsKey(c))
+  if (!state->mEdges.ContainsKey(c))
     return NULL;
 
   return &state->mEdges[c];

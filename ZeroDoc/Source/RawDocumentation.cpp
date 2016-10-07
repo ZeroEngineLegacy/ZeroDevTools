@@ -28,7 +28,7 @@ namespace Zero
   {
     uint start = (uint)-1;
     // get first OpenParen index
-    for (uint i = 0; i < fnCall.size(); ++i)
+    for (uint i = 0; i < fnCall.Size(); ++i)
     {
       if (fnCall[i].mEnumTokenType == DocTokenType::OpenParen)
       {
@@ -44,7 +44,7 @@ namespace Zero
     int parenCount = 0;
     uint argCount = 0;
     // start iterating from the character after that to the end
-    for (uint i = start; i < fnCall.size(); ++i)
+    for (uint i = start; i < fnCall.Size(); ++i)
     {
       DocToken &currToken = fnCall[i];
 
@@ -113,8 +113,8 @@ namespace Zero
 
       String codeString = lineBuilder.ToString();
 
-      if (codeString[0] == '#' ||
-        (codeString.size() > 1 && codeString[0] == '/' && codeString[1] == '/'))
+      if (codeString.c_str()[0] == '#' ||
+        (codeString.SizeInBytes() > 1 && codeString.c_str()[0] == '/' && codeString.c_str()[1] == '/'))
       {
         continue;
       }
@@ -131,18 +131,20 @@ namespace Zero
 
     builder << '_';
 
-    uint extensionLocation = filename.FindLastOf('.');
+    StringRange extensionLocation = filename.FindLastOf('.');
 
-    String extension = filename.sub_string(extensionLocation + 1, 3);
+    extensionLocation.IncrementByRune();
+
+    String extension(extensionLocation.Begin(), filename.End());
 
     if (extension != "cpp" && extension != "hpp")
       return "";
 
     bool prevLowercase = false;
 
-    for(uint i = 0; i < extensionLocation; ++i)
+    for(uint i = 0; i < extensionLocation.SizeInBytes(); ++i)
     {
-      char c = filename[i];
+      char c = filename.c_str()[i];
 
       if (IsUpper(c) && prevLowercase)
         builder << '_';
@@ -163,7 +165,7 @@ namespace Zero
   {
     StringBuilder builder;
 
-    for (uint i = 0; i < tokens.size(); ++i)
+    for (uint i = 0; i < tokens.Size(); ++i)
     {
       const DocToken &token = tokens[i];
 
@@ -209,7 +211,7 @@ namespace Zero
   // does as it says, removes all spaces from str and outputs it into the stringbuilder
   void CullAllSpacesFromString(StringRef str, StringBuilder* output)
   {
-    forRange(char c, str.all())
+    forRange(Rune c, str.All())
     {
       if (c != ' ')
         output->Append(c);
@@ -338,24 +340,24 @@ namespace Zero
   {
     TypeTokens newArray;
 
-    forRange(DocToken& token, tokenArray.all())
+    forRange(DocToken& token, tokenArray.All())
     {
       if (&token == location)
       {
-        forRange(DocToken& defToken, tDef.mDefinition.all())
+        forRange(DocToken& defToken, tDef.mDefinition.All())
         {
-          newArray.push_back(defToken);
+          newArray.PushBack(defToken);
         }
       }
       else
       {
-        newArray.push_back(token);
+        newArray.PushBack(token);
       }
     }
 
     tokenArray = newArray;
 
-    return tDef.mDefinition.size() - 1;
+    return tDef.mDefinition.Size() - 1;
   }
 
   // get type string from an element that contains Text nodes
@@ -378,7 +380,7 @@ namespace Zero
     bool madeReplacements = false;
 
     // loop over tokens
-    for (uint i = 0; i < tokens.size(); ++i)
+    for (uint i = 0; i < tokens.Size(); ++i)
     {
       //should be moved into the loop
       Array<String>& names = classNamespace.mNames;
@@ -390,7 +392,7 @@ namespace Zero
       String key = token.mText;
 
       // loop over possible namespace'd version
-      for (int j = -1; j < (int)names.size(); ++j)
+      for (int j = -1; j < (int)names.Size(); ++j)
       {
         StringBuilder builder;
 
@@ -401,12 +403,12 @@ namespace Zero
         
         key = builder.ToString();
 
-        if (defLib->mTypedefs.containsKey(key))
+        if (defLib->mTypedefs.ContainsKey(key))
         {
           TypeTokens* typedefTokens = &defLib->mTypedefs[key]->mDefinition;
 
           // make sure they are not just the same tokens
-          if (tokens.size() >= typedefTokens->size() 
+          if (tokens.Size() >= typedefTokens->Size() 
             && ContainsFirstTypeInSecondType(*typedefTokens, tokens))//tokens == *typedefTokens)
           {
             break;
@@ -415,14 +417,14 @@ namespace Zero
           else
           {
             // first we have to make sure our token ranges are of valid size
-            if ((int)i - 2 > 0 && typedefTokens->size() >= 3)
+            if ((int)i - 2 > 0 && typedefTokens->Size() >= 3)
             {
               bool equal = true;
 
               // the magic number 3 is because we are checking for this: typedef name ns::name
               for (uint m = 0; m < 3; ++m)
               { 
-                if ((*typedefTokens)[m].mText != tokens.sub_range(i - 2, 3)[m].mText)
+                if ((*typedefTokens)[m].mText != tokens.SubRange(i - 2, 3)[m].mText)
                   equal = false;
               }
               if (equal)
@@ -445,7 +447,7 @@ namespace Zero
   void GetFilesWithPartialName(StringParam basePath,StringParam partialName, Array<String>* output)
   {
     FileRange range(basePath);
-    for (; !range.empty(); range.popFront())
+    for (; !range.Empty(); range.PopFront())
     {
       FileEntry entry = range.frontEntry();
 
@@ -459,7 +461,7 @@ namespace Zero
       else
       {
         if (entry.mFileName.Contains(partialName))
-          output->push_back(filePath);
+          output->PushBack(filePath);
       }
     }
   }
@@ -468,7 +470,7 @@ namespace Zero
     IgnoreList &ignoreList, Array<String>* output)
   {
     FileRange range(basePath);
-    for (; !range.empty(); range.popFront())
+    for (; !range.Empty(); range.PopFront())
     {
       FileEntry entry = range.frontEntry();
 
@@ -489,7 +491,7 @@ namespace Zero
       else
       {
         if (entry.mFileName.Contains(partialName))
-          output->push_back(filePath);
+          output->PushBack(filePath);
       }
     }
   }
@@ -497,7 +499,7 @@ namespace Zero
   String GetFileWithExactName(StringParam basePath, StringParam exactName)
   {
     FileRange range(basePath);
-    for (; !range.empty(); range.popFront())
+    for (; !range.Empty(); range.PopFront())
     {
       FileEntry entry = range.frontEntry();
 
@@ -526,9 +528,9 @@ namespace Zero
 
     bool prevSpace = false;
 
-    for (uint i = 0; i < description.size(); ++i)
+    for (uint i = 0; i < description.SizeInBytes(); ++i)
     {
-      char currChar = description[i];
+      char currChar = description.c_str()[i];
 
       if (currChar == ' ')
       {
@@ -551,13 +553,13 @@ namespace Zero
 
     WriteLog("Objects Missing Description:\n");
 
-    for (uint i = 0; i < trimDoc.mClasses.size(); ++i)
+    for (uint i = 0; i < trimDoc.mClasses.Size(); ++i)
     {
       ClassDoc *currClass = trimDoc.mClasses[i];
       if (currClass->mDescription == "")
         WriteLog("Class '%s' missing description\n", currClass->mName.c_str());
 
-      for (uint j = 0; j < currClass->mMethods.size(); ++j)
+      for (uint j = 0; j < currClass->mMethods.Size(); ++j)
       {
         MethodDoc *currMethod = currClass->mMethods[j];
         if (currMethod->mDescription == "")
@@ -567,7 +569,7 @@ namespace Zero
         }
 
       }
-      for (uint j = 0; j < currClass->mProperties.size(); ++j)
+      for (uint j = 0; j < currClass->mProperties.Size(); ++j)
       {
         PropertyDoc *currProp = currClass->mProperties[j];
         if (currProp->mDescription == "")
@@ -581,14 +583,14 @@ namespace Zero
 
   bool ContainsFirstTypeInSecondType(TypeTokens &firstType, TypeTokens &secondType)
   {
-    if (firstType.empty())
+    if (firstType.Empty())
       return false;
 
     bool containedType = false;
     uint matchStart = (uint)-1;
 
     // we have to find the start of the match
-    for (uint i = 0; i < secondType.size(); ++i)
+    for (uint i = 0; i < secondType.Size(); ++i)
     {
       if (secondType[i] == firstType[0])
       {
@@ -601,9 +603,9 @@ namespace Zero
       return false;
 
     uint matchEnd = matchStart;
-    for (uint i = 0; i < firstType.size(); ++i)
+    for (uint i = 0; i < firstType.Size(); ++i)
     {
-      if (matchStart + i > secondType.size()
+      if (matchStart + i > secondType.Size()
         || !(firstType[i] == secondType[i + matchStart]))
       {
         return false;
@@ -639,29 +641,31 @@ namespace Zero
 
   bool IgnoreList::DirectoryIsOnIgnoreList(StringParam dir)
   {
-    uint location = dir.FindFirstOf(mDoxyPath);
+    StringRange locationRange = dir.FindFirstOf(mDoxyPath);
+
+    uint location = locationRange.SizeInBytes();
 
     String relativeDir;
     if (location != (uint)-1)
-      relativeDir = dir.sub_string(mDoxyPath.size(), dir.size());
+      relativeDir = dir.SubStringFromByteIndices(mDoxyPath.SizeInBytes(), dir.SizeInBytes());
     else
       relativeDir = dir;
 
     String match;
     match = BinarySearch(mDirectories, relativeDir, match);
-    if (!match.empty())
+    if (!match.Empty())
       return true;
 
     // now recursivly check to see if we are in a directory that was ignored
-    StringRange subPath = relativeDir.sub_string(0, relativeDir.FindLastOf('\\'));
+    StringRange subPath = relativeDir.SubString(relativeDir.Begin(), relativeDir.FindLastOf('\\').Begin());
 
-    while (subPath.size() > 2)
+    while (subPath.SizeInBytes() > 2)
     {
-      if (!BinarySearch(mDirectories, relativeDir, match).empty())
+      if (!BinarySearch(mDirectories, relativeDir, match).Empty())
         return true;
 
-      subPath.popBack();
-      subPath.sub_string(0, subPath.FindLastOf('\\'));
+      subPath.PopBack();
+      subPath = subPath.SubString(subPath.Begin(), subPath.FindLastOf('\\').Begin());
     }
 
     return false;
@@ -672,29 +676,33 @@ namespace Zero
     // strip all namespaces off of the name
     String strippedName;
     if (name.Contains(":"))
-       strippedName = name.sub_string(name.FindLastOf(':') + 1, name.size());
+    {
+      StringRange subStringStart = name.FindLastOf(':');
+      subStringStart.IncrementByRune();
+      strippedName = name.SubString(subStringStart.Begin(), name.End());
+    }
 
     String match;
     match = BinarySearch(mIgnoredNames, strippedName, match);
 
-    return !match.empty();
+    return !match.Empty();
   }
 
   bool IgnoreList::empty(void)
   {
-    return mDirectories.empty() || mIgnoredNames.empty();
+    return mDirectories.Empty() || mIgnoredNames.Empty();
   }
 
   void IgnoreList::SortList(void)
   {
-    sort(mDirectories.all());
-    sort(mIgnoredNames.all());
+    Sort(mDirectories.All());
+    Sort(mIgnoredNames.All());
   }
 
   void IgnoreList::CreateIgnoreListFromDocLib(StringParam doxyPath, DocumentationLibrary &doc)
   {
     // for each class inside of the library
-    for (uint i = 0; i < doc.mClasses.size(); ++i)
+    for (uint i = 0; i < doc.mClasses.Size(); ++i)
     {
       StringRef name = doc.mClasses[i]->mName;
       String doxName = GetDoxygenName(name);
@@ -703,7 +711,7 @@ namespace Zero
       //GetFilesWithPartialName(doxyPath, doxName, &mDirectories);
 
       // add the name to the ignored names list
-      mIgnoredNames.push_back(name);
+      mIgnoredNames.PushBack(name);
     }
   }
 
@@ -726,7 +734,7 @@ namespace Zero
     this->mPath = path;
     mStarted = true;
 
-    StringRange folderPath = mPath.sub_string(0, mPath.FindLastOf('\\'));
+    StringRange folderPath = mPath.SubStringFromByteIndices(0, mPath.FindLastOf('\\').SizeInBytes());
 
     if (!DirectoryExists(folderPath))
     {
@@ -771,7 +779,7 @@ namespace Zero
 
       String timestampMsg = builder.ToString();
 
-      mLog.Write((byte*)timestampMsg.c_str(), timestampMsg.size());
+      mLog.Write((byte*)timestampMsg.c_str(), timestampMsg.SizeInBytes());
 
       mLog.Close();
     }
@@ -794,14 +802,14 @@ namespace Zero
 
   void RawNamespaceDoc::GetNamesFromTokens(TypeTokens& tokens)
   {
-    for (uint i = 0; i < tokens.size(); ++i)
+    for (uint i = 0; i < tokens.Size(); ++i)
     {
       DocToken& token = tokens[i];
 
       if (token.mEnumTokenType != DocTokenType::Identifier)
         continue;
 
-      mNames.push_back(token.mText);
+      mNames.PushBack(token.mText);
     }
   }
 
@@ -812,7 +820,7 @@ namespace Zero
 
   RawDocumentationLibrary::~RawDocumentationLibrary()
   {
-    forRange(RawClassDoc* classDoc, mClasses.all())
+    forRange(RawClassDoc* classDoc, mClasses.All())
     {
       delete classDoc;
     }
@@ -821,7 +829,7 @@ namespace Zero
   RawClassDoc* RawDocumentationLibrary::AddNewClass(StringParam className)
   {
     RawClassDoc* newClass = new RawClassDoc;
-    mClasses.push_back(newClass);
+    mClasses.PushBack(newClass);
 
     newClass->mName = className;
 
@@ -832,10 +840,10 @@ namespace Zero
 
   void RawDocumentationLibrary::FillTrimmedDocumentation(DocumentationLibrary &trimLib)
   {
-    for (uint i = 0; i < mClasses.size(); ++i)
+    for (uint i = 0; i < mClasses.Size(); ++i)
     {
-      ClassDoc* newClass = new ClassDoc;
-      trimLib.mClasses.push_back(newClass);
+      ClassDoc* newClass = new ClassDoc();
+      trimLib.mClasses.PushBack(newClass);
       mClasses[i]->FillTrimmedClass(newClass);
 
       trimLib.mClassMap[newClass->mName] = newClass;
@@ -849,7 +857,7 @@ namespace Zero
   void RawDocumentationLibrary::GenerateCustomDocumentationFiles(StringRef directory)
   {
     WriteLog("writing raw documentation library to directory: %s\n\n", directory.c_str());
-    forRange(RawClassDoc* classDoc, mClasses.all())
+    forRange(RawClassDoc* classDoc, mClasses.All())
     {
       String absOutputPath = BuildString(directory, classDoc->mRelativePath);
 
@@ -861,7 +869,7 @@ namespace Zero
       }
 
       StringRange path = 
-        absOutputPath.sub_string(0, absOutputPath.FindLastOf('\\'));
+        absOutputPath.SubString(absOutputPath.Begin(), absOutputPath.FindLastOf('\\').Begin());
 
       if (!DirectoryExists(path))
       {
@@ -875,7 +883,7 @@ namespace Zero
         continue;
       }
 
-      mClassPaths.push_back(classDoc->mRelativePath);
+      mClassPaths.PushBack(classDoc->mRelativePath);
     }
 
     String docLibFile = BuildString(directory, "\\", "Library", ".data");
@@ -894,36 +902,36 @@ namespace Zero
   {
     //String mDescription;
     // check each class and see if it has a function missing a mDescription
-    forRange(RawClassDoc* classDoc, mClasses.all())
+    forRange(RawClassDoc* classDoc, mClasses.All())
     {
-      forRange(RawMethodDoc* methodDoc, classDoc->mMethods.all())
+      forRange(RawMethodDoc* methodDoc, classDoc->mMethods.All())
       {
         if (methodDoc->mDescription == "")
           continue;
 
         // see if there is a function in that same class by the same name
-        if (classDoc->mMethodMap[methodDoc->mName].size() > 1)
+        if (classDoc->mMethodMap[methodDoc->mName].Size() > 1)
         {
           // if there is, copy that mDescription into this method documentation
           methodDoc->mDescription = classDoc->GetDescriptionForMethod(methodDoc->mName);
 
           // if we found a mDescription, move on to the next method
-          if (methodDoc->mDescription.size() > 0)
+          if (methodDoc->mDescription.SizeInBytes() > 0)
             continue;
         }
 
         // if not, check if the base class has a method by the same name
-        RawClassDoc* parentClass = mClassMap.findValue(classDoc->mBaseClass, nullptr);
+        RawClassDoc* parentClass = mClassMap.FindValue(classDoc->mBaseClass, nullptr);
 
         while (parentClass)
         {
           methodDoc->mDescription = parentClass->GetDescriptionForMethod(methodDoc->mName);
 
           // if we found a mDescription, move on to the next method
-          if (methodDoc->mDescription.size() > 0)
+          if (methodDoc->mDescription.SizeInBytes() > 0)
             break;
 
-          parentClass = mClassMap.findValue(parentClass->mBaseClass, nullptr);
+          parentClass = mClassMap.FindValue(parentClass->mBaseClass, nullptr);
         }
       }
     }
@@ -931,7 +939,7 @@ namespace Zero
 
   void RawDocumentationLibrary::NormalizeAllTypes(RawTypedefLibrary* defLib)
   {
-    forRange(RawClassDoc* classDoc, mClasses.all())
+    forRange(RawClassDoc* classDoc, mClasses.All())
     {
       classDoc->NormalizeAllTypes(defLib);
     }
@@ -939,10 +947,10 @@ namespace Zero
 
   void RawDocumentationLibrary::Build(void)
   {
-    forRange(RawClassDoc* classDoc, mClasses.all())
+    forRange(RawClassDoc* classDoc, mClasses.All())
     {
       classDoc->Build();
-      mClassMap.insert(classDoc->GenerateMapKey(), classDoc);
+      mClassMap.Insert(classDoc->GenerateMapKey(), classDoc);
     }
   }
 
@@ -962,7 +970,7 @@ namespace Zero
       return false;
 
     // builds path to classes from paths stored in library file and loads them
-    for (uint i = 0; i < mClassPaths.size(); ++i)
+    for (uint i = 0; i < mClassPaths.Size(); ++i)
     {
       String libPath = BuildString(directory, mClassPaths[i]);
 
@@ -971,7 +979,7 @@ namespace Zero
 
       RawClassDoc* newClass = new RawClassDoc;
       newClass->mParentLibrary = this;
-      mClasses.push_back(newClass);
+      mClasses.PushBack(newClass);
 
       if (!LoadFromDataFile(*newClass, libPath, DataFileFormat::Text, true))
         return false;
@@ -979,7 +987,7 @@ namespace Zero
       // we had to load the file to get the name before checking its name to ignore it
       if (mIgnoreList.NameIsOnIgnoreList(newClass->mName))
       {
-        mClasses.pop_back();
+        mClasses.PopBack();
         delete newClass;
       }
     }
@@ -1003,7 +1011,7 @@ namespace Zero
     GetFilesWithPartialName(doxyPath, "struct_", mIgnoreList, &classFilepaths);
 
     // for each filepath
-    for (uint i = 0; i < classFilepaths.size(); ++i)
+    for (uint i = 0; i < classFilepaths.Size(); ++i)
     {
       StringRef filepath = classFilepaths[i];
 
@@ -1031,14 +1039,14 @@ namespace Zero
 
       AppendTokensFromString(DocLangDfa::Get(), className, &tokens);
 
-      className = tokens.back().mText;
+      className = tokens.Back().mText;
       
       RawClassDoc* newClass = AddNewClass(className);
 
       newClass->LoadFromXmlDoc(&doc, doxyPath, classFilepaths[i]);
     }
 
-    if (mClasses.size() != 0)
+    if (mClasses.Size() != 0)
     {
       printf("\n...Done Loading Classes from Doxygen Class XML Files\n\n");
       printf("\nExpanding and parsing any macros found in Doxygen XML Files...\n\n");
@@ -1057,10 +1065,10 @@ namespace Zero
 
     macroDb->mDoxyPath = doxyPath;
     // first add all the classes by name to the library
-    forRange(ClassDoc *classDoc, library.mClasses.all())
+    forRange(ClassDoc *classDoc, library.mClasses.All())
     {
       // if we have already documented this, skip it
-      if (mClassMap.containsKey(classDoc->mName) 
+      if (mClassMap.ContainsKey(classDoc->mName) 
         || mIgnoreList.NameIsOnIgnoreList(classDoc->mName))
         continue;
 
@@ -1072,7 +1080,7 @@ namespace Zero
     }
 
 
-    if (mClasses.size() != 0)
+    if (mClasses.Size() != 0)
     {
       printf("\n...Done Loading Classes from Doxygen Class XML Files\n\n");
       printf("\nExpanding and parsing any macros found in Doxygen XML Files...\n\n");
@@ -1098,21 +1106,21 @@ namespace Zero
 
   void RawDocumentationLibrary::SaveEventListToFile(StringParam absPath)
   {
-    CreateDirectoryAndParents(absPath.sub_string(0, absPath.FindLastOf('\\')));
+    CreateDirectoryAndParents(absPath.SubString(absPath.Begin(), absPath.FindLastOf('\\').Begin()));
 
     SaveToDataFile(mEvents, absPath);
   }
 
   RawClassDoc *RawDocumentationLibrary::GetClassByName(StringParam name,Array<String> &namespaces)
   {
-    if (mClassMap.containsKey(name))
+    if (mClassMap.ContainsKey(name))
       return mClassMap[name];
 
-    forRange(StringRef nameSpace, namespaces.all())
+    forRange(StringRef nameSpace, namespaces.All())
     {
       String newKey = BuildString(nameSpace, name);
 
-      if (mClassMap.containsKey(newKey))
+      if (mClassMap.ContainsKey(newKey))
         return mClassMap[newKey];
 
     }
@@ -1181,14 +1189,14 @@ namespace Zero
     AppendTokensFromString(DocLangDfa::Get(), defString, &mDefinition);
 
     // get rid of the first token that just says 'typedef'
-    mDefinition.pop_front();
+    mDefinition.PopFront();
 
     // now find the token that has the name of the typedef in it and remove it
-    for (uint i = mDefinition.size() - 1; i >= 0; --i)
+    for (uint i = mDefinition.Size() - 1; i >= 0; --i)
     {
       if (mDefinition[i].mText == mType)
       {
-        mDefinition.eraseAt(i);
+        mDefinition.EraseAt(i);
         break;
       }
     }
@@ -1198,7 +1206,7 @@ namespace Zero
   {
     StringBuilder builder;
 
-    for (uint i = 0; i < mNamespace.mNames.size(); ++i)
+    for (uint i = 0; i < mNamespace.mNames.Size(); ++i)
     {
       builder.Append(mNamespace.mNames[i]);
     }
@@ -1224,7 +1232,7 @@ namespace Zero
     mName = GetElementValue(element, gElementTags[eNAME]);
 
     // unnamed enums are automatically given a name by doxygen, remove it
-    if (mName.FindFirstOf('@') != (uint)-1)
+    if (mName.FindFirstOf('@') != "")
       mName = "";
 
     TiXmlNode* DescNode = GetFirstNodeOfChildType(element, "briefdescription");
@@ -1255,7 +1263,7 @@ namespace Zero
 
     for (TiXmlNode* node = firstElement; node != endNode; node = node->NextSibling())
     {
-      mEnumValues.push_back(node->FirstChildElement()->GetText());
+      mEnumValues.PushBack(node->FirstChildElement()->GetText());
     }
 
   }
@@ -1290,22 +1298,22 @@ namespace Zero
 
   RawClassDoc::~RawClassDoc()
   {
-    forRange(RawMethodDoc* methodDoc, mMethods.all())
+    forRange(RawMethodDoc* methodDoc, mMethods.All())
     {
       delete methodDoc;
     }
 
-    forRange(RawVariableDoc* variableDoc, mVariables.all())
+    forRange(RawVariableDoc* variableDoc, mVariables.All())
     {
       delete variableDoc;
     }
 
-    forRange(RawTypedefDoc* typedefDoc, mTypedefs.all())
+    forRange(RawTypedefDoc* typedefDoc, mTypedefs.All())
     { 
       delete typedefDoc;
     }
 
-    forRange(RawEnumDoc* enumDoc, mEnums.all())
+    forRange(RawEnumDoc* enumDoc, mEnums.All())
     {
       delete enumDoc;
     }
@@ -1315,7 +1323,7 @@ namespace Zero
   {
     mTags = skeleClass.mTags;
 
-    forRange(PropertyDoc *prop, skeleClass.mProperties.all())
+    forRange(PropertyDoc *prop, skeleClass.mProperties.All())
     {
       RawVariableDoc *newVar = new RawVariableDoc();
 
@@ -1323,10 +1331,10 @@ namespace Zero
       newVar->mDescription = prop->mDescription;
 
       newVar->mTokens = new TypeTokens;
-      newVar->mTokens->push_back(DocToken(prop->mType));
+      newVar->mTokens->PushBack(DocToken(prop->mType));
 
       newVar->mProperty = true;
-      mVariables.push_back(newVar);
+      mVariables.PushBack(newVar);
     }
     Build();
   }
@@ -1352,16 +1360,16 @@ namespace Zero
   {
     const Array<RawMethodDoc* > empty;
     // for every method in the passed in class documentation
-    forRange(RawMethodDoc* methodDoc, classDoc.mMethods.all())
+    forRange(RawMethodDoc* methodDoc, classDoc.mMethods.All())
     {
       // get the array of methods by the same name we have (if any)
       const Array<RawMethodDoc* >& sameNames
-        = mMethodMap.findValue(methodDoc->mName, empty);
+        = mMethodMap.FindValue(methodDoc->mName, empty);
       
       // if we had any methods by the same name, check if they have the
       // same signature before we add them
       bool sameSigExists = false;
-      forRange(RawMethodDoc* sameNamedMeth, sameNames.all())
+      forRange(RawMethodDoc* sameNamedMeth, sameNames.All())
       {
         if (sameNamedMeth->mReturnTokens == methodDoc->mReturnTokens)
         {
@@ -1375,16 +1383,16 @@ namespace Zero
       }
       
       if (!sameSigExists)
-        mMethods.push_back(methodDoc);
+        mMethods.PushBack(methodDoc);
     }
 
     // for every property in the passed in class documentation
-    forRange(RawVariableDoc* propertyDoc, mVariables.all())
+    forRange(RawVariableDoc* propertyDoc, mVariables.All())
     {
       // if we didn't find a property by that name, add it
-      if (!mVariableMap.findValue(propertyDoc->mName, nullptr))
+      if (!mVariableMap.FindValue(propertyDoc->mName, nullptr))
       {
-        mVariables.push_back(propertyDoc);
+        mVariables.PushBack(propertyDoc);
       }
     }
     // since we just added data (presumably) to both of these, time to clear and build
@@ -1394,17 +1402,17 @@ namespace Zero
   void RawClassDoc::Build(void)
   {
     // sort the method and property Arrays
-    Zero::sort(mMethods.all(), DocComparePtrFn<RawMethodDoc* >);
-    Zero::sort(mVariables.all(), DocComparePtrFn<RawVariableDoc* >);
+    Zero::Sort(mMethods.All(), DocComparePtrFn<RawMethodDoc* >);
+    Zero::Sort(mVariables.All(), DocComparePtrFn<RawVariableDoc* >);
 
     // build method map
-    forRange(RawMethodDoc* methodDoc, mMethods.all())
+    forRange(RawMethodDoc* methodDoc, mMethods.All())
     {
-      mMethodMap[methodDoc->mName].push_back(methodDoc);
+      mMethodMap[methodDoc->mName].PushBack(methodDoc);
     }
 
     // build property map
-    forRange(RawVariableDoc* propertyDoc, mVariables.all())
+    forRange(RawVariableDoc* propertyDoc, mVariables.All())
     {
       mVariableMap[propertyDoc->mName] = propertyDoc;
     }
@@ -1414,8 +1422,8 @@ namespace Zero
   // same as build but clears everything first
   void RawClassDoc::Rebuild(void)
   {
-    mMethodMap.clear();
-    mVariableMap.clear();
+    mMethodMap.Clear();
+    mVariableMap.Clear();
 
     Build();
   }
@@ -1429,14 +1437,14 @@ namespace Zero
     trimClass->mEventsSent = mEvents;
     trimClass->mTags = mTags;
 
-    for (uint i = 0; i < trimClass->mEventsSent.size(); ++i)
+    for (uint i = 0; i < trimClass->mEventsSent.Size(); ++i)
     {
       EventDoc *eventDoc = trimClass->mEventsSent[i];
       trimClass->mEventsMap[eventDoc->mName] = eventDoc;
     }
 
     // pull out all variables as properites (Removing leading 'm' where exists)
-    for (uint i = 0; i < mVariables.size(); ++i)
+    for (uint i = 0; i < mVariables.Size(); ++i)
     {
       RawVariableDoc* rawVar = mVariables[i];
 
@@ -1448,8 +1456,8 @@ namespace Zero
       PropertyDoc* trimProp = new PropertyDoc;
 
       // trim off the leading 'm' if it has one
-      if (rawVar->mName[0] == 'm')
-        trimProp->mName = rawVar->mName.sub_string(1, rawVar->mName.size());
+      if (rawVar->mName.c_str()[0] == 'm')
+        trimProp->mName = rawVar->mName.SubStringFromByteIndices(1, rawVar->mName.SizeInBytes());
       else
         trimProp->mName = rawVar->mName;
 
@@ -1461,93 +1469,98 @@ namespace Zero
     }
 
     // for each method
-    for (uint i = 0; i < mMethods.size(); ++i)
+    for (uint i = 0; i < mMethods.Size(); ++i)
     {
-      if (mMethods[i]->mReturnTokens->empty())
+      if (mMethods[i]->mReturnTokens->Empty())
         continue;
 
       // first unpack all the information
       MethodDoc* trimMethod = new MethodDoc;
       mMethods[i]->FillTrimmedMethod(trimMethod);
 
-      String firstThreeChar = trimMethod->mName.sub_string(0, 3).ToLower();
-
-      // is it a getter?
-      if (firstThreeChar == "get")
+      // if this is a really short method name there is no point to check for a prefix
+      if (trimMethod->mName.ComputeRuneCount() < 4)
       {
-        StringRange propName = trimMethod->mName.sub_string(3, trimMethod->mName.size());
-
-        // check if a corresponding property already exists
-        if (trimClass->mPropertiesMap.containsKey(propName))
-          //&& trimClass->mPropertiesMap[propName]->mType == trimMethod->mReturnType)
-        {
-          // if prop exists, make sure we are returning the same type
-          PropertyDoc *prop = trimClass->mPropertiesMap[propName];
-          
-          if (prop->mDescription.empty())
-          {
-            prop->mDescription = trimMethod->mDescription;
-          }
-        }
-        else
-        {
-          trimClass->mMethods.push_back(trimMethod);
-        }
-        
-      }
-      // 'is' functions as a getter for a boolean property
-      else if (trimMethod->mName.sub_string(0, 2).ToLower() == "is")
-      {
-        StringRange propName = trimMethod->mName.sub_string(2, trimMethod->mName.size());
-
-        // check if a corresponding property already exists
-        if (trimClass->mPropertiesMap.containsKey(propName)
-          && trimClass->mPropertiesMap[propName]->mType == trimMethod->mReturnType)
-        {
-          // if prop exists, make sure we are returning the same type
-          // NOTE: I am going to ignore differences in const or & since it is the same
-          PropertyDoc *prop = trimClass->mPropertiesMap[propName];
-
-          if (prop->mDescription.empty())
-          {
-            prop->mDescription = trimMethod->mDescription;
-          }
-          
-        }
-        else
-        {
-          trimClass->mMethods.push_back(trimMethod);
-        }
-      }
-      // is it a setter?
-      else if (firstThreeChar == "set")
-      {
-        StringRange propName = trimMethod->mName.sub_string(3, trimMethod->mName.size());
-
-        // we only care if this is already a property and has no description
-        // we can do this since methods will be in alphebetical order so
-        // all the 'set's with come after the 'is' and 'get's
-        if (trimClass->mPropertiesMap.containsKey(propName))
-          //&& trimMethod->mParameterList.size() == 1
-          //&& trimMethod->mParameterList[0]->mType == trimClass->mPropertiesMap[propName]->mType)
-        {
-          if (trimClass->mPropertiesMap[propName]->mDescription.empty())
-            trimClass->mPropertiesMap[propName]->mDescription = trimMethod->mDescription;
-        }
-        else
-        {
-          trimClass->mMethods.push_back(trimMethod);
-        }
+        trimClass->mMethods.PushBack(trimMethod);
       }
       else
       {
-        trimClass->mMethods.push_back(trimMethod);
+        String firstThreeChar = trimMethod->mName.SubStringFromByteIndices(0, 3).ToLower();
+
+        // is it a getter?
+        if (firstThreeChar == "get")
+        {
+          StringRange propName = trimMethod->mName.SubStringFromByteIndices(3, trimMethod->mName.SizeInBytes());
+
+          // check if a corresponding property already exists
+          if (trimClass->mPropertiesMap.ContainsKey(propName))
+          {
+            // if prop exists, make sure we are returning the same type
+            PropertyDoc *prop = trimClass->mPropertiesMap[propName];
+
+            if (prop->mDescription.Empty())
+            {
+              prop->mDescription = trimMethod->mDescription;
+            }
+          }
+          else
+          {
+            trimClass->mMethods.PushBack(trimMethod);
+          }
+
+        }
+        // 'is' functions as a getter for a boolean property
+        else if (trimMethod->mName.SubStringFromByteIndices(0, 2).ToLower() == "is")
+        {
+          StringRange propName = trimMethod->mName.SubStringFromByteIndices(2, trimMethod->mName.SizeInBytes());
+
+          // check if a corresponding property already exists
+          if (trimClass->mPropertiesMap.ContainsKey(propName)
+            && trimClass->mPropertiesMap[propName]->mType == trimMethod->mReturnType)
+          {
+            // if prop exists, make sure we are returning the same type
+            // NOTE: I am going to ignore differences in const or & since it is the same
+            PropertyDoc *prop = trimClass->mPropertiesMap[propName];
+
+            if (prop->mDescription.Empty())
+            {
+              prop->mDescription = trimMethod->mDescription;
+            }
+
+          }
+          else
+          {
+            trimClass->mMethods.PushBack(trimMethod);
+          }
+        }
+        // is it a setter?
+        else if (firstThreeChar == "set")
+        {
+          StringRange propName = trimMethod->mName.SubStringFromByteIndices(3, trimMethod->mName.SizeInBytes());
+
+          // we only care if this is already a property and has no description
+          // we can do this since methods will be in alphebetical order so
+          // all the 'set's with come after the 'is' and 'get's
+          if (trimClass->mPropertiesMap.ContainsKey(propName))
+          {
+            if (trimClass->mPropertiesMap[propName]->mDescription.Empty())
+              trimClass->mPropertiesMap[propName]->mDescription = trimMethod->mDescription;
+          }
+          else
+          {
+            trimClass->mMethods.PushBack(trimMethod);
+          }
+        }
+        else
+        {
+          trimClass->mMethods.PushBack(trimMethod);
+        }
       }
     }
 
-    forRange(auto prop, trimClass->mPropertiesMap.all())
+    forRange(auto prop, trimClass->mPropertiesMap.All())
     {
-      trimClass->mProperties.push_back(prop.second);
+      trimClass->mProperties.PushBack(prop.second);
     }
   }
 
@@ -1572,11 +1585,11 @@ namespace Zero
   bool FillEventInformation(StringParam fnTokenName, uint paramNum, bool listeningFn, 
     EventDocList &libEventList, RawClassDoc *classDoc, TypeTokens &tokens)
   {
-    if (tokens.contains(DocToken(fnTokenName)))
+    if (tokens.Contains(DocToken(fnTokenName)))
     {
       uint i = 0;
       uint commaCount = 0;
-      for (; i < tokens.size() && commaCount < paramNum; ++i)
+      for (; i < tokens.Size() && commaCount < paramNum; ++i)
       {
         if (tokens[i].mEnumTokenType == DocTokenType::Comma)
         {
@@ -1591,18 +1604,18 @@ namespace Zero
 
         EventDoc *eventDoc = nullptr;
 
-        if (libEventList.mEventMap.containsKey(eventName))
+        if (libEventList.mEventMap.ContainsKey(eventName))
         {
           eventDoc = libEventList.mEventMap[eventName];
           if (listeningFn)
           {
-            eventDoc->mListeners.push_back(classDoc->mName);
-            classDoc->mEventsListened.push_back(eventDoc);
+            eventDoc->mListeners.PushBack(classDoc->mName);
+            classDoc->mEventsListened.PushBack(eventDoc);
           }
           else
           {
-            eventDoc->mSenders.push_back(classDoc->mName);
-            classDoc->mEventsSent.push_back(eventDoc);
+            eventDoc->mSenders.PushBack(classDoc->mName);
+            classDoc->mEventsSent.PushBack(eventDoc);
           }
           return true;
         }
@@ -1616,16 +1629,16 @@ namespace Zero
   {
     StringBuilder builder;
 
-    forRange(char c, exceptionName.all())
+    forRange(Rune c, exceptionName.All())
     {
       if (c != '"')
         builder.Append(c);
     }
 
-    if (!exceptionName.empty() && !exceptionText.empty())
+    if (!exceptionName.Empty() && !exceptionText.Empty())
       builder.Append(": ");
 
-    forRange(char c, exceptionText.all())
+    forRange(Rune c, exceptionText.All())
     {
       if (c != '"')
         builder.Append(c);
@@ -1638,7 +1651,7 @@ namespace Zero
   {
     RawMethodDoc *currFn = mMethodMap[fnName][0];
 
-    forRange(ExceptionDoc *doc, currFn->mPossibleExceptionThrows.all())
+    forRange(ExceptionDoc *doc, currFn->mPossibleExceptionThrows.All())
     {
       if (doc->mTitle == errorDoc->mTitle && doc->mMessage == errorDoc->mMessage)
       {
@@ -1647,31 +1660,31 @@ namespace Zero
       }
     }
 
-    mMethodMap[fnName][0]->mPossibleExceptionThrows.push_back(errorDoc);
+    mMethodMap[fnName][0]->mPossibleExceptionThrows.PushBack(errorDoc);
   }
 
   // param number technically starts at 1 since 0 means no param for this fn
   // need to give this some newfangled way to detect what function we are in
   void RawClassDoc::FillErrorInformation(StringParam fnTokenName, StringRef fnName, TypeTokens &tokens)
   {
-    if (!mMethodMap.containsKey(fnName))
+    if (!mMethodMap.ContainsKey(fnName))
     {
       return;
     }
 
-    if (tokens.contains(DocToken(fnTokenName)))
+    if (tokens.Contains(DocToken(fnTokenName)))
     {
       String firstParam = GetArgumentIfString(tokens, 1);
       String secondParam = GetArgumentIfString(tokens, 2);
 
-      if (!firstParam.empty() || !secondParam.empty())
+      if (!firstParam.Empty() || !secondParam.Empty())
       {
         ExceptionDoc *errorDoc = new ExceptionDoc();
 
         String exceptionText = buildExceptionText(firstParam, secondParam);
 
-        errorDoc->mTitle = firstParam.empty() ? "[variable]" : firstParam;
-        errorDoc->mMessage = secondParam.empty() ? "[variable]" : secondParam;
+        errorDoc->mTitle = firstParam.Empty() ? "[variable]" : firstParam;
+        errorDoc->mMessage = secondParam.Empty() ? "[variable]" : secondParam;
 
         //TODO: actually make sure we find the correct overload instead of the first one
 
@@ -1725,11 +1738,11 @@ namespace Zero
     ParseCodelinesInDoc(doc, [](RawClassDoc *classDoc, StringParam codeString) {
       TypeTokens tokens;
 
-      if (!codeString.empty())
+      if (!codeString.Empty())
       {
         AppendTokensFromString(DocLangDfa::Get(), codeString, &tokens);
 
-        for (uint i = 0; i < tokens.size(); ++i)
+        for (uint i = 0; i < tokens.Size(); ++i)
         {
           // if we found the events namespace node, the node two up from here is event
           if (tokens[i].mText == "Events")
@@ -1737,10 +1750,10 @@ namespace Zero
             i += 2;
             EventDoc *eventDoc = new EventDoc;
 
-            classDoc->mEvents.push_back(eventDoc);
+            classDoc->mEvents.PushBack(eventDoc);
 
             eventDoc->mName = tokens[i].mText;
-            //classDoc->mEvents.push_back(tokens[i].mText);
+            //classDoc->mEvents.PushBack(tokens[i].mText);
             return;
           }
         }
@@ -1776,13 +1789,13 @@ namespace Zero
   // this function assumes we are not contained within scope
   bool isFunctionDefinition(TypeTokens &tokens)
   {
-    if (tokens.contains(DocToken(";", DocTokenType::Semicolon))
-      ||tokens.contains(DocToken("#", DocTokenType::Pound)))
+    if (tokens.Contains(DocToken(";", DocTokenType::Semicolon))
+      ||tokens.Contains(DocToken("#", DocTokenType::Pound)))
     {
       return false;
     }
 
-    if (tokens.contains(DocToken("(", DocTokenType::OpenParen)))
+    if (tokens.Contains(DocToken("(", DocTokenType::OpenParen)))
       return true;
 
     return false;
@@ -1790,7 +1803,7 @@ namespace Zero
 
   String getStringFromFnTokenList(TypeTokens &tokens)
   {
-    for (uint i = 0; i < tokens.size(); ++i)
+    for (uint i = 0; i < tokens.Size(); ++i)
     {
       DocToken &token = tokens[i];
 
@@ -1826,8 +1839,8 @@ namespace Zero
     RawClassDoc *currClass = this;
 
     Array<String> namespaces;
-    namespaces.push_back("Zero");
-    namespaces.push_back("Zilch");
+    namespaces.PushBack("Zero");
+    namespaces.PushBack("Zilch");
 
     // the majority of this loop is just getting the current function
     for (TiXmlNode *codeline = firstCodeline;
@@ -1847,7 +1860,7 @@ namespace Zero
 
       AppendTokensFromString(DocLangDfa::Get(), codeString, &tokens);
 
-      if (tokens.empty())
+      if (tokens.Empty())
         continue;
 
       // does the current line have a pound? Then just continue.
@@ -1855,10 +1868,10 @@ namespace Zero
         continue;
 
       // have a semicolon?
-      if (tokens.contains(DocToken(";", DocTokenType::Semicolon)))
+      if (tokens.Contains(DocToken(";", DocTokenType::Semicolon)))
       {
         // check if it is one of the lines we are looking for
-        if (currFn.empty())
+        if (currFn.Empty())
           continue;
         // otherwise, we are going to look for any exceptions, and save it if we find one
         FillErrorInformation("DoNotifyException", currFn, tokens);
@@ -1868,7 +1881,7 @@ namespace Zero
       }
 
       // does it have '::'?
-      for (uint i = 0; i < tokens.size(); ++i)
+      for (uint i = 0; i < tokens.Size(); ++i)
       {
         DocToken &currToken = tokens[i];
 
@@ -1887,7 +1900,7 @@ namespace Zero
         }
 
         // see if the function exists
-        if (currClass->mMethodMap.containsKey(rhs.mText))
+        if (currClass->mMethodMap.ContainsKey(rhs.mText))
         {
           currFn = rhs.mText;
         }
@@ -1900,12 +1913,12 @@ namespace Zero
 
   void RemoveDuplicates(Array<String> &stringList)
   {
-    for (uint i = 1; i < stringList.size(); ++i)
+    for (uint i = 1; i < stringList.Size(); ++i)
     {
       // get rid of duplicates
       if (stringList[i] == stringList[i - 1])
       {
-        stringList.eraseAt(i);
+        stringList.EraseAt(i);
         --i;
       }
     }
@@ -1916,28 +1929,28 @@ namespace Zero
   {
     EventDocList &libEventList = mParentLibrary->mEvents;
 
-    for (uint i = 0; i < libEventList.mEvents.size(); ++i)
+    for (uint i = 0; i < libEventList.mEvents.Size(); ++i)
     {
-      sort(libEventList.mEvents[i]->mSenders.all());
-      sort(libEventList.mEvents[i]->mListeners.all());
+      Sort(libEventList.mEvents[i]->mSenders.All());
+      Sort(libEventList.mEvents[i]->mListeners.All());
       RemoveDuplicates(libEventList.mEvents[i]->mSenders);
       RemoveDuplicates(libEventList.mEvents[i]->mListeners);
     }
-    if (mEvents.empty())
+    if (mEvents.Empty())
       return;
 
-    sort(mEvents.all(), [](EventDoc *lhs, EventDoc * rhs)
+    Sort(mEvents.All(), [](EventDoc *lhs, EventDoc * rhs)
     {
       return lhs->mName < rhs->mName;
     });
 
     // we have to get rid of duplicates in case event was defined and bound in same class
-    for (uint i = 1; i < mEvents.size(); ++i)
+    for (uint i = 1; i < mEvents.Size(); ++i)
     {
       // get rid of duplicates
       if (mEvents[i] == mEvents[i - 1])
       {
-        mEvents.eraseAt(i);
+        mEvents.EraseAt(i);
         --i;
       }
     }
@@ -1945,11 +1958,11 @@ namespace Zero
 
   bool RawClassDoc::SetRelativePath(StringRef doxyPath, StringRef filePath)
   {
-    StringRange relPath = filePath.sub_string(doxyPath.size(), filePath.size() - doxyPath.size());
+    StringRange relPath = filePath.SubStringFromByteIndices(doxyPath.SizeInBytes(), filePath.SizeInBytes());
 
-    relPath = relPath.sub_string(0, relPath.FindLastOf("\\xml\\"));
+    relPath = relPath.SubString(relPath.Begin(), relPath.FindLastOf("\\xml\\").Begin());
 
-    if (relPath.size() == 0)
+    if (relPath.SizeInBytes() == 0)
       return false;
 
     StringBuilder path;
@@ -1957,14 +1970,14 @@ namespace Zero
     path.Append(relPath);
     path.Append('\\');
 
-    for (int i = 0; i < (int)mNamespace.mNames.size() - 1; ++i)
+    for (int i = 0; i < (int)mNamespace.mNames.Size() - 1; ++i)
     {
       path.Append(mNamespace.mNames[i]);
       path.Append('\\');
     }
     
     // there is probably a better way to do this but...   
-    forRange(char c, mName.all())
+    forRange(Rune c, mName.All())
     {
       if (c == ':' || c == '*' || c == '?' || c == '\"' || c == '<' || c == '>' || c == '|')
         path.Append('_');
@@ -1976,8 +1989,6 @@ namespace Zero
     // we are guarenteed to already have our name so this is safe
     mRelativePath = path.ToString();
 
-    //RelativePath = FilePath::Normalize(RelativePath);
-
     return true;
   }
 
@@ -1987,7 +1998,7 @@ namespace Zero
 
     filename = GetFileWithExactName(doxyPath, filename);
 
-    if (filename.empty())
+    if (filename.Empty())
       return false;
 
     TiXmlDocument cppDoc;
@@ -2021,7 +2032,7 @@ namespace Zero
     if (LoadFromXmlDoc(doc) && SetRelativePath(doxyPath, filePath))
     {
       // check if the class Initializes Meta
-      if (mMethodMap.containsKey("InitializeMeta"))
+      if (mMethodMap.ContainsKey("InitializeMeta"))
       {
         // add path and name to seperatelist of events to find
         String doxName = GetDoxygenName(mName);
@@ -2038,7 +2049,7 @@ namespace Zero
   bool RawClassDoc::LoadFromXmlDoc(TiXmlDocument* doc)
   {
     // if we already have a list of variables before load it means we know exactly what to save
-    bool onlySaveValidProperteies = !mVariables.empty();
+    bool onlySaveValidProperteies = !mVariables.Empty();
 
     MacroDatabase *macroDb = MacroDatabase::GetInstance();
 
@@ -2099,9 +2110,9 @@ namespace Zero
         case 'v': // if we are a variable
           // only save the variable if we are saving all varibles or if it is one of our known vals
           if (!onlySaveValidProperteies
-            || mVariableMap.containsKey(GetElementValue(memberElement, gElementTags[eNAME])))
+            || mVariableMap.ContainsKey(GetElementValue(memberElement, gElementTags[eNAME])))
           {
-            mVariables.push_back(new RawVariableDoc(memberElement));
+            mVariables.PushBack(new RawVariableDoc(memberElement));
           }
           break;
         case 't': // else if we are a typedef
@@ -2110,22 +2121,22 @@ namespace Zero
 
           newTd->mNamespace.mNames = mNamespace.mNames;
 
-          mTypedefs.push_back(newTd);
+          mTypedefs.PushBack(newTd);
           break;
         }
         case 'e': //else if we are an enum
-          mEnums.push_back(new RawEnumDoc(memberElement, pMemberDef));
+          mEnums.PushBack(new RawEnumDoc(memberElement, pMemberDef));
           break;
         case 'f':  // function or friend
 
           if (strcmp(kind->Value(), "friend") == 0)
           {
-            mFriends.push_back(GetElementValue(memberElement, gElementTags[eNAME]));
+            mFriends.PushBack(GetElementValue(memberElement, gElementTags[eNAME]));
             break;
           }
           else // function
           {
-            if (mBodyFile.empty())
+            if (mBodyFile.Empty())
             {
               TiXmlNode *locationNode = GetFirstNodeOfChildType(memberElement, "location");
 
@@ -2140,9 +2151,10 @@ namespace Zero
                   mHeaderFile = attString;
 
                   // since this path is going to be from doxygen it will have correct slashes
-                  uint pos = mHeaderFile.FindLastOf(cDirectorySeparatorChar);
+                  StringRange pos = mHeaderFile.FindLastOf(cDirectorySeparatorChar);
+                  pos.IncrementByRune();
 
-                  mHeaderFile = mHeaderFile.sub_string(pos + 1, mHeaderFile.size());
+                  mHeaderFile = mHeaderFile.SubString(pos.Begin(), mHeaderFile.End());
                 }
 
                 attString = locElement->Attribute("bodyfile");
@@ -2151,9 +2163,11 @@ namespace Zero
                 {
                   mBodyFile = attString;
 
-                  uint pos = mBodyFile.FindLastOf(cDirectorySeparatorChar);
+                  StringRange pos = mBodyFile.FindLastOf(cDirectorySeparatorChar);
 
-                  mBodyFile = mBodyFile.sub_string(pos + 1, mBodyFile.size());
+                  pos.IncrementByRune();
+
+                  mBodyFile = mBodyFile.SubString(pos.Begin(), mBodyFile.End());
                 }
               }
             }
@@ -2166,7 +2180,7 @@ namespace Zero
             }
             else
             {
-              mMethods.push_back(new RawMethodDoc(memberElement, pMemberDef));
+              mMethods.PushBack(new RawMethodDoc(memberElement, pMemberDef));
             }
             break;
           }
@@ -2197,7 +2211,7 @@ namespace Zero
     BuildFullTypeString(element, &retTypeStr);
 
     // if it is empty, that means we are a macro so return true
-    return retTypeStr.ToString().empty();
+    return retTypeStr.ToString().Empty();
   }
 
   bool RawClassDoc::loadDoxyfile(StringParam doxyPath, TiXmlDocument& doc)
@@ -2243,7 +2257,7 @@ namespace Zero
     String fileName = FindFile(doxyPath, BuildString("class_zero_1_1"
       , GetDoxygenName(mName), ".xml"), ignoreList);
 
-    if (fileName.empty())
+    if (fileName.Empty())
       return false;
 
     bool loadOkay = doc.LoadFile(fileName.c_str());
@@ -2254,7 +2268,7 @@ namespace Zero
       fileName = FindFile(doxyPath, BuildString("struct_zero_1_1"
         , GetDoxygenName(mName).c_str(), ".xml"), ignoreList);
 
-      if (fileName.empty())
+      if (fileName.Empty())
         return false;
 
       loadOkay = doc.LoadFile(fileName.c_str());
@@ -2264,7 +2278,7 @@ namespace Zero
         fileName = FindFile(doxyPath, BuildString("struct_zero_1_1_physics_1_1"
           , GetDoxygenName(mName).c_str(), ".xml"), ignoreList);
 
-        if (fileName.empty())
+        if (fileName.Empty())
           return false;
 
         loadOkay = doc.LoadFile(fileName.c_str());
@@ -2286,22 +2300,22 @@ namespace Zero
   const StringRef RawClassDoc::GetDescriptionForMethod(StringParam methodName)
   {
     // check if we have a method with a mDescription by that name
-    forRange(RawMethodDoc* method, mMethodMap[methodName].all())
+    forRange(RawMethodDoc* method, mMethodMap[methodName].All())
     {
-      if (method->mDescription.size() > 0)
+      if (method->mDescription.SizeInBytes() > 0)
         return method->mDescription;
     }
 
-    return mMethodMap[methodName].all()[0]->mDescription;
+    return mMethodMap[methodName].All()[0]->mDescription;
   }
 
   void RawClassDoc::NormalizeAllTypes(RawTypedefLibrary* defLib)
   {
-    forRange(RawVariableDoc* prop, mVariables.all())
+    forRange(RawVariableDoc* prop, mVariables.All())
     {
       NormalizeTokensFromTypedefs(*prop->mTokens, defLib, mNamespace);
     }
-    for (uint i = 0; i < mMethods.size(); ++i)
+    for (uint i = 0; i < mMethods.Size(); ++i)
     {
       mMethods[i]->NormalizeAllTypes(defLib, mNamespace);
     }
@@ -2311,7 +2325,7 @@ namespace Zero
   {
     StringBuilder builder;
 
-    for (uint i = 0; i < mNamespace.mNames.size(); ++i)
+    for (uint i = 0; i < mNamespace.mNames.Size(); ++i)
     {
       builder.Append(mNamespace.mNames[i]);
     }
@@ -2350,7 +2364,7 @@ namespace Zero
   {
     delete mReturnTokens;
 
-    forRange(Parameter* param, mParsedParameters.all())
+    forRange(Parameter* param, mParsedParameters.All())
     {
       delete param;
     }
@@ -2421,7 +2435,7 @@ namespace Zero
         }
       }
       parameterDoc->mDescription = CleanRedundantSpacesInDesc(parameterDoc->mDescription);
-      mParsedParameters.push_back(parameterDoc);
+      mParsedParameters.PushBack(parameterDoc);
     }
   }
 
@@ -2447,12 +2461,12 @@ namespace Zero
 
     StringBuilder paramBuilder;
     paramBuilder.Append('(');
-    for (uint i = 0; i < mParsedParameters.size(); ++i)
+    for (uint i = 0; i < mParsedParameters.Size(); ++i)
     {
       RawMethodDoc::Parameter* rawParam = mParsedParameters[i];
 
       // if we have no parameters (or we have void parameter) just leave loop
-      if (rawParam->mTokens->size() == 0
+      if (rawParam->mTokens->Size() == 0
         || (*rawParam->mTokens)[0].mEnumTokenType == DocTokenType::Void)
       {
         break;
@@ -2468,7 +2482,7 @@ namespace Zero
 
       trimParam->mType = TrimTypeTokens(*tokens);
 
-      trimMethod->mParameterList.push_back(trimParam);
+      trimMethod->mParameterList.PushBack(trimParam);
 
       if (i > 0)
         paramBuilder.Append(", ");
@@ -2493,7 +2507,7 @@ namespace Zero
     NormalizeTokensFromTypedefs(*mReturnTokens, defLib, classNamespace);
 
     // normalize parameters
-    forRange(Parameter* arg, mParsedParameters.all())
+    forRange(Parameter* arg, mParsedParameters.All())
     {
       NormalizeTokensFromTypedefs(*arg->mTokens, defLib, classNamespace);
     }    
@@ -2508,27 +2522,27 @@ namespace Zero
   {
     WriteLog("\nLoading Typedefs from Intermediate Documentation Library\n\n");
 
-    mTypedefs.clear();
-    mTypedefArray.clear();
-    forRange(RawClassDoc* classDoc, docLib.mClasses.all())
+    mTypedefs.Clear();
+    mTypedefArray.Clear();
+    forRange(RawClassDoc* classDoc, docLib.mClasses.All())
     {
-      forRange(RawTypedefDoc* tdefDoc, classDoc->mTypedefs.all())
+      forRange(RawTypedefDoc* tdefDoc, classDoc->mTypedefs.All())
       {
         String mapKey = tdefDoc->GenerateMapKey();
-        if (mTypedefs.containsKey(mapKey))
+        if (mTypedefs.ContainsKey(mapKey))
         {
           WriteLog("WARNING: Duplicate Typedef: %s\n%*s\nFrom Class: %s\n\n",
             tdefDoc->mType.c_str(), 10, "", classDoc->mName.c_str());
           continue;
         }
 
-        mTypedefArray.push_back(*tdefDoc);
+        mTypedefArray.PushBack(*tdefDoc);
 
-        mTypedefs[mapKey] = &mTypedefArray.back();
+        mTypedefs[mapKey] = &mTypedefArray.Back();
       }
     }
 
-    Zero::sort(mTypedefArray.all(), TypedefDocCompareFn);
+    Zero::Sort(mTypedefArray.All(), TypedefDocCompareFn);
 
     BuildMap();
 
@@ -2544,7 +2558,7 @@ namespace Zero
     GetFilesWithPartialName(doxypath, "namespace_", mIgnoreList, &namespaceFilepaths);
 
     // for each filepath
-    for (uint i = 0; i < namespaceFilepaths.size(); ++i)
+    for (uint i = 0; i < namespaceFilepaths.Size(); ++i)
     {
       // open the doxy file
       TiXmlDocument doc;
@@ -2605,7 +2619,7 @@ namespace Zero
 
         String mName = GetTextFromAllChildrenNodesRecursively(nameNode);
 
-        RawTypedefDoc* newDoc = &mTypedefArray.push_back();
+        RawTypedefDoc* newDoc = &mTypedefArray.PushBack();
 
         newDoc->LoadFromElement(node->ToElement());
 
@@ -2613,9 +2627,9 @@ namespace Zero
 
         String key = newDoc->GenerateMapKey();
 
-        if (mTypedefs.containsKey(key))
+        if (mTypedefs.ContainsKey(key))
         {
-          mTypedefArray.pop_back();
+          mTypedefArray.PopBack();
           WriteLog("WARNING: Duplicate Typedef Key: %s\n\n", key.c_str());
           continue;
         }
@@ -2625,7 +2639,7 @@ namespace Zero
 
     } // end namespace file loop
 
-    Zero::sort(mTypedefArray.all(), TypedefDocCompareFn);
+    Zero::Sort(mTypedefArray.All(), TypedefDocCompareFn);
 
     BuildMap();
 
@@ -2665,7 +2679,7 @@ namespace Zero
     }
 
     // just to be safe, sort the serialized array (even though it already should be)
-    Zero::sort(mTypedefArray.all(), TypedefDocCompareFn);
+    Zero::Sort(mTypedefArray.All(), TypedefDocCompareFn);
 
     BuildMap();
 
@@ -2674,9 +2688,9 @@ namespace Zero
 
   void RawTypedefLibrary::BuildMap(void)
   {
-    mTypedefs.clear();
+    mTypedefs.Clear();
 
-    for (uint i = 0; i < mTypedefArray.size(); ++i)
+    for (uint i = 0; i < mTypedefArray.Size(); ++i)
     {
       RawTypedefDoc* tdoc = &mTypedefArray[i];
 
@@ -2691,7 +2705,7 @@ namespace Zero
     bool madeReplacements = false;
 
     // loop over tokens
-    for (uint i = 0; i < tokens.size(); ++i)
+    for (uint i = 0; i < tokens.Size(); ++i)
     {
       //should be moved into the loop
       Array<String>& names = classNamespace.mNames;
@@ -2703,7 +2717,7 @@ namespace Zero
       String key = token.mText;
 
       // loop over possible namespace'd version
-      for (int j = -1; j < (int)names.size(); ++j)
+      for (int j = -1; j < (int)names.Size(); ++j)
       {
         StringBuilder builder;
 
@@ -2714,12 +2728,12 @@ namespace Zero
 
         key = builder.ToString();
 
-        if (defLib->mTypedefs.containsKey(key))
+        if (defLib->mTypedefs.ContainsKey(key))
         {
           TypeTokens* typedefTokens = &defLib->mTypedefs[key]->mDefinition;
 
           // make sure they are not just the same tokens
-          if (typedefKey == key || (tokens.size() >= typedefTokens->size()
+          if (typedefKey == key || (tokens.Size() >= typedefTokens->Size()
             && ContainsFirstTypeInSecondType(*typedefTokens, tokens)))
           {
             break;
@@ -2728,14 +2742,14 @@ namespace Zero
 
           // this next chunk of crazy to make sure we don't redundantly expand any typedefs
           // first we have to make sure our token ranges are of valid size
-          if ((int)i - 2 > 0 && typedefTokens->size() >= 3)
+          if ((int)i - 2 > 0 && typedefTokens->Size() >= 3)
           {
             bool equal = true;
 
             // the magic number 3 is because we are checking for this: typedef name ns::name
             for (uint m = 0; m < 3; ++m)
             {
-              if ((*typedefTokens)[m].mText != tokens.sub_range(i - 2, 3)[m].mText)
+              if ((*typedefTokens)[m].mText != tokens.SubRange(i - 2, 3)[m].mText)
                 equal = false;
             }
             if (equal)
@@ -2765,14 +2779,14 @@ namespace Zero
     Array<String> replacementList;
 
     // for each typedef
-    for(mapIndex *iter = mTypedefs.begin(); iter != mTypedefs.end(); ++iter)
+    for(mapIndex *iter = mTypedefs.Begin(); iter != mTypedefs.End(); ++iter)
     {
       RawTypedefDoc* tDef = iter->second;
 
       if (NormalizeTypedefWithTypedefs(iter->first,tDef->mDefinition, this, tDef->mNamespace))
       {
         replacements = true;
-        replacementList.append(iter->first);
+        replacementList.Append(iter->first);
       }
     }
     
@@ -2782,7 +2796,7 @@ namespace Zero
       Array<String> newReplacementList;
     
       replacements = false;
-      for (uint i = 0; i < replacementList.size(); ++i)
+      for (uint i = 0; i < replacementList.Size(); ++i)
       {
         StringRef name = replacementList[i];
         RawTypedefDoc *tDef = mTypedefs[name];
@@ -2790,12 +2804,12 @@ namespace Zero
         if (NormalizeTypedefWithTypedefs(name,tDef->mDefinition, this, tDef->mNamespace))
         {
           replacements = true;
-          newReplacementList.append(name);
+          newReplacementList.Append(name);
         }
     
       }
     
-      replacementList.clear();
+      replacementList.Clear();
       replacementList = newReplacementList;
     }// end of while
     

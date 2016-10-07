@@ -9,7 +9,7 @@ String BuildDoc(ClassDoc& classDoc, Replacements& replacements)
 {
   StringBuilder builder;
 
-  if(!classDoc.mBaseClass.empty())
+  if(!classDoc.mBaseClass.Empty())
   {
     builder << "<h4 class=\"FunctionDoc\">";
     builder << "Base Class - ";
@@ -24,9 +24,9 @@ String BuildDoc(ClassDoc& classDoc, Replacements& replacements)
   builder << "</p>";
 
   builder << "<h2> Events </h2>";
-  if(!classDoc.mEventsSent.empty())
+  if(!classDoc.mEventsSent.Empty())
   {
-    forRange(EventDoc* eventDoc, classDoc.mEventsSent.all())
+    forRange(EventDoc* eventDoc, classDoc.mEventsSent.All())
     {
       builder << "<h4 class=\"FunctionDoc\">";
       builder << "On Events." << eventDoc->mName << " Sends ";
@@ -41,9 +41,9 @@ String BuildDoc(ClassDoc& classDoc, Replacements& replacements)
 
   builder << "<h2> Properties </h2>";
 
-  if(!classDoc.mProperties.empty())
+  if(!classDoc.mProperties.Empty())
   {
-    forRange(PropertyDoc* propertyDoc, classDoc.mProperties.all())
+    forRange(PropertyDoc* propertyDoc, classDoc.mProperties.All())
     {
       builder << "<h4 class=\"FunctionDoc\">";
       builder << propertyDoc->mName;
@@ -66,9 +66,9 @@ String BuildDoc(ClassDoc& classDoc, Replacements& replacements)
 
 
   builder << "<h2> Methods </h2>";
-  if(!classDoc.mMethods.empty())
+  if(!classDoc.mMethods.Empty())
   {
-    forRange(MethodDoc* methodDoc, classDoc.mMethods.all())
+    forRange(MethodDoc* methodDoc, classDoc.mMethods.All())
     {
       builder << "<h4 class=\"FunctionDoc\"> ";
       Replace(builder, replacements, methodDoc->mReturnType);
@@ -96,7 +96,7 @@ String BuildDoc(ClassDoc& classDoc, Replacements& replacements)
 void Check(StringRef className, StringRef element, StringRef string)
 {
   bool nonWhitespace = false;
-  forRange(char c,  string.all())
+  forRange(Rune c,  string.All())
   {
     if(!IsSpace(c))
       nonWhitespace = true;

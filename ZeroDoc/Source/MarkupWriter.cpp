@@ -19,7 +19,7 @@ void WriteTagIndices(String outputDir, DocToTags& tagged, DocumentationLibrary &
 {
   String fileName = FilePath::Combine(outputDir, "CodeIndex.rst");
 
-  DocRange r = tagged.all();
+  DocRange r = tagged.All();
 
   StringBuilder markup;
   markup << "Code Index\n";
@@ -31,18 +31,18 @@ void WriteTagIndices(String outputDir, DocToTags& tagged, DocumentationLibrary &
   markup << "*  :doc:`Reference/Vector`\n";
   markup << "*  :doc:`Reference/Quat`\n\n";
 
-  for(;!r.empty();r.popFront())
+  for(;!r.Empty();r.PopFront())
   {
-    Array<ClassDoc*>& stuff = r.front().second;
-    sort(stuff.all());
+    Array<ClassDoc*>& stuff = r.Front().second;
+    Sort(stuff.All());
 
-    String tag = r.front().first;
+    String tag = r.Front().first;
 
     markup << tag << "\n";
     markup << "----------------------------------" << "\n\n";
 
     // create the reference list
-    forRange(ClassDoc* doc, stuff.all())
+    forRange(ClassDoc* doc, stuff.All())
     {
         markup << String::Format("*  :doc:`Reference/%s`\n", doc->mName.c_str(), doc->mName.c_str());
     }
@@ -58,9 +58,9 @@ void WriteTagIndices(String outputDir, DocToTags& tagged, DocumentationLibrary &
 \t:maxdepth: 1\n\
 \t:titlesonly:\n\n";
   //output the doctree
-  forRange(ClassDoc* doc, docLib.mClasses.all())
+  forRange(ClassDoc* doc, docLib.mClasses.All())
   {
-    markup << "Reference/" << doc->mName << "\n";
+    markup << "\tReference/" << doc->mName << "\n";
   }
 
   String text = markup.ToString();
@@ -86,7 +86,7 @@ void WriteOutAllMarkdownFiles(Zero::DocGeneratorConfig& config)
     DocToTags tagged;
 
     //Upload the class' page to the wiki, making sure to perform the link replacements
-    forRange(ClassDoc* classDoc, doc.mClasses.all())
+    forRange(ClassDoc* classDoc, doc.mClasses.All())
     {
       String filename = BuildString(classDoc->mName, ".rst");
 
@@ -106,7 +106,7 @@ void WriteOutAllMarkdownFiles(Zero::DocGeneratorConfig& config)
 
 
   // check if we outputting commands
-  if (!config.mCommandListFile.empty())
+  if (!config.mCommandListFile.Empty())
   {
     String output = FilePath::Combine(config.mMarkupDirectory, "CommandRef.rst");
     output = FilePath::Normalize(output);
@@ -114,7 +114,7 @@ void WriteOutAllMarkdownFiles(Zero::DocGeneratorConfig& config)
   }
 
   // check if we are outputing events
-  if (!config.mEventsOutputLocation.empty())
+  if (!config.mEventsOutputLocation.Empty())
   {
     String output = FilePath::Combine(config.mMarkupDirectory, "EventList.rst");
     output = FilePath::Normalize(output);
@@ -177,7 +177,7 @@ void BaseMarkupWriter::InsertNewUnderline(uint length, uint headerLevel)
 void BaseMarkupWriter::InsertNewSectionHeader(StringRef sectionName)
 {
   mOutput << sectionName << "\n";
-  InsertNewUnderline(sectionName.size());
+  InsertNewUnderline(sectionName.SizeInBytes());
 }
 
 void BaseMarkupWriter::InsertCollapsibleSection()
@@ -196,9 +196,9 @@ void ClassMarkupWriter::WriteClass(
   DocToTags& tagged)
 {
   // first things first, set up the tags for this class
-  forRange(StringRef tag, classDoc->mTags.all())
+  forRange(StringRef tag, classDoc->mTags.All())
   {
-    tagged[tag].push_back(classDoc);
+    tagged[tag].PushBack(classDoc);
   }
 
   // do the magic for getting directory and file
@@ -213,7 +213,7 @@ void ClassMarkupWriter::WriteClass(
 
   writer.InsertNewSectionHeader("Properties");
 
-  forRange(PropertyDoc *prop, classDoc->mProperties.all())
+  forRange(PropertyDoc *prop, classDoc->mProperties.All())
   {
     writer.InsertProperty(*prop);
   }
@@ -223,7 +223,7 @@ void ClassMarkupWriter::WriteClass(
 
   writer.InsertNewSectionHeader("Methods");
 
-  forRange(MethodDoc *method, classDoc->mMethods.all())
+  forRange(MethodDoc *method, classDoc->mMethods.All())
   {
     writer.InsertMethod(*method);
   }
@@ -251,11 +251,11 @@ void ClassMarkupWriter::InsertClassRstHeader(void)
     << ".. include:: Description/Action.rst\n\n"
     << ".. cpp:class:: " << mName;
 
-  if (mBases.size() > 0)
+  if (mBases.Size() > 0)
   {
     mOutput << " : public " << mBases[0];
 
-    for (uint i = 1; i < mBases.size(); ++i)
+    for (uint i = 1; i < mBases.Size(); ++i)
     {
       mOutput << ", " << mBases[i];
     }
@@ -279,7 +279,7 @@ void ClassMarkupWriter::InsertMethod(MethodDoc &method)
   mOutput << ".. cpp:function:: " << method.mReturnType << " " 
     << mName << "::" << method.mName << method.mParameters << "\n\n";
 
-  if (!method.mDescription.empty())
+  if (!method.mDescription.Empty())
   {
     IndentToCurrentLevel();
 
@@ -292,7 +292,7 @@ void ClassMarkupWriter::InsertMethod(MethodDoc &method)
 void ClassMarkupWriter::InsertProperty(PropertyDoc &propDoc)
 {
   //TODO: we need to figure out why so many things are not properly getting type
-  if (propDoc.mType.empty())
+  if (propDoc.mType.Empty())
     return;
 
   InsertCollapsibleSection();
@@ -302,7 +302,7 @@ void ClassMarkupWriter::InsertProperty(PropertyDoc &propDoc)
 
   mOutput << ".. cpp:member:: " <<  propDoc.mType << " " << mName << "::" << propDoc.mName << "\n\n";
 
-  if (!propDoc.mDescription.empty())
+  if (!propDoc.mDescription.Empty())
   {
     IndentToCurrentLevel();
 
@@ -341,7 +341,7 @@ void EventListWriter::WriteEventList(StringRef eventListFilepath, StringRef outp
   StartHeaderSection(writer);
 
   // iterate over all events and insert them
-  forRange(EventDoc *eventDoc, eventArray.all())
+  forRange(EventDoc *eventDoc, eventArray.All())
   {
     writer.WriteEventEntry(eventDoc->mName, eventDoc->mType);
   }
@@ -400,7 +400,7 @@ void CommandRefWriter::WriteCommandRef(StringParam commandListFilepath, StringRe
   StartHeaderSection(writer);
 
   // iterate over all commands and insert them
-  forRange(CommandDoc *cmdDoc, cmdArray.all())
+  forRange(CommandDoc *cmdDoc, cmdArray.All())
   {
     writer.WriteCommandEntry(*cmdDoc);
   }
@@ -418,20 +418,20 @@ void CommandRefWriter::WriteCommandEntry(const CommandDoc &cmdDoc)
 {
   InsertNewSectionHeader(cmdDoc.mName);
 
-  if (!cmdDoc.mDescription.empty())
+  if (!cmdDoc.mDescription.Empty())
     mOutput << cmdDoc.mDescription << "\n\n";
 
   StartHeaderSection((*this));
   InsertNewSectionHeader("Tags");
 
-  if (cmdDoc.mTags.empty())
+  if (cmdDoc.mTags.Empty())
   {
     mOutput << "**No Tags**\n\n";
   }
   else
   {
     // actually list tags
-    forRange(StringRef tag, cmdDoc.mTags.all())
+    forRange(StringRef tag, cmdDoc.mTags.All())
     {
       mOutput << "*\t" << tag << "\n\n";
     }
@@ -439,7 +439,7 @@ void CommandRefWriter::WriteCommandEntry(const CommandDoc &cmdDoc)
 
   InsertNewSectionHeader("Shortcut");
 
-  if (cmdDoc.mShortcut.empty())
+  if (cmdDoc.mShortcut.Empty())
   {
     mOutput << "**No Keyboard Shortcut**\n\n";
   }

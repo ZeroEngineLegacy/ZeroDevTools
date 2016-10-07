@@ -3,6 +3,8 @@
 #include "Engine/Documentation.hpp"
 #include "Serialization/Simple.hpp"
 #include "Serialization/Text.hpp"
+#include "StandardLibraries/Platform/CommandLineSupport.hpp"
+#include "Engine/Environment.hpp"
 
 #include "DocConfiguration.hpp"
 #include "RawDocumentation.hpp"
@@ -55,18 +57,18 @@ bool ValidateConfig(DocGeneratorConfig &config)
     return true;
 
   // we have to output something
-  if (!config.mCreateTrimmed && config.mOutputDirectory.empty() && config.mMarkupDirectory.empty())
+  if (!config.mCreateTrimmed && config.mOutputDirectory.Empty() && config.mMarkupDirectory.Empty())
   {
     printf("one of the output options have to be set\n");
     return false;
   }
 
-  bool noLoadRawOption = config.mRawDocDirectory.empty() && config.mDoxygenPath.empty();
+  bool noLoadRawOption = config.mRawDocDirectory.Empty() && config.mDoxygenPath.Empty();
 
   // we basically have two main cases, with and without trimmed output
   if (config.mCreateTrimmed)
   {
-    if (config.mTrimmedOutput.empty())
+    if (config.mTrimmedOutput.Empty())
     {
       printf("no valid Trimmed Documentation Output directory given\n");
       return false;
@@ -79,7 +81,7 @@ bool ValidateConfig(DocGeneratorConfig &config)
 // wow lets see if we can somehow come up with a worse name
 void RunDocumentationGenerator(DocGeneratorConfig &config)
 {
-  if (config.mLogFile.size() > 0)
+  if (config.mLogFile.SizeInBytes() > 0)
   {
     DocLogger::Get()->StartLogger(config.mLogFile);
   }
@@ -91,13 +93,13 @@ void RunDocumentationGenerator(DocGeneratorConfig &config)
   RawTypedefLibrary tdLibrary;
 
   // if we are going to parse doxygen
-  if (config.mDoxygenPath.size() != 0)
+  if (config.mDoxygenPath.SizeInBytes() != 0)
   {
     library = new RawDocumentationLibrary;
 
     library->mIgnoreList.mDoxyPath = config.mDoxygenPath;
 
-    if (!config.mIgnoreFile.empty())
+    if (!config.mIgnoreFile.Empty())
     {
       if (!Zero::LoadFromDataFile(library->mIgnoreList, config.mIgnoreFile))
       {
@@ -105,7 +107,7 @@ void RunDocumentationGenerator(DocGeneratorConfig &config)
       }
     }
 
-    if (!config.mIgnoreSkeletonDocFile.empty())
+    if (!config.mIgnoreSkeletonDocFile.Empty())
     {
       DocumentationLibrary ignoreSkele;
       if (!Zero::LoadFromDataFile(ignoreSkele, config.mIgnoreSkeletonDocFile))
@@ -118,14 +120,14 @@ void RunDocumentationGenerator(DocGeneratorConfig &config)
 
     library->mIgnoreList.SortList();
 
-    if (config.mZeroEventsFile.size())
+    if (config.mZeroEventsFile.SizeInBytes())
     {
       library->LoadEventsList(config.mZeroEventsFile);
       library->mEvents.BuildMap();
     }
 
     // if zerodocfile then get list of classes from it
-    if (config.mZeroDocFile.size() > 0)
+    if (config.mZeroDocFile.SizeInBytes() > 0)
     {
       Zero::DocumentationLibrary doc;
       if (!Zero::LoadFromDataFile(doc, config.mZeroDocFile))
@@ -145,16 +147,12 @@ void RunDocumentationGenerator(DocGeneratorConfig &config)
         Error("Unable to load doxygen files at location: %s", config.mDoxygenPath.c_str());
       }
     }
-    // if we arn't loading a typedef file, load from doxygen
-    //if (!config.mLoadTypedefs)
-    //{
-    //  tdLibrary.LoadTypedefsFromDocLibrary(*library);
-    //}
+
     library->Build();
     library->FillOverloadDescriptions();
   }
   // if we were passed in already existing raw documentation
-  else if (!config.mRawDocDirectory.empty())
+  else if (!config.mRawDocDirectory.Empty())
   {
     library = new RawDocumentationLibrary;
 
@@ -164,15 +162,13 @@ void RunDocumentationGenerator(DocGeneratorConfig &config)
 
     if (config.mLoadTypedefs)
       tdLibrary.LoadFromFile(config.mTypedefLibraryFile);
-    //else
-    //  tdLibrary.LoadTypedefsFromDocLibrary(*library);
   }
 
   if (config.mLoadTypedefsFromDoxygen)
   {
     tdLibrary.mIgnoreList.mDoxyPath = config.mDoxygenPath;
 
-    if (!config.mIgnoreFile.empty())
+    if (!config.mIgnoreFile.Empty())
     {
       if (!Zero::LoadFromDataFile(tdLibrary.mIgnoreList, config.mIgnoreFile))
       {
@@ -197,27 +193,23 @@ void RunDocumentationGenerator(DocGeneratorConfig &config)
 
     if (config.mTagAllAsUnbound)
     {
-      for (uint i = 0; i < library->mClasses.size(); ++i)
+      for (uint i = 0; i < library->mClasses.Size(); ++i)
       {
-        library->mClasses[i]->mTags.push_back("Non-Zilch");
+        library->mClasses[i]->mTags.PushBack("Non-Zilch");
       }
     }
 
-    if (config.mOutputDirectory.size())
+    if (config.mOutputDirectory.SizeInBytes())
     {
       // output library and typedefs
       library->GenerateCustomDocumentationFiles(config.mOutputDirectory);
       tdLibrary.GenerateTypedefDataFile(config.mOutputDirectory);
     }
 
-    if (config.mEventsOutputLocation.size())
+    if (config.mEventsOutputLocation.SizeInBytes())
     {
       library->SaveEventListToFile(config.mEventsOutputLocation);
     }
-    //if (config.mExceptionsFile.size())
-    //{
-    //  library->SaveExceptionListToFile(config.mExceptionsFile);
-    //}
   }
 
   /////// Trimmed Documentation ///////
@@ -233,7 +225,7 @@ void RunDocumentationGenerator(DocGeneratorConfig &config)
 
   DocumentationLibrary trimLib;
 
-  if (!config.mTrimmedTypedefFile.empty())
+  if (!config.mTrimmedTypedefFile.Empty())
   {
     RawTypedefLibrary trimTypedef;
 
@@ -268,16 +260,20 @@ int main(int argc, char* argv[])
 
   printf("Raw Documentation Generator\n");
 
-  Zero::StringMap params;
-  Zero::ParseCommandLine(params, (cstr*)argv, argc);
+  Zero::Array<Zero::String> commandLine;
+  Zero::CommandLineToStringArray(commandLine, (cstr*)argv, argc);
 
-  forRange(auto& entry, params.all())
+  Zero::Environment environment;
+  environment.ParseCommandArgs(commandLine);
+
+
+  forRange(auto& entry, environment.mParsedCommandLineArguments.All())
   {
       printf("  %s : %s\n", entry.first.c_str(), entry.second.c_str());
   }
   printf("\n");
 
-  Zero::DocGeneratorConfig config = LoadConfigurations(params);
+  Zero::DocGeneratorConfig config = LoadConfigurations(environment.mParsedCommandLineArguments);
 
   // if the help flag is passed, ignore everything else and just print the help info
   if (config.mHelp || !Zero::ValidateConfig(config))
@@ -293,7 +289,7 @@ int main(int argc, char* argv[])
 
   Zero::RunDocumentationGenerator(config);
 
-  if (!config.mMarkupDirectory.empty())
+  if (!config.mMarkupDirectory.Empty())
   {
     Zero::WriteOutAllMarkdownFiles(config);
   }

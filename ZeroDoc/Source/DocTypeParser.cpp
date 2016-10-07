@@ -10,7 +10,7 @@ namespace Zero
 ////////////////////
 #define Make_Node(NodeType) UniquePointer<NodeType> node = new NodeType;
 
-#define Get_Statements while (node->mStatements.push_back(this->Statement()));
+#define Get_Statements while (node->mStatements.PushBack(this->Statement()));
 
 #define Accept_Rule node.Release()
 
@@ -42,7 +42,7 @@ UniquePointer<BlockNode> ParseBlock(TypeTokens* tokens)
 bool DocTypeParser::accept(DocTokenType::Enum type)
 {
   // automatically return false if we are at the end of the token stream
-  if (mIndex >= mTokens.size())
+  if (mIndex >= mTokens.Size())
   {
     return false;
   }
@@ -61,7 +61,7 @@ bool DocTypeParser::accept(DocTokenType::Enum type)
 bool DocTypeParser::accept(DocTokenType::Enum type, DocToken*& token)
 {
   // automatically return false if we are at the end of the token stream
-  if (mIndex >= mTokens.size())
+  if (mIndex >= mTokens.Size())
   {
     return false;
   }
@@ -190,7 +190,7 @@ UniquePointer<BlockNode> DocTypeParser::Block(void)
 
     if (newNode != nullptr)
     {
-      node->mGlobals.push_back(newNode.Release());
+      node->mGlobals.PushBack(newNode.Release());
       continue;
     }
     break;
@@ -203,7 +203,7 @@ UniquePointer<BlockNode> DocTypeParser::Block(void)
 void BlockNode::AddToClassDoc(RawClassDoc* doc)
 {
 
-  forRange(AbstractNode *node, mGlobals.all())
+  forRange(AbstractNode *node, mGlobals.All())
   {
     node->AddToClassDoc(doc);
   }
@@ -241,14 +241,14 @@ CallNode* DocTypeParser::Call(void)
 
   if (accept(DocTokenType::Identifier, arg) || accept(DocTokenType::StringLiteral, arg))
   {
-    node->mArguments.push_back(arg);
+    node->mArguments.PushBack(arg);
 
     while (accept(DocTokenType::Comma))
     {
       arg = nullptr;
       expect(accept(DocTokenType::Identifier, arg) || accept(DocTokenType::StringLiteral, arg)
         , "Expected parameter after comma, did you leave a trailing comma?");
-      node->mArguments.push_back(arg);
+      node->mArguments.PushBack(arg);
     }
   }
 
@@ -263,7 +263,7 @@ CallNode* DocTypeParser::Call(void)
 // check for macro expansion, create a new code block if one is found
 void CallNode::AddToClassDoc(RawClassDoc* doc)
 {
-  if (mComment.empty())
+  if (mComment.Empty())
     return;
 
   TypeTokens commentTokens;
@@ -271,7 +271,7 @@ void CallNode::AddToClassDoc(RawClassDoc* doc)
   AppendTokensFromString(DocLangDfa::Get(), mComment, &commentTokens);
 
   // if it is blank it does not even contain the MacroComment keyword
-  if (commentTokens.size() < 1)
+  if (commentTokens.Size() < 1)
     return;
 
   // check for a macro comment directive
@@ -289,9 +289,9 @@ void CallNode::AddToClassDoc(RawClassDoc* doc)
 
 
   // copy over any arguments that were passed to the macro call
-  forRange(DocToken* token, mArguments.all())
+  forRange(DocToken* token, mArguments.All())
   {
-    call.mMacroArgs.push_back(token->mText);
+    call.mMacroArgs.PushBack(token->mText);
   }
 
   MacroDatabase* database = MacroDatabase::GetInstance();
@@ -309,7 +309,7 @@ void CallNode::AddToClassDoc(RawClassDoc* doc)
   if (parsedMacro)
     parsedMacro->AddToClassDoc(doc);
 
-  MacroDatabase::GetInstance()->mMacroExpandStack.pop_back();
+  MacroDatabase::GetInstance()->mMacroExpandStack.PopBack();
 }
 
 void ExpandCommentVariables(String* comment)
@@ -325,7 +325,7 @@ void ExpandCommentVariables(String* comment)
   StringBuilder newComment;
 
   // note: the "minus one" is so we do not go out of bounds when grabbing token after '$'
-  for (uint i = 0; i < commentTokens.size(); ++i)
+  for (uint i = 0; i < commentTokens.Size(); ++i)
   {
     DocToken *commentToken = &commentTokens[i];
 
@@ -334,7 +334,7 @@ void ExpandCommentVariables(String* comment)
       // move to the next comment token
       ++i;
 
-      if (i >= commentTokens.size())
+      if (i >= commentTokens.Size())
       {
         DocLogger::Get()->Write("ingnoring unnamed comment option");
         break;
@@ -402,13 +402,13 @@ FunctionNode* DocTypeParser::Function(void)
   UniquePointer<ParameterNode> param = Parameter();
   if (param)
   {
-    node->mParameters.push_back(param.Release());
+    node->mParameters.PushBack(param.Release());
 
     while (accept(DocTokenType::Comma))
     {
       param = Parameter();
       expect(param != nullptr, "Expected parameter after comma, did you leave a trailing comma?");
-      node->mParameters.push_back(param.Release());
+      node->mParameters.PushBack(param.Release());
     }
   }
 
@@ -434,7 +434,7 @@ void FunctionNode::AddToClassDoc(RawClassDoc *doc)
   CopyArrayOfTokenPtrToTypeTokens(mReturnType->mTokens, newMethod->mReturnTokens);
 
   // since param needs to save to the method doc we will implement it here
-  forRange(ParameterNode *param, mParameters.all())
+  forRange(ParameterNode *param, mParameters.All())
   {
     RawMethodDoc::Parameter *newParam = new RawMethodDoc::Parameter;
 
@@ -442,12 +442,12 @@ void FunctionNode::AddToClassDoc(RawClassDoc *doc)
 
     newParam->mName = param->mName->mText;
 
-    newMethod->mParsedParameters.push_back(newParam);
+    newMethod->mParsedParameters.PushBack(newParam);
   }
 
-  doc->mMethods.push_back(newMethod);
+  doc->mMethods.PushBack(newMethod);
 
-  doc->mMethodMap[newMethod->mName].append(newMethod);
+  doc->mMethodMap[newMethod->mName].Append(newMethod);
 }
 
 //--------------------------------------------------------------------------------Parameter
@@ -505,29 +505,29 @@ UniquePointer<TypeNode> DocTypeParser::NamedType(void)
 
   if (accept(DocTokenType::ConstQualifier, currToken))
   {
-    node->mTokens.push_back(currToken);
+    node->mTokens.PushBack(currToken);
   }
 
   if (!accept(DocTokenType::Identifier, currToken)
     && !accept(DocTokenType::Void, currToken))
   {
-    if (!node->mTokens.empty())
+    if (!node->mTokens.Empty())
       throw ParsingException("Invalid Const Qualifier Found");
 
     return nullptr;
   }
 
 
-  node->mTokens.push_back(currToken);
+  node->mTokens.PushBack(currToken);
 
   while (accept(DocTokenType::Pointer, currToken))
   {
-    node->mTokens.push_back(currToken);
+    node->mTokens.PushBack(currToken);
   }
 
   if (accept(DocTokenType::Reference, currToken))
   {
-    node->mTokens.push_back(currToken);
+    node->mTokens.PushBack(currToken);
   }
 
   return Accept_Rule;

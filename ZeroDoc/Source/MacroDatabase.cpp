@@ -39,9 +39,9 @@ namespace Zero
 
     if (node != nullptr)
     {
-      forRange(DocToken *param, node->mArguments.all())
+      forRange(DocToken *param, node->mArguments.All())
       {
-        mParameters.push_back(param->mText);
+        mParameters.PushBack(param->mText);
       }
     }
 
@@ -61,7 +61,7 @@ namespace Zero
 
       AppendTokensFromString(DocLangDfa::Get(), codeString, &mMacroBody);
 
-      if (mMacroBody[mMacroBody.size() - 1].mEnumTokenType != DocTokenType::BackwardSlash)
+      if (mMacroBody[mMacroBody.Size() - 1].mEnumTokenType != DocTokenType::BackwardSlash)
         break;
     }
   }
@@ -73,13 +73,13 @@ namespace Zero
   {
     StringRef lowerName = optionName.ToLower();
     // first see if it is in our option map
-    if (mOptions.containsKey(lowerName))
+    if (mOptions.ContainsKey(lowerName))
     {
       return mOptions[lowerName];
     }
 
     // if it is not see if it was a macro parameter
-    for (uint i = 0; i < mMacro->mParameters.size(); ++i)
+    for (uint i = 0; i < mMacro->mParameters.Size(); ++i)
     {
       StringRef arg = mMacro->mParameters[i].ToLower();
 
@@ -100,15 +100,15 @@ namespace Zero
 
   void MacroCall::DoOptionExpansion(void)
   {
-    forRange(auto pair, mOptions.all())
+    forRange(auto pair, mOptions.All())
     {
       String& commentVar = pair.second;
 
       // if this option does not start with a dollar sign it does not need to be replaced
-      if (commentVar[0] != '$' || commentVar.size() < 2)
+      if (commentVar.c_str()[0] != '$' || commentVar.SizeInBytes() < 2)
         return;
 
-      StringRange varName = commentVar.sub_string(1, commentVar.size());
+      StringRange varName = commentVar.SubStringFromByteIndices(1, commentVar.SizeInBytes());
 
       StringRef varValue = MacroDatabase::GetInstance()->SearchMacroExpandStackForOption(varName);
 
@@ -122,7 +122,7 @@ namespace Zero
   bool MacroCall::LoadMacroWithName(StringParam name)
   {
     // if we have the location, go ahead and load the macro now if we do not have it already
-    if (mOptions.containsKey(MacroOptionStrings[MacroOptions::Location]))
+    if (mOptions.ContainsKey(MacroOptionStrings[MacroOptions::Location]))
     {
       mMacro = MacroDatabase::GetInstance()->FindMacro(name, mOptions[MacroOptionStrings[MacroOptions::Location]]);
       // if we do not find the macro after having a location, consider that an error
@@ -147,17 +147,17 @@ namespace Zero
   void MacroCall::ParseOptions(TypeTokens &tokens)
    {
     // loop starting from one since we know first token is MacroComment
-    for (uint i = 0; i < tokens.size(); ++i)
+    for (uint i = 0; i < tokens.Size(); ++i)
     {
       DocToken &token = tokens[i];
 
       if (token.mEnumTokenType == DocTokenType::Colon)
       {
-        if (i + 1 == tokens.size())
+        if (i + 1 == tokens.Size())
         {
           StringBuilder errMsg;
           errMsg << "Invalid MacroCall Option Syntax: ";
-          forRange(DocToken &errToken, tokens.all())
+          forRange(DocToken &errToken, tokens.All())
           {
             errMsg << errToken.mText << " ";
           }
@@ -174,7 +174,7 @@ namespace Zero
 
   String replaceIdentifier(DocToken &token, UnsortedMap<String, String>& argMap)
   {
-    if (argMap.containsKey(token.mText))
+    if (argMap.ContainsKey(token.mText))
     {
       return argMap[token.mText];
     }
@@ -186,23 +186,23 @@ namespace Zero
     // first create a little map for our parameters
     UnsortedMap<String,String> argMap;
 
-    if (mMacro->mParameters.size() != mMacroArgs.size())
+    if (mMacro->mParameters.Size() != mMacroArgs.Size())
       Error("Param and Arg counts do not match for call to '%s'", mMacro->mName.c_str());
 
-    for (uint i = 0; i < mMacro->mParameters.size(); ++i)
+    for (uint i = 0; i < mMacro->mParameters.Size(); ++i)
     {
       StringRef param = mMacro->mParameters[i];
       argMap[param] = mMacroArgs[i];
     }
 
-    MacroDatabase::GetInstance()->mMacroExpandStack.push_back(this);
+    MacroDatabase::GetInstance()->mMacroExpandStack.PushBack(this);
 
     // we are going to unwrap the loop a bit to make things easier,
     // so first we are going to find the first ')' and jump to parsing after
     // that point
     TypeTokens &macroBody = mMacro->mMacroBody;
     uint start = 0;
-    for (; start < macroBody.size(); ++start)
+    for (; start < macroBody.Size(); ++start)
     {
       if (macroBody[start].mEnumTokenType == DocTokenType::CloseParen)
       {
@@ -211,7 +211,7 @@ namespace Zero
       }
     }
 
-    for (uint i = start; i < macroBody.size(); ++i)
+    for (uint i = start; i < macroBody.Size(); ++i)
     {
       DocToken &currToken = macroBody[i];
 
@@ -224,7 +224,7 @@ namespace Zero
         // stringify
       case DocTokenType::Pound:
       {
-        mExpandedMacro.push_back(DocToken(replaceIdentifier(macroBody[++i], argMap), DocTokenType::StringLiteral));
+        mExpandedMacro.PushBack(DocToken(replaceIdentifier(macroBody[++i], argMap), DocTokenType::StringLiteral));
       }
         break;
 
@@ -235,7 +235,7 @@ namespace Zero
         StringBuilder newTokenBuilder;
 
         // get last token
-        DocToken &lastToken = mExpandedMacro.back();
+        DocToken &lastToken = mExpandedMacro.Back();
 
         // concatinate the two tokens into one string
         newTokenBuilder << lastToken.mText;
@@ -243,18 +243,18 @@ namespace Zero
         newTokenBuilder << replaceIdentifier(macroBody[++i], argMap);
         
         // delete the last token that we added (as it is now invalid)
-        mExpandedMacro.pop_back();
+        mExpandedMacro.PopBack();
 
         String newTokString = newTokenBuilder.ToString();
 
-        mExpandedMacro.push_back(DocToken(newTokString, DocTokenType::Identifier));
+        mExpandedMacro.PushBack(DocToken(newTokString, DocTokenType::Identifier));
       }
         break;
 
         // check for arg substitution
       case DocTokenType::Identifier:
       {
-        DocToken &newTok = mExpandedMacro.push_back();
+        DocToken &newTok = mExpandedMacro.PushBack();
 
         newTok.mText = replaceIdentifier(macroBody[i], argMap);
         newTok.mEnumTokenType = DocTokenType::Identifier;
@@ -263,7 +263,7 @@ namespace Zero
 
         // just copy the token into the expanded macro list
       default:
-        mExpandedMacro.push_back(currToken);
+        mExpandedMacro.PushBack(currToken);
         break;
       }
     }
@@ -289,13 +289,13 @@ namespace Zero
 
   MacroData *MacroDatabase::FindMacro(StringParam name, StringParam location)
   {
-    if (mMacrosByName.containsKey(name))
+    if (mMacrosByName.ContainsKey(name))
     {
       return mMacrosByName[name];
     }
 
     // if location is empty that is an error
-    if (location.empty())
+    if (location.Empty())
     {
       // caller will need to handle the case where there is no macro data (delete the call)
       return nullptr;
@@ -307,7 +307,7 @@ namespace Zero
     AppendTokensFromString(DocLangDfa::Get(), location, &folders);
 
     String folder = "";
-    forRange(DocToken &token, folders.all())
+    forRange(DocToken &token, folders.All())
     {
       if (token.mEnumTokenType != DocTokenType::Identifier)
         continue;
@@ -334,7 +334,7 @@ namespace Zero
 
     path << mDoxyPath;
 
-    if (!folder.empty())
+    if (!folder.Empty())
     {
       path << cDirectorySeparatorChar << folder;
     }
@@ -342,12 +342,11 @@ namespace Zero
     path << cDirectorySeparatorChar;
 
     // separate filename from the path
-    StringRange filename
-      = location.sub_string(location.FindLastOf('/') + 1, location.size());
-
+    StringRange filename = location.FindLastOf("/");
+    
     String uniqueId = generateUniqueMacroId(folder, filename, name);
     // if we have already loaded this macro just return that instead of parsing it again
-    if (mUniqueMacros.containsKey(uniqueId))
+    if (mUniqueMacros.ContainsKey(uniqueId))
     {
       return mUniqueMacros[uniqueId];
     }
@@ -357,7 +356,7 @@ namespace Zero
 
     fullFilename = GetFileWithExactName(path.ToString(), fullFilename);
 
-    if (fullFilename.empty())
+    if (fullFilename.Empty())
     {
       Error("file '%s' either did not have a doxy file or was not found", name.c_str());
     }
@@ -407,7 +406,7 @@ namespace Zero
       AppendTokensFromString(DocLangDfa::Get(), codeString, &tokens);
 
       // we know there has to be at least 3 tokens for us to care [#,define,name]
-      if (tokens.size() < 4)
+      if (tokens.Size() < 4)
         continue;
 
       // if the line does not start with a '#' just skip it
@@ -440,7 +439,7 @@ namespace Zero
     // get the comment above, if we have no MacroDoc directive, we do not need to save this
     String description = DoxyToString(element, gElementTags[eBRIEFDESCRIPTION]).Trim();
 
-    if (description.empty())
+    if (description.Empty())
       return;
 
     TypeTokens descTokens;
@@ -449,10 +448,10 @@ namespace Zero
     if (descTokens[0].mText != "MacroComment")
       return;
 
-    MacroCall &call = mMacroCalls.push_back();
+    MacroCall &call = mMacroCalls.PushBack();
 
     // parse any options in the comment really quick
-    if (descTokens.size() > 1)
+    if (descTokens.Size() > 1)
     {
       call.ParseOptions(descTokens);
     }
@@ -482,20 +481,21 @@ namespace Zero
       BuildFullTypeString(paramElement, &argName);
 
       String argStr = argName.ToString();
-      uint start = argStr.FindFirstNonWhitespaceCharIndex();
 
-      argStr = argStr.sub_string(start, argStr.FindLastNonWhitespaceCharIndex() - start + 1);
+      StringIterator start = argStr.All().FindFirstNonWhitespaceRuneIt();
 
-      call.mMacroArgs.push_back(argStr);
+      argStr = argStr.SubString(start, argStr.All().FindLastNonWhitespaceRuneIt());
+
+      call.mMacroArgs.PushBack(argStr);
     }
     // LoadMacro refernenced by call, remove this call if it is not found
     if (!call.LoadMacroWithName(name))
-      mMacroCalls.pop_back();
+      mMacroCalls.PopBack();
   }
 
   void MacroDatabase::ProcessMacroCalls(void)
   {
-    forRange(MacroCall &call, this->mMacroCalls.all())
+    forRange(MacroCall &call, this->mMacroCalls.All())
     {
       call.ExpandCall();
       call.AddExpandedMacroDocToRawClass();
@@ -504,7 +504,7 @@ namespace Zero
 
   StringRef MacroDatabase::SearchMacroExpandStackForOption(StringRef option)
   {
-    for (int i = mMacroExpandStack.size() - 1; i >= 0; --i)
+    for (int i = mMacroExpandStack.Size() - 1; i >= 0; --i)
     {
       MacroCall* call = mMacroExpandStack[i];
 
@@ -529,7 +529,7 @@ namespace Zero
     AppendTokensFromString(DocLangDfa::Get(), macroString, &tokens);
 
     // we know there has to be at least 3 tokens for us to care [#,define,name]
-    if (tokens.size() < 4)
+    if (tokens.Size() < 4)
       return nullptr;
 
     // if the line does not start with a '#' just skip it

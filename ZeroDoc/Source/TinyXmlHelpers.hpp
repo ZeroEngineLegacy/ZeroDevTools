@@ -7,6 +7,9 @@
 class TiXmlElement;
 class TiXmlNode;
 
+
+#define cDirectorySeparatorChar '/'
+
 namespace Zero
 {
   /// convertes class name passed in into something that would actually be in a doxygen filename

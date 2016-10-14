@@ -900,13 +900,13 @@ namespace Zero
 
   void RawDocumentationLibrary::FillOverloadDescriptions(void)
   {
-    //String mDescription;
     // check each class and see if it has a function missing a mDescription
     forRange(RawClassDoc* classDoc, mClasses.All())
     {
       forRange(RawMethodDoc* methodDoc, classDoc->mMethods.All())
       {
-        if (methodDoc->mDescription == "")
+        // if we have a description we do not need to do anything
+        if (!methodDoc->mDescription.Empty())
           continue;
 
         // see if there is a function in that same class by the same name
@@ -925,7 +925,10 @@ namespace Zero
 
         while (parentClass)
         {
-          methodDoc->mDescription = parentClass->GetDescriptionForMethod(methodDoc->mName);
+          if (parentClass->mMethodMap[methodDoc->mName].Size() > 1)
+          {
+            methodDoc->mDescription = parentClass->GetDescriptionForMethod(methodDoc->mName);
+          }
 
           // if we found a mDescription, move on to the next method
           if (methodDoc->mDescription.SizeInBytes() > 0)

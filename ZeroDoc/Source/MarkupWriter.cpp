@@ -85,6 +85,8 @@ void WriteOutAllMarkdownFiles(Zero::DocGeneratorConfig& config)
 
     DocToTags tagged;
 
+    StringBuilder fileList;
+
     //Upload the class' page to the wiki, making sure to perform the link replacements
     forRange(ClassDoc* classDoc, doc.mClasses.All())
     {
@@ -99,7 +101,11 @@ void WriteOutAllMarkdownFiles(Zero::DocGeneratorConfig& config)
       fullPath = FilePath::Normalize(fullPath);
 
       ClassMarkupWriter::WriteClass(fullPath, classDoc, doc, tagged);
+
+      fileList << classDoc->mName << '\t' << FilePath::Combine(".", "Reference", filename) << '\n';
     }
+
+    WriteStringRangeToFile(FilePath::Combine(directory, "classList.txt"), fileList.ToString());
 
     WriteTagIndices(directory, tagged, doc);
   }
@@ -452,5 +458,7 @@ void CommandRefWriter::WriteCommandEntry(const CommandDoc &cmdDoc)
 
   EndHeaderSection((*this));
 }
+
+
 
 }

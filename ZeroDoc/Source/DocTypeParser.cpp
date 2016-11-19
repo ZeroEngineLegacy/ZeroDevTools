@@ -29,7 +29,7 @@ UniquePointer<BlockNode> ParseBlock(TypeTokens* tokens)
   catch (ParsingException &e)
   {
     // for now do nothing  but break
-    Error(e.what());
+    Zero::DoNotifyError("Parsing error", e.what());
   }
 
   return retVal.Release();

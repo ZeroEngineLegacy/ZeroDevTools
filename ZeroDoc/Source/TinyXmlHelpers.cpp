@@ -37,9 +37,9 @@ String GetDoxygenName(String name)
 String ToTypeName(TiXmlElement* parent, cstr name)
 {
   String typeName = GetElementValue(parent, "type", "ref");
-  if(!typeName.empty())
+  if(!typeName.Empty())
     return typeName;
-  return GetElementValue(parent, "type");
+  return GetElementValue(parent->FirstChildElement(), "type");
 }
 
 TiXmlElement* FindElementWithAttribute(TiXmlElement* element, cstr attribute, cstr value)
@@ -109,110 +109,6 @@ String GetElementValue(TiXmlElement* parent, cstr name, cstr second)
   return String();
 }
 
-void ExtractMethodDocs(StringParam doxyPath, String& className, Array<Replacement>& replacements,
-                       HashMap<String,PropertyDoc>& properties, HashMap<String,MethodDoc>& methods)
-{
-  //try to open the class file
-  TiXmlDocument doc(doxyPath.c_str());
-  bool loadOkay = doc.LoadFile();
-
-  if(!loadOkay)
-  {
-    //__debugbreak();
-    return;
-  }
-
-  TiXmlElement* doxygenElement = doc.FirstChildElement("doxygen");
-  TiXmlElement* compounddef = doxygenElement->FirstChildElement("compounddef");
-
-  className = GetElementValue(compounddef, "compoundname");
-  uint nameStart = className.FindLastOf(':') + 1;
-  className = className.sub_string(nameStart, className.size() - nameStart);
-
-  TiXmlNode* pSection;
-  for(pSection = compounddef->FirstChild(); pSection != 0; pSection = pSection->NextSibling()) 
-  {
-    TiXmlNode* pMemberDef;
-    for(pMemberDef = pSection->FirstChild(); pMemberDef != 0; pMemberDef = pMemberDef->NextSibling()) 
-    {
-      TiXmlElement* memberElement = pMemberDef->ToElement();
-      if(!memberElement)
-        continue;
-
-      //only parse member definitions (both members and methods in doxy)
-      if(strcmp(memberElement->Value(),"memberdef") != 0)
-        continue;
-
-      //variables have the mutable attribute while methods don't, use this to differentiate the two
-      const char* isVariable = memberElement->Attribute("mutable");
-      String name = GetElementValue(memberElement, "name");
-      String argsstring = GetElementValue(memberElement, "argsstring");
-      String briefdescription = DoxyToString(memberElement, "briefdescription");
-      String returnValue  = ToTypeName(memberElement, "type");
-
-      name = Replace(replacements,name);
-      argsstring = Replace(replacements,argsstring);
-      briefdescription = Replace(replacements,briefdescription);
-      returnValue = Replace(replacements,returnValue);
-
-      PropertyDoc propDoc;
-      propDoc.Name = name;
-      propDoc.Description = briefdescription;
-      MethodDoc metDoc;
-      metDoc.Name = name;
-      metDoc.Description = briefdescription;
-      metDoc.ReturnValue = returnValue;
-
-      if(isVariable)
-      {
-        //See if this is an m'VarName' member variable.
-        if(name[0] == 'm')
-        {
-          //strip the 'm' off of the name
-          String mName = name.size() > 1 ? name.sub_string(1, name.size() - 1) : String();
-
-          PropertyDoc* propertyDoc = properties.findPointer(mName);
-          if(!propertyDoc)
-            properties[mName] = propDoc;
-          else
-          {
-            if(propertyDoc->Description.empty())
-              *propertyDoc = propDoc;
-          }
-        }
-
-        //See if this is a property that is not a Getter and doesn't start with m, such as Translation.
-        PropertyDoc* propertyDoc = properties.findPointer(name);
-        if(!propertyDoc)
-          properties[name] = propDoc;
-        else
-        {
-          if(propertyDoc->Description.empty())
-            *propertyDoc = propDoc;
-        }
-      }
-      else
-      {
-        //See if this is a Get 'Property' function.
-        if(name[0] == 'G')
-        {
-          //strip the 'Get' off of the name
-          String getName = name.size() > 3 ? name.sub_string(3, name.size() - 3) : String();
-      
-          properties[getName] = propDoc;
-        }
-        //this will right now make Set 'Property' functions actually be methods, but I don't think that's a huge deal now.
-        //Not adding an if for setters because a set might not be a get for a property.
-        else
-        {
-          //otherwise it's just a method
-          methods[name] = metDoc;
-        }
-      }
-    }
-  }
-}
-
 void FindClassesWithBase(StringParam doxyPath, HashSet<String>& classes, HashSet<String>& baseClassesToInclude,
                          HashSet<String>& baseClassesToIgnore, HashSet<String>& classesToIgnore)
 {
@@ -222,16 +118,16 @@ void FindClassesWithBase(StringParam doxyPath, HashSet<String>& classes, HashSet
   FileRange files(BuildString(doxyPath.c_str(),"\\xml\\"));
   
   //iterate through all of the files searching for classes
-  for(; !files.empty(); files.popFront())
+  for(; !files.Empty(); files.PopFront())
   {
-    String fileName = files.front();
+    String fileName = files.Front();
   
     String classHeader = "class_zero_1_1";
     String structHeader = "struct_zero_1_1";
   
     //only open class or struct documentation files
-    if(String(fileName.sub_string(0,classHeader.size())) != classHeader &&
-      String(fileName.sub_string(0,structHeader.size())) != structHeader)
+    if(String(fileName.SubStringFromByteIndices(0,classHeader.SizeInBytes())) != classHeader &&
+      String(fileName.SubStringFromByteIndices(0,structHeader.SizeInBytes())) != structHeader)
       continue;
   
     String fullFileName = BuildString(doxyPath.c_str(),"\\xml\\",fileName.c_str());
@@ -249,15 +145,15 @@ void FindClassesWithBase(StringParam doxyPath, HashSet<String>& classes, HashSet
 
     //get the name of the class (strip out the Zero:: parts)
     String className = GetElementValue(compounddef, "compoundname");
-    uint nameStart = className.FindLastOf(':') + 1;
-    className = className.sub_string(nameStart, className.size() - nameStart);
+    uint nameStart = className.FindLastOf(':').SizeInBytes() + 1;
+    className = className.SubStringFromByteIndices(nameStart, className.SizeInBytes() - nameStart);
 
     //get the name of the base class (this doesn't have the namespace,
     //but it will have templates so strip out anything after the first <)
     String baseName = GetElementValue(compounddef, "basecompoundref");
-    uint templateStart = baseName.FindFirstOf('<');
-    if(templateStart < baseName.size())
-      baseName = baseName.sub_string(0,templateStart);
+    uint templateStart = baseName.FindFirstOf('<').SizeInBytes();
+    if(templateStart < baseName.SizeInBytes())
+      baseName = baseName.SubStringFromByteIndices(0,templateStart);
     
     //mark that this class has the given base
     classToBase[className] = baseName;
@@ -266,31 +162,31 @@ void FindClassesWithBase(StringParam doxyPath, HashSet<String>& classes, HashSet
   //now we want to iterate through all of the classes and see if this class should be documented
   //it should be document if it has one of the bases to include but doesn't have an ignore base first.
   //Also, if it itself is marked as ignore then don't add it
-  ClassBaseMap::range r = classToBase.all();
-  for(; !r.empty(); r.popFront())
+  ClassBaseMap::range r = classToBase.All();
+  for(; !r.Empty(); r.PopFront())
   {
-    String className = r.front().first;
+    String className = r.Front().first;
 
     //see if we ignore this class such as random events (e.g. ChatEvent)
-    if(classesToIgnore.findValue(className,"").empty() == false)
+    if(classesToIgnore.FindValue(className,"").Empty() == false)
       continue;
 
     //iterate through the bases until we have no base
-    String baseName = r.front().second;
-    while(!baseName.empty())
+    String baseName = r.Front().second;
+    while(!baseName.Empty())
     {
       //if we ignore this base then stop. e.g. Widget
-      if(baseClassesToIgnore.findValue(baseName,"").empty() == false)
+      if(baseClassesToIgnore.FindValue(baseName,"").Empty() == false)
         break;
 
       //if this base should be included then insert the class and go to the next one. e.g. Component
-      if(baseClassesToInclude.findValue(baseName,"").empty() == false)
+      if(baseClassesToInclude.FindValue(baseName,"").Empty() == false)
       {
-        classes.insert(className);
+        classes.Insert(className);
         break;
       }
 
-      baseName = classToBase.findValue(baseName,"");
+      baseName = classToBase.FindValue(baseName,"");
     }
   }
 }
@@ -300,74 +196,18 @@ namespace AddedType
 enum DataType {None, Property, Method};
 }
 
-void AddMethodOrProperty(ClassDoc& classDoc, PropertyDoc& propDoc, MethodDoc& metDoc, PropertyDoc*& resultProp, MethodDoc*& resultMethod)
-{
-  //See if this is a Get 'Property' function.
-  if(propDoc.Name[0] == 'G')
-  {
-    //strip the 'Get' off of the name
-    String getName = propDoc.Name.size() > 3 ? propDoc.Name.sub_string(3, propDoc.Name.size() - 3) : String();
-
-    if(PropertyDoc* propertyDoc = classDoc.PropertyMap.findValue(getName, NULL))
-    {
-      *propertyDoc = propDoc;
-      propertyDoc->Name = getName;
-
-      resultProp = propertyDoc;
-    }
-  }
-
-  //See if this is an m'VarName' member variable.
-  if(propDoc.Name[0] == 'm')
-  {
-    //strip the 'm' off of the name
-    String mName = propDoc.Name.size() > 1 ? propDoc.Name.sub_string(1, propDoc.Name.size() - 1) : String();
-
-    if(PropertyDoc* propertyDoc = classDoc.PropertyMap.findValue(mName, NULL))
-    {
-      if(propertyDoc->Description.empty())
-      {
-        *propertyDoc = propDoc;
-        propertyDoc->Name = mName;
-        
-        resultProp = propertyDoc;
-      }
-    }
-  }
-
-  //See if this is a property that is not a Getter and doesn't start with m, such as Translation.
-  if(PropertyDoc* propertyDoc = classDoc.PropertyMap.findValue(propDoc.Name, NULL))
-  {
-    if(propertyDoc->Description.empty())
-    {
-      *propertyDoc = propDoc;
-      
-      resultProp = propertyDoc;
-    }
-  }
-
-  //See if this was a method.
-  if(MethodDoc* methodDoc = classDoc.MethodMap.findValue(metDoc.Name, NULL))
-  {
-    *methodDoc = metDoc;
-
-    resultMethod = methodDoc;
-  }
-}
 
 String NormalizeDocumentation(StringRange text)
 {
-  if(text.empty())
+  if(text.Empty())
     return String();
 
-  uint size = text.size();
+  uint size = text.SizeInBytes();
   char* buffer = (char*)alloca(size + 1);
 
   uint outIndex = 0;
-  for(uint i = 0; i < size; ++i)
+  forRange(Rune current, text.All())
   {
-    char current = text[i];
-
     if(IsSpace(current))
     {
       // Skip all leading spaces
@@ -382,11 +222,11 @@ String NormalizeDocumentation(StringRange text)
     // Remove spaces before symbols
     if(IsSymbol(current) && outIndex > 0 && IsSpace(buffer[outIndex - 1]))
     {
-      buffer[outIndex - 1] = current;
+      buffer[outIndex - 1] = current.value;
       continue;
     }
 
-    buffer[outIndex++] = current;
+    buffer[outIndex++] = current.value;
   }
 
   // Remove trailing white space
@@ -406,355 +246,53 @@ String FindFile(StringParam basePath, StringParam fileName)
     return fullPath;
 
   FileRange range(basePath);
-  for (; !range.empty(); range.popFront())
+  for (; !range.Empty(); range.PopFront())
   {
     FileEntry entry = range.frontEntry();
     String subPath = entry.GetFullPath();
     if (IsDirectory(subPath))
     {
       String subFilePath = FindFile(subPath, fileName);
-      if (!subFilePath.empty())
+      if (!subFilePath.Empty())
         return subFilePath;
     }
   }
   return String();
 }
 
-void ExtractMethodDocs(ClassDoc& classDocT, HashMap<String, ClassDoc>& dataBase, DocumentationLibrary& library, ClassDoc& currentClass, ClassDoc* derivedClass, StringParam doxyPath, Array<Replacement>& replacements)
+String FindFile(StringParam basePath, StringParam fileName, IgnoreList &ignoreList)
 {
-  ClassDoc* baseClassDoc = dataBase.findPointer(currentClass.Name);
-  //if this class already exists then don't re-read it
-  if(baseClassDoc != NULL)
-  {
-    currentClass = *baseClassDoc;
-    return;
-  }
-
-  //extract methods and properties from the base classes
-  if(!currentClass.BaseClass.empty())
-  {
-    if(ClassDoc* parentClass = library.ClassMap.findValue(currentClass.BaseClass, NULL))
-    {
-      ExtractMethodDocs(classDocT, dataBase, library, *parentClass, &currentClass, doxyPath, replacements);
-      //add all of the parent's properties to this class
-      currentClass.Add(*parentClass);
-    }
-  }
-
-  String searchPath = doxyPath;
-  //try to open the class file
-  String fileName = FindFile(searchPath, BuildString("class_zero_1_1", GetDoxygenName(currentClass.Name).c_str(), ".xml"));
-  TiXmlDocument doc(fileName.c_str());
-  bool loadOkay = doc.LoadFile();
-  //if loading the class file failed, search for a struct file
-  if(!loadOkay)
-  {
-    String fileName = FindFile(searchPath, BuildString("struct_zero_1_1", GetDoxygenName(currentClass.Name).c_str(), ".xml"));
-    loadOkay = doc.LoadFile(fileName.c_str());
-
-    if(!loadOkay)
-    {
-      String fileName = FindFile(searchPath, BuildString("struct_zero_1_1_physics_1_1", GetDoxygenName(currentClass.Name).c_str(), ".xml"));
-      loadOkay = doc.LoadFile(fileName.c_str());
-    }
-  }
-
-  if(!loadOkay)
-  {
-    printf("Failed to load doc file for '%s\n", currentClass.Name.c_str());
-    return;
-  }
-
-  TiXmlElement* doxygenElement = doc.FirstChildElement("doxygen");
-  TiXmlElement* compounddef = doxygenElement->FirstChildElement("compounddef");
-
-  TiXmlElement* baseClassElement = compounddef->FirstChildElement("basecompoundref");
-  if(baseClassElement != NULL)
-  {
-    const char* baseClass = baseClassElement->GetText();
-    ClassDoc* parentClass = library.ClassMap.findValue(currentClass.BaseClass, NULL);
-    if(parentClass == NULL)
-    {
-      ClassDoc baseDoc;// = currentClass;
-      baseDoc.Name = baseClass;
-      ExtractMethodDocs(classDocT, dataBase, library, baseDoc, &currentClass, doxyPath, replacements);
-      //add all of the parent's properties to this class
-      currentClass.Add(baseDoc);
-    }
-  }
-
-  if(&classDocT == &currentClass)
-  {
-    //if(currentClass.Name == "Transform")
-    //  __debugbreak();
-    String classDesc = DoxyToString(compounddef, "briefdescription");
-    currentClass.Description = NormalizeDocumentation(classDesc);
-  }
-
-  TiXmlNode* pSection;
-  for(pSection = compounddef->FirstChild(); pSection != 0; pSection = pSection->NextSibling()) 
-  {
-    //if this is the bried description for the class then pull out the class's description
-    if(strcmp(pSection->Value(),"briefdescription") == 0)
-    {
-      currentClass.Description = NormalizeDocumentation(DoxyToString(pSection->ToElement(), "para"));
-    }
-
-    TiXmlNode* pMemberDef;
-    for(pMemberDef = pSection->FirstChild(); pMemberDef != 0; pMemberDef = pMemberDef->NextSibling()) 
-    {
-      TiXmlElement* memberElement = pMemberDef->ToElement();
-      if(!memberElement)
-        continue;
-
-      //only parse member definitions (both members and methods in doxy)
-      if(strcmp(memberElement->Value(),"memberdef") != 0)
-        continue;
-
-      //variables have the mutable attribute while methods don't, use this to differentiate the two
-      const char* isVariable = memberElement->Attribute("mutable");
-      String name = GetElementValue(memberElement, "name");
-      String argsstring = GetElementValue(memberElement, "argsstring");
-      
-      String briefdescription = DoxyToString(memberElement, "briefdescription");
-      uint i = 0;
-      while(briefdescription[i] == ' ')
-        ++i;
-      briefdescription = briefdescription.sub_string(i,briefdescription.size() - i);
-
-      String returnValue  = ToTypeName(memberElement, "type");
-
-      name = Replace(replacements,name);
-      argsstring = NormalizeDocumentation(Replace(replacements,argsstring));
-      briefdescription = NormalizeDocumentation(Replace(replacements,briefdescription));
-      returnValue = NormalizeDocumentation(Replace(replacements,returnValue));
-
-      PropertyDoc propDoc;
-      propDoc.Name = name;
-      propDoc.Description = briefdescription;
-      propDoc.Type = returnValue;
-      MethodDoc metDoc;
-      metDoc.Name = name;
-      metDoc.Arguments = argsstring;
-      metDoc.Description = briefdescription;
-      metDoc.ReturnValue = returnValue;
-
-      //extract all of the parameter (if this is a method) names and types for easy parsing for a user later
-      TiXmlNode* params = pMemberDef->FirstChild("param");
-      while(params != NULL)
-      {
-        TiXmlElement* paramElement = params->ToElement();
-
-        MethodDoc::Argument& argument = metDoc.ParsedArguments.push_back();
-        argument.Type = NormalizeDocumentation(Replace(replacements, GetElementValue(paramElement, "type")));
-        if(argument.Type.empty())
-        {
-          TiXmlNode* typeNode = paramElement->FirstChild("type");
-          if(typeNode != NULL)
-          {
-            TiXmlElement* typeElement = typeNode->ToElement();
-            if(typeElement != NULL)
-              argument.Type = NormalizeDocumentation(Replace(replacements, GetElementValue(typeElement, "ref")));
-          }
-        }
-        argument.Name = GetElementValue(paramElement, "declname");
-
-        params = params->NextSibling("param");
-      }
-
-      PropertyDoc* resultProp = NULL;
-      MethodDoc* resultMethod = NULL;
-
-      AddMethodOrProperty(currentClass, propDoc, metDoc, resultProp, resultMethod);
-
-      if((resultProp == NULL && resultMethod == NULL) && derivedClass != NULL)
-      {
-        AddMethodOrProperty(*derivedClass, propDoc, metDoc, resultProp, resultMethod);
-        if(resultProp != NULL && !resultProp->Description.empty())
-        {
-          PropertyDoc* prop = currentClass.PropertyMap.findValue(resultProp->Name, NULL);
-          if(prop != NULL)
-            *prop = *resultProp;
-          else
-          {
-            currentClass.Properties.push_back(*resultProp);
-            currentClass.Build();
-          }
-        }
-        else if(resultMethod && !resultMethod->Description.empty())
-        {
-          MethodDoc* method = currentClass.MethodMap.findValue(resultMethod->Name, NULL);
-          if(method != NULL)
-            *method = *resultMethod;
-          else
-          {
-            currentClass.Methods.push_back(*resultMethod);
-            currentClass.Build();
-          }
-        }
-      }
-    }
-  }
-
-  currentClass.Build();
-  dataBase.insert(currentClass.Name, currentClass);
-}
-
-void ExtractMethodDocs(ClassDoc& classDoc, DocumentationLibrary& library, ClassDoc& currentClass, StringParam doxyPath, Array<Replacement>& replacements)
-{
-  //extract methods and properties from the base classes
-  if(!currentClass.BaseClass.empty())
-  {
-    if(ClassDoc* parentClass = library.ClassMap.findValue(currentClass.BaseClass, NULL))
-    {
-      ExtractMethodDocs(classDoc, library, *parentClass, doxyPath, replacements);
-    }
-  }
-
-  //try to open the class file
-  String fileName = BuildString(doxyPath.c_str(),"\\xml\\class_zero_1_1", GetDoxygenName(currentClass.Name).c_str(), ".xml");
-  TiXmlDocument doc(fileName.c_str());
-  bool loadOkay = doc.LoadFile();
-  //if loading the class file failed, search for a struct file
-  if(!loadOkay)
-  {
-    String fileName = BuildString(doxyPath.c_str(),"\\xml\\struct_zero_1_1", GetDoxygenName(currentClass.Name).c_str(), ".xml");
-    loadOkay = doc.LoadFile(fileName.c_str());
-
-    if(!loadOkay)
-    {
-      String fileName = BuildString(doxyPath.c_str(),"\\xml\\struct_zero_1_1_physics_1_1", GetDoxygenName(currentClass.Name).c_str(), ".xml");
-      loadOkay = doc.LoadFile(fileName.c_str());
-    }
-  }
-
-  if(!loadOkay)
-  {
-    //__debugbreak();
-    return;
-  }
+  String fullPath = FilePath::Combine(basePath, fileName);
   
-  TiXmlElement* doxygenElement = doc.FirstChildElement("doxygen");
-  TiXmlElement* compounddef = doxygenElement->FirstChildElement("compounddef");
-
-  TiXmlElement* baseClassElement = compounddef->FirstChildElement("basecompoundref");
-  if(baseClassElement != NULL)
+  if (ignoreList.DirectoryIsOnIgnoreList(fullPath))
   {
-    const char* baseClass = baseClassElement->GetText();
-
-    if(String(baseClass) != currentClass.BaseClass)
-    {
-      ClassDoc baseDoc = currentClass;
-      baseDoc.Name = baseClass;
-      ExtractMethodDocs(classDoc, library, baseDoc, doxyPath, replacements);
-    }
+    WriteLog("Ignoring File: %s\n", fullPath);
+    return String();
   }
 
-  if(&classDoc == &currentClass)
-  {
-    String classDesc = DoxyToString(compounddef, "briefdescription");
-    classDoc.Description = classDesc;
-  }
+  if (FileExists(fullPath))
+    return fullPath;
 
-  TiXmlNode* pSection;
-  for(pSection = compounddef->FirstChild(); pSection != 0; pSection = pSection->NextSibling()) 
+  FileRange range(basePath);
+  for (; !range.Empty(); range.PopFront())
   {
-    //if this is the bried description for the class then pull out the class's description
-    if(strcmp(pSection->Value(),"briefdescription") == 0)
+    FileEntry entry = range.frontEntry();
+    String subPath = entry.GetFullPath();
+
+    if (ignoreList.DirectoryIsOnIgnoreList(subPath))
     {
-      classDoc.Description = DoxyToString(pSection->ToElement(), "para");
+      WriteLog("Ignoring File: %s\n", subPath);
+      return String();
     }
 
-    TiXmlNode* pMemberDef;
-    for(pMemberDef = pSection->FirstChild(); pMemberDef != 0; pMemberDef = pMemberDef->NextSibling()) 
+    if (IsDirectory(subPath))
     {
-      TiXmlElement* memberElement = pMemberDef->ToElement();
-      if(!memberElement)
-        continue;
-  
-      //only parse member definitions (both members and methods in doxy)
-      if(strcmp(memberElement->Value(),"memberdef") != 0)
-        continue;
-
-      //variables have the mutable attribute while methods don't, use this to differentiate the two
-      const char* isVariable = memberElement->Attribute("mutable");
-      String name = GetElementValue(memberElement, "name");
-      String argsstring = GetElementValue(memberElement, "argsstring");
-      String briefdescription = DoxyToString(memberElement, "briefdescription");
-      uint i = 0;
-      while(briefdescription[i] == ' ')
-        ++i;
-      briefdescription = briefdescription.sub_string(i,briefdescription.size() - i);
-
-      String returnValue  = ToTypeName(memberElement, "type");
-
-      name = Replace(replacements,name);
-      argsstring = Replace(replacements,argsstring);
-      briefdescription = Replace(replacements,briefdescription);
-      returnValue = Replace(replacements,returnValue);
-
-      PropertyDoc propDoc;
-      propDoc.Name = name;
-      propDoc.Description = briefdescription;
-      propDoc.Type = returnValue;
-      MethodDoc metDoc;
-      metDoc.Name = name;
-      metDoc.Arguments = argsstring;
-      metDoc.Description = briefdescription;
-      metDoc.ReturnValue = returnValue;
-
-
-      //See if this is a Get 'Property' function.
-      if(name[0] == 'G')
-      {
-        //strip the 'Get' off of the name
-        String getName = name.size() > 3 ? name.sub_string(3, name.size() - 3) : String();
-
-        if(PropertyDoc* propertyDoc = classDoc.PropertyMap.findValue(getName, NULL))
-        {
-          *propertyDoc = propDoc;
-          propertyDoc->Name = getName;
-        }
-      }
-
-      //See if this is an m'VarName' member variable.
-      if(name[0] == 'm')
-      {
-        //strip the 'm' off of the name
-        String mName = name.size() > 1 ? name.sub_string(1, name.size() - 1) : String();
-
-        if(PropertyDoc* propertyDoc = classDoc.PropertyMap.findValue(mName, NULL))
-        {
-          if(propertyDoc->Description.empty())
-          {
-            *propertyDoc = propDoc;
-            propertyDoc->Name = mName;
-          }
-        }
-      }
-
-      //See if this is a property that is not a Getter and doesn't start with m, such as Translation.
-      if(PropertyDoc* propertyDoc = classDoc.PropertyMap.findValue(name, NULL))
-      {
-        if(propertyDoc->Description.empty())
-          *propertyDoc = propDoc;
-      }
-
-      //See if this was a method.
-      if(MethodDoc* methodDoc = classDoc.MethodMap.findValue(name, NULL))
-        *methodDoc = metDoc;
+      String subFilePath = FindFile(subPath, fileName, ignoreList);
+      if (!subFilePath.Empty())
+        return subFilePath;
     }
   }
-}
-
-void ExtractMethodDocs(ClassDoc& classDoc, HashMap<String, ClassDoc>& dataBase, DocumentationLibrary& library, StringParam doxyPath, Array<Replacement>& replacements)
-{
-  ExtractMethodDocs(classDoc, dataBase, library, classDoc, NULL, doxyPath, replacements);
-}
-
-void ExtractMethodDocs(ClassDoc& classDoc, DocumentationLibrary& library, StringParam doxyPath, Array<Replacement>& replacements)
-{
-  ExtractMethodDocs(classDoc, library, classDoc, doxyPath, replacements);
+  return String();
 }
 
 }//namespace Zero

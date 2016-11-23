@@ -38,3 +38,9 @@ ZeroDoc/curl/lib/DLL-Debug/
 PatchZeroBadUrls/PatchZeroBadUrls/obj/
 PatchZeroBadUrls/PatchZeroBadUrls/bin/
 BuildOutput
+Debug_why/TinyXml.pdb
+DocGenerator.exe
+ZeroDoc/TinyXml/Debug/*
+ZeroDoc/Source/Debug/*
+Debug_why/TinyXml.lib
+*.opendb

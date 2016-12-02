@@ -129,6 +129,45 @@ namespace ZeroLauncherVersionIdUpdater
       innoSetup.WaitForExit();
     }
 
+    static void GeneratePatch(String sourceDir, String outputPackagePath, String resultPatchPath)
+    {
+      //Generate the Zero Engine installer using Inno Setup.
+      ProcessStartInfo innoSetupInfo = new ProcessStartInfo();
+      innoSetupInfo.Arguments = "ZeroLauncherInstallerPatch.iss " +
+                                  String.Format("/DZeroSource=\"{0}\"", sourceDir) +
+                                  String.Format(" /DOutputFiles=\"{0}\"", outputPackagePath);// +
+      innoSetupInfo.FileName = @"C:\Program Files (x86)\Inno Setup 5\iscc.exe";
+      innoSetupInfo.RedirectStandardOutput = true;
+      innoSetupInfo.RedirectStandardError = true;
+      innoSetupInfo.UseShellExecute = false;
+
+      Process innoSetup;
+      try
+      {
+        innoSetup = Process.Start(innoSetupInfo);
+      }
+      catch (Win32Exception /*win32*/)
+      {
+        Console.WriteLine("Inno Setup not found. Please install it and rerun " +
+                          "the build install maker.");
+        Console.WriteLine("Press any key to continue...");
+        Console.ReadKey();
+        return;
+
+      }
+      String output = innoSetup.StandardOutput.ReadToEnd();
+      String errs = innoSetup.StandardError.ReadToEnd();
+
+      innoSetup.WaitForExit();
+
+      String outputExeName = "ZeroLauncherPatch.exe";
+      String expectedOutputPath = Path.Combine("Output", outputExeName);
+      if(File.Exists(expectedOutputPath))
+      {
+        File.Copy(expectedOutputPath, Path.Combine(resultPatchPath, outputExeName), true);
+      }
+    }
+
     static void Main(string[] args)
     {
       var commandArgs = new CommandArgs();
@@ -165,10 +204,6 @@ namespace ZeroLauncherVersionIdUpdater
       {
         CreatePackage(commandArgs.SourceDir, commandArgs.ZeroOutDir, commandArgs.OutDir, packageOutDir);
         ZipPackage(packageOutDir, Path.Combine(commandArgs.OutDir, "ZeroLauncherPackage.zip"));
-
-        //open the package folder
-        if (commandArgs.OpenExplorer)
-          Process.Start(commandArgs.OutDir);
       }
       
       if(commandArgs.GenerateInstaller)
@@ -182,6 +217,21 @@ namespace ZeroLauncherVersionIdUpdater
         CopyDirectory(packageOutDir, commandArgs.ZeroOutDir);
         GenerateInstaller(commandArgs.SourceDir, commandArgs.ZeroOutDir);
       }
+
+      if (commandArgs.CreatePatch)
+      {
+        if (createPackage == false)
+        {
+          Console.WriteLine("Generate patch requires create package");
+          return;
+        }
+
+        GeneratePatch(commandArgs.SourceDir, packageOutDir, commandArgs.OutDir);
+      }
+
+      //open the package folder
+      if (commandArgs.OpenExplorer && Directory.Exists(commandArgs.OutDir))
+        Process.Start(commandArgs.OutDir);
     }
   }
 }

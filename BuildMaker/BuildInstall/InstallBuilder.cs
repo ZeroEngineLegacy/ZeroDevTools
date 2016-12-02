@@ -47,8 +47,8 @@ namespace BuildMaker
       mProperties.Add("PatchVersion", new BuildProperty("int", "PatchVersion", "0"));
       mProperties.Add("RevisionId", new BuildProperty("int", "RevisionId", "0"));
       mProperties.Add("ExperimentalBranchName", new BuildProperty("string", "ExperimentalBranchName", ""));
-      mProperties.Add("BuildId", new BuildProperty("string", "BuildId", "\"0.0.0.0\""));
-      mProperties.Add("ShortChangeSet", new BuildProperty("string", "ShortChangeSet", "\"0\""));
+      mProperties.Add("BuildId", new BuildProperty("string", "BuildId", "0.0.0.0"));
+      mProperties.Add("ShortChangeSet", new BuildProperty("string", "ShortChangeSet", "0"));
       mProperties.Add("ChangeSet", new BuildProperty("string", "ChangeSet", "\"0\""));
       mProperties.Add("ChangeSetDate", new BuildProperty("string", "ChangeSetDate", "\"0-0-0\""));
       mProperties.Add("Platform", new BuildProperty("string", "Platform", "\"Win32\""));

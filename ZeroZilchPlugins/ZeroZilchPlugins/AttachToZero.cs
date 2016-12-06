@@ -299,89 +299,131 @@ namespace ZeroZilchPlugins
             }
         }
 
-        private void AttemptAttach()
+    private String TryFindProjectPath()
+    {
+      var dte = this.GetDTE();
+      var dir = Path.GetDirectoryName(dte.Solution.FullName);
+      while (dir != null)
+      {
+        foreach (var file in Directory.EnumerateFiles(dir))
         {
-            var dte = this.GetDTE();
-            EnvDTE.Process possibleZeroProcess = null;
-            EnvDTE.Process betterZeroProcess = null;
-            EnvDTE.Process bestZeroProcess = null;
+          if (Path.GetExtension(file) == ".zeroproj")
+            return file;
+        }
+        dir = Path.GetDirectoryName(dir);
+      }
+      return "";
+    }
 
-            Processes processes = dte.Debugger.LocalProcesses;
-            foreach (EnvDTE.Process vsProcess in dte.Debugger.LocalProcesses)
+    private EnvDTE.Process FindProcess()
+    {
+      var dte = this.GetDTE();
+      EnvDTE.Process possibleZeroProcess = null;
+      EnvDTE.Process betterZeroProcess = null;
+      EnvDTE.Process bestZeroProcess = null;
+
+      Processes processes = dte.Debugger.LocalProcesses;
+      foreach (EnvDTE.Process vsProcess in dte.Debugger.LocalProcesses)
+      {
+        if (Path.GetFileName(vsProcess.Name) == "ZeroEditor.exe")
+        {
+          possibleZeroProcess = vsProcess;
+
+          var process = System.Diagnostics.Process.GetProcessById(vsProcess.ProcessID);
+
+          // Within the solution path we should generally be able to find the project name
+          // For example: C:\Users\Trevor\Documents\ZeroProjects\Test123\Plugins\MyPlugin\MyPlugin.sln
+          // Test123 would be the project name
+
+          var solutionName = dte.Solution.FullName;
+          if (String.IsNullOrWhiteSpace(solutionName) == false)
+          {
+            var pluginDir = Path.GetDirectoryName(solutionName);
+            var pluginsDir = Path.GetDirectoryName(pluginDir);
+            var projectDir = Path.GetDirectoryName(pluginsDir);
+
+            var projectName = this.GetZeroProjectName(projectDir);
+
+            if (process.MainWindowTitle == "Zero Editor - " + projectName)
             {
-                if (Path.GetFileName(vsProcess.Name) == "ZeroEditor.exe")
-                {
-                    possibleZeroProcess = vsProcess;
-
-                    var process = System.Diagnostics.Process.GetProcessById(vsProcess.ProcessID);
-
-                    // Within the solution path we should generally be able to find the project name
-                    // For example: C:\Users\Trevor\Documents\ZeroProjects\Test123\Plugins\MyPlugin\MyPlugin.sln
-                    // Test123 would be the project name
-
-                    var solutionName = dte.Solution.FullName;
-                    if (String.IsNullOrWhiteSpace(solutionName) == false)
-                    {
-                        var pluginDir = Path.GetDirectoryName(solutionName);
-                        var pluginsDir = Path.GetDirectoryName(pluginDir);
-                        var projectDir = Path.GetDirectoryName(pluginsDir);
-
-                        var projectName = this.GetZeroProjectName(projectDir);
-
-                        if (process.MainWindowTitle == "Zero Editor - " + projectName)
-                        {
-                            bestZeroProcess = vsProcess;
-                            break;
-                        }
-                        else if (process.MainWindowTitle.EndsWith(projectName))
-                        {
-                            betterZeroProcess = vsProcess;
-                        }
-                    }
-                }
+              bestZeroProcess = vsProcess;
+              break;
             }
-
-            var attachingZeroProcess = bestZeroProcess;
-            if (attachingZeroProcess == null)
-                attachingZeroProcess = betterZeroProcess;
-            if (attachingZeroProcess == null)
-                attachingZeroProcess = possibleZeroProcess;
-
-            var possiblyAttached = false;
-            if (attachingZeroProcess != null)
+            else if (process.MainWindowTitle.EndsWith(projectName))
             {
-                // Visual Studio may not attach on the first try, so spend up to 5 seconds attempting to connect
-                var tryCount = 5;
-                while (tryCount > 0)
-                {
-                    try
-                    {
-                        attachingZeroProcess.Attach();
-
-                        // For some reason, just because we got here does not mean that we actually attached
-                        possiblyAttached = true;
-                        break;
-                    }
-                    catch
-                    {
-                        System.Threading.Thread.Sleep(1000);
-                    }
-
-                    --tryCount;
-                }
+              betterZeroProcess = vsProcess;
             }
+          }
+        }
+      }
 
-            // As long as we 'possibly attached' and we're not in design mode then consider us fully attached
-            // CurrentProcess appears to always be null on the Debugger, even after Attach...
-            var attached = possiblyAttached && dte.Debugger.CurrentMode != dbgDebugMode.dbgDesignMode && dte.Debugger.DebuggedProcesses.Count > 0;
+      var attachingZeroProcess = bestZeroProcess;
+      if (attachingZeroProcess == null)
+        attachingZeroProcess = betterZeroProcess;
+      if (attachingZeroProcess == null)
+        attachingZeroProcess = possibleZeroProcess;
+      return attachingZeroProcess;
+    }
 
-            if (!attached)
-            {
-                this.MessageBox("Unable to attach to Zero. Make sure the ZeroEdtior.exe process is running.", OLEMSGICON.OLEMSGICON_WARNING);
-            }
+    private void AttemptAttach()
+    {
+      var dte = this.GetDTE();
+
+      var attachingZeroProcess = FindProcess();
+
+      if (attachingZeroProcess == null)
+      {
+        string projectPath = TryFindProjectPath();
+        System.Diagnostics.ProcessStartInfo startInfo = new System.Diagnostics.ProcessStartInfo();
+        startInfo.FileName = projectPath;
+        startInfo.Arguments = "-Run";
+        System.Diagnostics.Process.Start(startInfo);
+
+        var tryCount = 15;
+        while (tryCount > 0 && attachingZeroProcess == null)
+        {
+          System.Threading.Thread.Sleep(1000);
+          --tryCount;
+          attachingZeroProcess = FindProcess();
         }
 
-        public void MessageBox(String text, OLEMSGICON icon = OLEMSGICON.OLEMSGICON_INFO)
+      }
+
+      var possiblyAttached = false;
+      if (attachingZeroProcess != null)
+      {
+        // Visual Studio may not attach on the first try, so spend up to 5 seconds attempting to connect
+        var tryCount = 5;
+        while (tryCount > 0)
+        {
+          try
+          {
+            attachingZeroProcess.Attach();
+
+            // For some reason, just because we got here does not mean that we actually attached
+            possiblyAttached = true;
+            break;
+          }
+          catch
+          {
+            System.Threading.Thread.Sleep(1000);
+          }
+
+          --tryCount;
+        }
+      }
+
+      // As long as we 'possibly attached' and we're not in design mode then consider us fully attached
+      // CurrentProcess appears to always be null on the Debugger, even after Attach...
+      var attached = possiblyAttached && dte.Debugger.CurrentMode != dbgDebugMode.dbgDesignMode && dte.Debugger.DebuggedProcesses.Count > 0;
+
+      if (!attached)
+      {
+        this.MessageBox("Unable to attach to Zero. Make sure the ZeroEditor.exe process is running.", OLEMSGICON.OLEMSGICON_WARNING);
+      }
+    }
+
+    public void MessageBox(String text, OLEMSGICON icon = OLEMSGICON.OLEMSGICON_INFO)
         {
             IVsUIShell uiShell = (IVsUIShell)this.ServiceProvider.GetService(typeof(SVsUIShell));
             Guid clsid = Guid.Empty;

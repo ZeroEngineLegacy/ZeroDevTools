@@ -44,3 +44,5 @@ ZeroDoc/TinyXml/Debug/*
 ZeroDoc/Source/Debug/*
 Debug_why/TinyXml.lib
 *.opendb
+
+subinclude:ZilchShaderGeneration/.hgignore

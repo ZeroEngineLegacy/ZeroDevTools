@@ -2,8 +2,10 @@
 ///
 ///\file InterDocumentation.hpp
 /// contains classes for unpacking data from doxygen's xml output into a nicer format
-///
-/// Authors: Joshua Shlemmer
+///
+
+/// Authors: Joshua Shlemmer
+
 /// Copyright 2015-2016, DigiPen Institute of Technology
 ///
 //////////////////////////////////////////////////////////////////////////////

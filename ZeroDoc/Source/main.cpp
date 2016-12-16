@@ -291,7 +291,7 @@ int main(int argc, char* argv[])
 
   if (!config.mMarkupDirectory.Empty())
   {
-    Zero::WriteOutAllMarkdownFiles(config);
+    Zero::WriteOutAllReMarkupFiles(config);
   }
 
 

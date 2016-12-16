@@ -218,26 +218,10 @@ namespace Zero
     }
   }
 
-  // gets Text from a Text type node or a ref to a Text type node
-  //const char* GetTextFromNode(TiXmlNode* node)
-  //{
-  //  if (!node)
-  //    return nullptr;
-  //
-  //  if (node->Type() == TiXmlNode::TEXT)
-  //    return node->ToText()->Value();
-  //  else //Check if it has a child, if it does assume ref
-  //  {
-  //    TiXmlNode* child = node->FirstChild();
-  //
-  //    return child ? node->FirstChild()->ToText()->Value() : nullptr;
-  //  }
-  //}
-
+  // just keep trodding our way down the node structure until we get every single text node
+  // (I am tired of edge cases making us miss text so this is the brute force hammer)
   void GetTextFromAllChildrenNodesRecursively(TiXmlNode* node, StringBuilder* output)
   {
-    // just keep trodding our way down the node structure until we get every single text node
-    // (I am tired of edge cases making us miss text so this is the brute force hammer)
     for (TiXmlNode *child = node->FirstChild(); child != nullptr; child = child->NextSibling())
     {
       if (child->Type() != TiXmlNode::TEXT)
@@ -251,6 +235,7 @@ namespace Zero
     }
   }
 
+  // call other overload but return string instead of getting passed a string builder
   String GetTextFromAllChildrenNodesRecursively(TiXmlNode* node)
   {
     StringBuilder output;
@@ -955,6 +940,8 @@ namespace Zero
       classDoc->Build();
       mClassMap.Insert(classDoc->GenerateMapKey(), classDoc);
     }
+    Zero::Sort(mClasses.All(), DocComparePtrFn<RawClassDoc* >);
+
   }
 
   void RawDocumentationLibrary::Serialize(Serializer& stream)

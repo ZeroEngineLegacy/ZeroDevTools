@@ -3,7 +3,7 @@
 class $safeitemrootname$
 {
 public:
-  ZilchDeclareBaseType($safeitemrootname$);
+  ZilchDeclareType(Zilch::TypeCopyMode::ReferenceType);
   
   $safeitemrootname$();
   ~$safeitemrootname$();

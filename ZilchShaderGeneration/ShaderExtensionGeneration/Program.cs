@@ -222,7 +222,7 @@ namespace ShaderExtensionGeneration
       results.AppendLine("}");
     }
 
-    static void GenerateMultiplyUpConversion(ExtendedStringBuilder results, String fnName, String matrixType, String scalarType, int sizeX, int sizeY, String promotionValue)
+    static void GenerateMultiplyUpNoDivide(ExtendedStringBuilder results, String fnName, String matrixType, String scalarType, int sizeX, int sizeY, String promotionValue)
     {
       String inputVectorType = String.Format("{0}{1}", scalarType, sizeY - 1);
       if (sizeY - 1 == 1)
@@ -240,19 +240,48 @@ namespace ShaderExtensionGeneration
       results.AppendLine("[Static][Extension(typeid(Math))][Implements]");
       results.AppendLine(String.Format("function {0}(by : {1}, the : {2}) : {2}", fnName, matrixType, inputVectorType));
       results.AppendLine("{");
-      results.AppendLine(String.Format("  var promotedVector = {0}(the, {1});", multiplyVectorType, promotionValue)); ;
+      results.AppendLine(String.Format("  var promotedVector = {0}(the, {1});", multiplyVectorType, promotionValue));
       results.AppendLine(String.Format("  return Math.Multiply(by, promotedVector).{0};", memberAccessStr));
       results.AppendLine("}");
     }
 
     static void GenerateMultiplyNormal(ExtendedStringBuilder results, String matrixType, String scalarType, int sizeX, int sizeY)
     {
-      GenerateMultiplyUpConversion(results, "MultiplyNormal", matrixType, scalarType, sizeX, sizeY, "0");
+      GenerateMultiplyUpNoDivide(results, "MultiplyNormal", matrixType, scalarType, sizeX, sizeY, "0");
+    }
+
+    static void GenerateMultiplyPointNoDivision(ExtendedStringBuilder results, String matrixType, String scalarType, int sizeX, int sizeY)
+    {
+      results.AppendLine("// Multiplies the given vector as a point without performing the homogeneous division");
+      GenerateMultiplyUpNoDivide(results, "MultiplyPointNoDivide", matrixType, scalarType, sizeX, sizeY, "1");
+    }
+
+    static void GenerateMultiplyUpWithDivision(ExtendedStringBuilder results, String fnName, String matrixType, String scalarType, int sizeX, int sizeY, String promotionValue)
+    {
+      String inputVectorType = String.Format("{0}{1}", scalarType, sizeY - 1);
+      if (sizeY - 1 == 1)
+        inputVectorType = scalarType;
+
+      String multiplyVectorType = String.Format("{0}{1}", scalarType, sizeY);
+      var memberAccessStrings = new List<string>() { "X", "Y", "Z", "W" };
+      String memberAccessStr = "";
+      for (var i = 0; i < sizeY - 1; ++i)
+        memberAccessStr += memberAccessStrings[i];
+
+      results.AppendLine("[Static][Extension(typeid(Math))][Implements]");
+      results.AppendLine(String.Format("function {0}(by : {1}, the : {2}) : {2}", fnName, matrixType, inputVectorType));
+      results.AppendLine("{");
+      results.AppendLine(String.Format("  var promotedVector = {0}(the, {1});", multiplyVectorType, promotionValue));
+      results.AppendLine(String.Format("  var transformedVector = Math.Multiply(by, promotedVector);"));
+      results.AppendLine(String.Format("  var result = transformedVector.{0} / transformedVector.{1};", memberAccessStr, memberAccessStrings[sizeY - 1]));
+      results.AppendLine("  return result;");
+      results.AppendLine("}");
     }
 
     static void GenerateMultiplyPoint(ExtendedStringBuilder results, String matrixType, String scalarType, int sizeX, int sizeY)
     {
-      GenerateMultiplyUpConversion(results, "MultiplyPoint", matrixType, scalarType, sizeX, sizeY, "1");
+      results.AppendLine("// Multiplies the given vector as a point while performing the homogeneous division");
+      GenerateMultiplyUpWithDivision(results, "MultiplyPoint", matrixType, scalarType, sizeX, sizeY, "1");
     }
 
     delegate void FnCall(ExtendedStringBuilder results, String type);
@@ -369,9 +398,11 @@ namespace ShaderExtensionGeneration
       builder.AppendLine();
       GenerateClass(builder, "MathMatrixSetByIndex", realMatrixTypes, GenerateSetByIndex);
       builder.AppendLine();
-      GenerateSquareMatrixClass(builder, "MathMultiplyPoint", GenerateMultiplyPoint);
+      GenerateSquareMatrixClass(builder, "MathMultiplyPointNoDivide", GenerateMultiplyPointNoDivision);
       builder.AppendLine();
       GenerateSquareMatrixClass(builder, "MathMultiplyNormal", GenerateMultiplyNormal);
+      builder.AppendLine();
+      GenerateSquareMatrixClass(builder, "MathMultiplyPoint", GenerateMultiplyPoint);
 
       AddCodeFromFile(builder, "ExtraCode.zilchFrag");
 

@@ -59,6 +59,8 @@ struct DocGeneratorConfig
   bool mVerbose;
   /// if true, we tag everything we load as unbound types
   bool mTagAllAsUnbound;
+  /// if true, warn for every undocumented type and function that is bound
+  bool mWarnOnUndocumentedBoundData;
   /// if true, we will print the help text then exit
   bool mHelp;
 
@@ -81,6 +83,7 @@ inline DocGeneratorConfig LoadConfigurations(StringMap& params)
   config.mLoadTypedefsFromDoxygen = GetStringValue<bool>(params, "loadTypedefsFromDoxygen", false);
   config.mVerbose = GetStringValue<bool>(params, "verbose", false);
   config.mHelp = GetStringValue<bool>(params, "help", false);
+  config.mWarnOnUndocumentedBoundData = GetStringValue<bool>(params, "warnOnUndocumentedBoundData", false);
   config.mTagAllAsUnbound = GetStringValue<bool>(params, "tagAllAsUnbound", false);
 
   //get the path to the doxygen file

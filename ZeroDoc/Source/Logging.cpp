@@ -58,14 +58,15 @@ void WarnAndLogUndocumented(Array<ClassDoc *>& classes, StringParam doxyPath,
 
 void LoadSet(StringParam fileName, HashSet<String>& data)
 {
-  TextLoader stream;
-  if(FileExists(fileName))
-  {
-    Status status;
-    stream.Open(status, fileName.c_str());
-    SerializeName(data);
-    stream.Close();
-  }
+  //TODO 
+  //TextLoader stream;
+  //if(FileExists(fileName))
+  //{
+  //  Status status;
+  //  stream.Open(status, fileName.c_str());
+  //  SerializeName(data);
+  //  stream.Close();
+  //}
 }
 
 void FilterIgnoredClasses(Array<ClassDoc *>& classes, HashSet<String>& classesToDocument, Array<String>& undocumentedClasses,

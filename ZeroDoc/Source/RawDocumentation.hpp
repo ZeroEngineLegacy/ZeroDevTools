@@ -137,7 +137,9 @@ namespace Zero
   String CleanRedundantSpacesInDesc(StringParam description);
 
   /// takes in a trim doc and outputs anything missing description
-  void OutputListOfObjectsWithoutDesc(const DocumentationLibrary &trimDoc);
+  void OutputListOfObjectsWithoutDesc(const DocumentationLibrary &trimDoc,
+    IgnoreList *ignoreList = nullptr, 
+    DocumentationLibrary *ignoreSkeleton = nullptr);
 
   bool ContainsFirstTypeInSecondType(TypeTokens &firstType, TypeTokens &secondType);
 
@@ -156,22 +158,20 @@ namespace Zero
   public:
     ZeroDeclareType(IgnoreList);
     /// returns true if directory/file passed in is on the ignore list
-    bool DirectoryIsOnIgnoreList(StringParam dir);
+    bool DirectoryIsOnIgnoreList(StringParam dir) const;
 
-    bool NameIsOnIgnoreList(StringParam name);
+    bool NameIsOnIgnoreList(StringParam name) const;
 
     bool empty(void);
-
-    void SortList(void);
 
     void CreateIgnoreListFromDocLib(StringParam doxyPath, DocumentationLibrary &doc);
 
     void Serialize(Serializer& stream);
 
     /// list of ignored directories relative to documentation location (can be single files too)
-    Array<String> mDirectories;
+    HashSet<String> mDirectories;
 
-    Array<String> mIgnoredNames;
+    HashSet<String> mIgnoredNames;
 
     String mDoxyPath;
   };

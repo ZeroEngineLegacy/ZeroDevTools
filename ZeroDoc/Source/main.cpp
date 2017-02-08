@@ -118,7 +118,7 @@ void RunDocumentationGenerator(DocGeneratorConfig &config)
       library->mIgnoreList.CreateIgnoreListFromDocLib(config.mDoxygenPath ,ignoreSkele);
     }
 
-    library->mIgnoreList.SortList();
+    //library->mIgnoreList.SortList();
 
     if (config.mZeroEventsFile.SizeInBytes())
     {
@@ -174,7 +174,7 @@ void RunDocumentationGenerator(DocGeneratorConfig &config)
       {
         Error("Unable to load doc file at: %s", config.mIgnoreFile.c_str());
       }
-      tdLibrary.mIgnoreList.SortList();
+      //tdLibrary.mIgnoreList.SortList();
     }
 
     tdLibrary.LoadTypedefsFromNamespaceDocumentation(config.mDoxygenPath);
@@ -247,7 +247,7 @@ void RunDocumentationGenerator(DocGeneratorConfig &config)
 
   SaveToDataFile(trimLib, config.mTrimmedOutput);
 
-  if (config.mVerbose)
+  if (config.mVerbose || config.mWarnOnUndocumentedBoundData)
     OutputListOfObjectsWithoutDesc(trimLib);
 }
 

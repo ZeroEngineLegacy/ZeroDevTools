@@ -532,7 +532,8 @@ namespace Zero
     return builder.ToString();
   }
 
-  void OutputListOfObjectsWithoutDesc(const DocumentationLibrary &trimDoc)
+  void OutputListOfObjectsWithoutDesc(const DocumentationLibrary &trimDoc,
+    IgnoreList *ignoreList, DocumentationLibrary *ignoreSkeleton)
   {
     DocLogger *log = DocLogger::Get();
 
@@ -541,6 +542,17 @@ namespace Zero
     for (uint i = 0; i < trimDoc.mClasses.Size(); ++i)
     {
       ClassDoc *currClass = trimDoc.mClasses[i];
+
+      String &className = currClass->mName;
+
+      // if we are already supposed to ignore this, we don't care it is undocumented
+      if ((ignoreList && ignoreList->NameIsOnIgnoreList(className)
+         || (ignoreSkeleton && ignoreSkeleton->mClassMap.ContainsKey(className))))
+      {
+        continue;
+      }
+
+
       if (currClass->mDescription == "")
         WriteLog("Class '%s' missing description\n", currClass->mName.c_str());
 
@@ -549,6 +561,14 @@ namespace Zero
         MethodDoc *currMethod = currClass->mMethods[j];
         if (currMethod->mDescription == "")
         {
+          String& methodName = currMethod->mName;
+
+          // if on the ignore list
+          if (ignoreList && ignoreList->NameIsOnIgnoreList(methodName))
+          {
+            continue;
+          }
+
           WriteLog("Method '%s.%s' missing description\n"
             , currClass->mName.c_str(), currMethod->mName.c_str());
         }
@@ -559,6 +579,14 @@ namespace Zero
         PropertyDoc *currProp = currClass->mProperties[j];
         if (currProp->mDescription == "")
         {
+          String& propName = currProp->mName;
+
+          // if on the ignore list
+          if (ignoreList && ignoreList->NameIsOnIgnoreList(propName))
+          {
+            continue;
+          }
+
           WriteLog("Property '%s.%s' missing description\n"
             , currClass->mName.c_str(), currProp->mName.c_str());
         }
@@ -624,7 +652,7 @@ namespace Zero
   ////////////////////////////////////////////////////////////////////////
   ZeroDefineType(IgnoreList);
 
-  bool IgnoreList::DirectoryIsOnIgnoreList(StringParam dir)
+  bool IgnoreList::DirectoryIsOnIgnoreList(StringParam dir) const
   {
     StringRange locationRange = dir.FindFirstOf(mDoxyPath);
 
@@ -636,9 +664,7 @@ namespace Zero
     else
       relativeDir = dir;
 
-    String match;
-    match = BinarySearch(mDirectories, relativeDir, match);
-    if (!match.Empty())
+    if (mDirectories.Contains(relativeDir))
       return true;
 
     // now recursivly check to see if we are in a directory that was ignored
@@ -646,7 +672,7 @@ namespace Zero
 
     while (subPath.SizeInBytes() > 2)
     {
-      if (!BinarySearch(mDirectories, relativeDir, match).Empty())
+      if (mDirectories.Contains(relativeDir))
         return true;
 
       subPath.PopBack();
@@ -656,7 +682,7 @@ namespace Zero
     return false;
   }
 
-  bool IgnoreList::NameIsOnIgnoreList(StringParam name)
+  bool IgnoreList::NameIsOnIgnoreList(StringParam name) const
   {
     // strip all namespaces off of the name
     String strippedName;
@@ -667,21 +693,12 @@ namespace Zero
       strippedName = name.SubString(subStringStart.Begin(), name.End());
     }
 
-    String match;
-    match = BinarySearch(mIgnoredNames, strippedName, match);
-
-    return !match.Empty();
+    return mIgnoredNames.Contains(strippedName);
   }
 
   bool IgnoreList::empty(void)
   {
     return mDirectories.Empty() || mIgnoredNames.Empty();
-  }
-
-  void IgnoreList::SortList(void)
-  {
-    Sort(mDirectories.All());
-    Sort(mIgnoredNames.All());
   }
 
   void IgnoreList::CreateIgnoreListFromDocLib(StringParam doxyPath, DocumentationLibrary &doc)
@@ -696,7 +713,7 @@ namespace Zero
       //GetFilesWithPartialName(doxyPath, doxName, &mDirectories);
 
       // add the name to the ignored names list
-      mIgnoredNames.PushBack(name);
+      mIgnoredNames.Insert(name);
     }
   }
 

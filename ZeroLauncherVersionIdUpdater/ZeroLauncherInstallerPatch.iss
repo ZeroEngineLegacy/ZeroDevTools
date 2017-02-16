@@ -1,8 +1,8 @@
 #define MyAppName "ZeroLauncherPatch"
 #define MyAppNameVisual "Zero Launcher Patch"
-#define MyAppPublisher "DigiPen Institute of Technology"
-#define MyAppURL "http://zero.digipen.edu/"
-#define MyAppVersion "0.0.1.0"                                         
+#define MyAppPublisher "DigiPen USA Corporation"
+#define MyAppURL "http://zeroengine.io"
+#define MyAppVersion "1.0.0.0"                                         
 
 #define IconPath "{app}\"
 

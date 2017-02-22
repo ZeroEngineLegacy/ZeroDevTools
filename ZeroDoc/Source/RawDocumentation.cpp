@@ -533,7 +533,7 @@ namespace Zero
   }
 
   void OutputListOfObjectsWithoutDesc(const DocumentationLibrary &trimDoc,
-    IgnoreList *ignoreList, DocumentationLibrary *ignoreSkeleton)
+    IgnoreList *ignoreList)
   {
     DocLogger *log = DocLogger::Get();
 
@@ -546,8 +546,7 @@ namespace Zero
       String &className = currClass->mName;
 
       // if we are already supposed to ignore this, we don't care it is undocumented
-      if ((ignoreList && ignoreList->NameIsOnIgnoreList(className)
-         || (ignoreSkeleton && ignoreSkeleton->mClassMap.ContainsKey(className))))
+      if (ignoreList && ignoreList->NameIsOnIgnoreList(className))
       {
         continue;
       }
@@ -691,9 +690,11 @@ namespace Zero
       StringRange subStringStart = name.FindLastOf(':');
       subStringStart.IncrementByRune();
       strippedName = name.SubString(subStringStart.Begin(), name.End());
+
+      return mIgnoredNames.Contains(strippedName);
     }
 
-    return mIgnoredNames.Contains(strippedName);
+    return mIgnoredNames.Contains(name);
   }
 
   bool IgnoreList::empty(void)
@@ -731,10 +732,13 @@ namespace Zero
     if (mStarted)
       mLog.Close();
   }
-  void DocLogger::StartLogger(StringParam path)
+  void DocLogger::StartLogger(StringParam path, bool verbose)
   {
     this->mPath = path;
+
     mStarted = true;
+
+    mVerbose = verbose;
 
     StringRange folderPath = mPath.SubStringFromByteIndices(0, mPath.FindLastOf('\\').SizeInBytes());
 
@@ -767,15 +771,19 @@ namespace Zero
         ErrorIf(!mLog.Open(mPath, FileMode::Append, FileAccessPattern::Sequential),
           "failed to open log at: %s\n", mPath);
       }
-      // we timestamp logs
-      CalendarDateTime time = Time::GetLocalTime(Time::GetTime());
 
       StringBuilder builder;
 
-      // month first since we are heathens
-      builder << '[' << time.Hour << ':' << time.Minutes
-        << " (" << time.Month << '/' << time.Day 
-        << '/' << time.Year << ")] - ";
+      if (mVerbose)
+      {
+        // we timestamp logs if verbose
+        CalendarDateTime time = Time::GetLocalTime(Time::GetTime());
+
+        // month first since we are heathens
+        builder << '[' << time.Hour << ':' << time.Minutes
+          << " (" << time.Month << '/' << time.Day
+          << '/' << time.Year << ")] - ";
+      }
 
       builder << (const char *)msgBuffer;
 

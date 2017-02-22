@@ -138,8 +138,7 @@ namespace Zero
 
   /// takes in a trim doc and outputs anything missing description
   void OutputListOfObjectsWithoutDesc(const DocumentationLibrary &trimDoc,
-    IgnoreList *ignoreList = nullptr, 
-    DocumentationLibrary *ignoreSkeleton = nullptr);
+    IgnoreList *ignoreList = nullptr);
 
   bool ContainsFirstTypeInSecondType(TypeTokens &firstType, TypeTokens &secondType);
 
@@ -190,7 +189,7 @@ namespace Zero
     ~DocLogger();
 
     /// opens up the log file in write mode at path
-    void StartLogger(StringParam path);
+    void StartLogger(StringParam path, bool verbose);
 
     /// writes message to stdout as well as the log file
     void Write(const char*fmt...);
@@ -204,6 +203,8 @@ namespace Zero
     String mPath;
 
     bool mStarted;
+
+    bool mVerbose;
   };
 
   class RawNamespaceDoc

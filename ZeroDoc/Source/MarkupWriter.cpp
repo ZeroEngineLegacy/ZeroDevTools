@@ -876,7 +876,8 @@ void ReMarkupCommandRefWriter::WriteCommandEntry(const CommandDoc &cmdDoc)
   }
   else
   {
-    mOutput << cmdDoc.mShortcut << mEndLine;
+    String shortcut = cmdDoc.mShortcut.Replace("+", " ");
+    mOutput << "{key " << shortcut << "}" << mEndLine;
   }
 
   //mOutput << ".. include:: CommandPageExtensions/" << cmdDoc.mName << ".rst\n\n";

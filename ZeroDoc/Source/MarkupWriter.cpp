@@ -16,7 +16,7 @@
 namespace Zero
 {
 UnsortedMap<String, String> gClassLinkMap;
-String gBaseLink = "Code_Reference/";
+String gBaseLink = "zero_engine_documentation/zero_editor_documentation/code_reference/";
 
 void WriteTagIndices(String outputDir, DocToTags& tagged, DocumentationLibrary &docLib)
 {

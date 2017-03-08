@@ -37,6 +37,10 @@ namespace ZeroLauncherVersionIdUpdater
     public bool GenerateInstallerProperty { get { return GenerateInstaller; } set { GenerateInstaller = value; } }
     public bool GenerateInstaller = false;
 
+    [Option("MajorId", Required = false, HelpText = "The major id to generate for the launcher")]
+    public int MajorIdProperty { get { return MajorId; } set { MajorId = value; } }
+    public int MajorId = -1;
+
     [HelpOption(HelpText = "Display this help screen.")]
     public string GetUsage()
     {

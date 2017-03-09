@@ -49,7 +49,7 @@ namespace ZeroCrashHandler
 		const bool SSL = true;
 
 		// Php settings data
-		const String PhpRedirectUrl = "http://zerocrash.digipen.edu/crash.php";
+		const String PhpRedirectUrl = "https://crashapi.zeroengine.io/ZeroCrashReport.php";
 		const String PhpFileId = "userfile";
 		const String PhpEmailId = "email";
 		const String PhpBodyId = "body";

@@ -22,8 +22,6 @@ struct DocGeneratorConfig
   String mRawDocDirectory;
   /// file containing list of files/directores to ignore
   String mIgnoreFile;
-  /// a skeleton doc file that we ignore anything it has documented
-  String mIgnoreSkeletonDocFile;
   /// where to output our log of warnings/errors
   String mLogFile;
   /// this is the events file zero outputs
@@ -59,6 +57,8 @@ struct DocGeneratorConfig
   bool mVerbose;
   /// if true, we tag everything we load as unbound types
   bool mTagAllAsUnbound;
+  /// if true, warn for every undocumented type and function that is bound
+  bool mWarnOnUndocumentedBoundData;
   /// if true, we will print the help text then exit
   bool mHelp;
 
@@ -81,6 +81,7 @@ inline DocGeneratorConfig LoadConfigurations(StringMap& params)
   config.mLoadTypedefsFromDoxygen = GetStringValue<bool>(params, "loadTypedefsFromDoxygen", false);
   config.mVerbose = GetStringValue<bool>(params, "verbose", false);
   config.mHelp = GetStringValue<bool>(params, "help", false);
+  config.mWarnOnUndocumentedBoundData = GetStringValue<bool>(params, "warnOnUndocumentedBoundData", false);
   config.mTagAllAsUnbound = GetStringValue<bool>(params, "tagAllAsUnbound", false);
 
   //get the path to the doxygen file
@@ -107,10 +108,6 @@ inline DocGeneratorConfig LoadConfigurations(StringMap& params)
   // data file for the list of directories and files to ignore
   config.mIgnoreFile = GetStringValue<String>(params, "ignoreFile", "");
   config.mIgnoreFile = FilePath::Normalize(config.mIgnoreFile);
-
-  // will contain a list of names that we wish to ignore
-  config.mIgnoreSkeletonDocFile = GetStringValue<String>(params, "ignoreSkeletonFile", "");
-  config.mIgnoreSkeletonDocFile = FilePath::Normalize(config.mIgnoreSkeletonDocFile);
 
   config.mLogFile = GetStringValue<String>(params, "logFile", "");
   config.mLogFile = FilePath::Normalize(config.mLogFile);

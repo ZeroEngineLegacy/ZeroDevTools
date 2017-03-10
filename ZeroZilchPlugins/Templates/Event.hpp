@@ -3,7 +3,7 @@
 class $safeitemrootname$ : public ZeroEngine::ZilchEvent
 {
 public:
-  ZilchDeclareDerivedType($safeitemrootname$, ZeroEngine::ZilchEvent);
+  ZilchDeclareType(Zilch::TypeCopyMode::ReferenceType);
   
   $safeitemrootname$();
   ~$safeitemrootname$();

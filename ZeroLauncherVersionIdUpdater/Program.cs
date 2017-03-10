@@ -16,12 +16,18 @@ namespace ZeroLauncherVersionIdUpdater
 {
     class Program
   {
-    static String BaseUrl = "http://zero.digipen.edu/Builds/StandAlones/";
+    static String BaseUrl = "https://builds.zeroengine.io/ZeroLauncher.php";
 
-    static void CreateVersionIdFile(String outDir)
+    static String QueryMajorId()
     {
-      String url = BaseUrl + "ZeroLauncherVersionId.txt";
-      String versionId = HttpDownloadHelpers.GetStringData(url);
+      String majorIdQuery = BaseUrl + "?Commands=RequestMajorVersionId";
+      return HttpDownloadHelpers.GetStringData(majorIdQuery);
+    }
+
+    static void CreateVersionIdFile(String outDir, int majorId)
+    {
+      String minorIdQuery = BaseUrl + "?Commands=CheckPatchId&MajorId=" + majorId;
+      String versionId = HttpDownloadHelpers.GetStringData(minorIdQuery);
 
       int id = int.Parse(versionId);
       ++id;
@@ -90,19 +96,21 @@ namespace ZeroLauncherVersionIdUpdater
       CopyDirectory(Path.Combine(sourceDir, "Resources", "ZeroLauncherResources"), Path.Combine(packageOutDir, "Resources", "ZeroLauncherResources"));
       CopyDirectory(Path.Combine(sourceDir, "Resources", "Loading"), Path.Combine(packageOutDir, "Resources", "Loading"));
       CopyDirectory(Path.Combine(sourceDir, "Resources", "Core"), Path.Combine(packageOutDir, "Resources", "Core"));
+      CopyDirectory(Path.Combine(sourceDir, "Resources", "FragmentCore"), Path.Combine(packageOutDir, "Resources", "FragmentCore"));
       File.Copy(Path.Combine(sourceDir, "Data", "ZeroLauncherEula.txt"), Path.Combine(packageOutDir, "ZeroLauncherEula.txt"));
 
       // Copy the default templates we install with over too
       CopyDirectory(Path.Combine(sourceDir, "Projects", "LauncherTemplates"), Path.Combine(packageOutDir, "Templates"));
     }
 
-    static void GenerateInstaller(String sourceDir, String zeroOutDir)
+    static void GenerateInstaller(String sourceDir, String zeroOutDir, int majorId)
     {
       //Generate the Zero Engine installer using Inno Setup.
       ProcessStartInfo innoSetupInfo = new ProcessStartInfo();
       innoSetupInfo.Arguments = Path.Combine(sourceDir, "Build", "ZeroLauncherInstaller.iss ") +
                                   String.Format("/DZeroSource=\"{0}\"" , sourceDir) +
-                                  String.Format(" /DZeroLauncherOutputPath=\"{0}\"", zeroOutDir);// +
+                                  String.Format(" /DZeroLauncherOutputPath=\"{0}\"", zeroOutDir) +
+                                  String.Format(" /DMajorId=\"{0}\"", majorId);// +
       innoSetupInfo.FileName = @"C:\Program Files (x86)\Inno Setup 5\iscc.exe";
       innoSetupInfo.RedirectStandardOutput = true;
       innoSetupInfo.RedirectStandardError = true;
@@ -129,13 +137,14 @@ namespace ZeroLauncherVersionIdUpdater
       innoSetup.WaitForExit();
     }
 
-    static void GeneratePatch(String sourceDir, String outputPackagePath, String resultPatchPath)
+    static void GeneratePatch(String sourceDir, String outputPackagePath, int majorId, String resultPatchPath)
     {
       //Generate the Zero Engine installer using Inno Setup.
       ProcessStartInfo innoSetupInfo = new ProcessStartInfo();
       innoSetupInfo.Arguments = "ZeroLauncherInstallerPatch.iss " +
                                   String.Format("/DZeroSource=\"{0}\"", sourceDir) +
-                                  String.Format(" /DOutputFiles=\"{0}\"", outputPackagePath);// +
+                                  String.Format(" /DOutputFiles=\"{0}\"", outputPackagePath) +
+                                  String.Format(" /DMajorId=\"{0}\"", majorId);// +
       innoSetupInfo.FileName = @"C:\Program Files (x86)\Inno Setup 5\iscc.exe";
       innoSetupInfo.RedirectStandardOutput = true;
       innoSetupInfo.RedirectStandardError = true;
@@ -197,8 +206,11 @@ namespace ZeroLauncherVersionIdUpdater
       if (createPackage)
         Directory.CreateDirectory(packageOutDir);
 
+      if (commandArgs.MajorId == -1)
+        commandArgs.MajorId = int.Parse(QueryMajorId());
+
       //always create the id file
-      CreateVersionIdFile(commandArgs.OutDir);
+      CreateVersionIdFile(commandArgs.OutDir, commandArgs.MajorId);
 
       if (createPackage)
       {
@@ -215,7 +227,7 @@ namespace ZeroLauncherVersionIdUpdater
         }
 
         CopyDirectory(packageOutDir, commandArgs.ZeroOutDir);
-        GenerateInstaller(commandArgs.SourceDir, commandArgs.ZeroOutDir);
+        GenerateInstaller(commandArgs.SourceDir, commandArgs.ZeroOutDir, commandArgs.MajorId);
       }
 
       if (commandArgs.CreatePatch)
@@ -226,7 +238,7 @@ namespace ZeroLauncherVersionIdUpdater
           return;
         }
 
-        GeneratePatch(commandArgs.SourceDir, packageOutDir, commandArgs.OutDir);
+        GeneratePatch(commandArgs.SourceDir, packageOutDir, commandArgs.MajorId, commandArgs.OutDir);
       }
 
       //open the package folder

@@ -145,6 +145,10 @@ namespace BuildMaker
       
       startInfo.Arguments = String.Format("-WriteBuildInfo {0} -newProject", tempFile);
       startInfo.FileName = Path.Combine(outputPath, zeroEditorOutputSuffix, "ZeroEditor.exe");
+
+      Console.WriteLine("Invoking Zero Editor at: " + startInfo.FileName);
+      Console.WriteLine("With arguments: " + startInfo.Arguments);
+
       var process = Process.Start(startInfo);
 
       // Old versions of the engine won't understand this argument, so wait a
@@ -165,6 +169,8 @@ namespace BuildMaker
         // we can run the same update logic as normal.
         string revisionInfo = InstallBuilder.GetRevisionInfo(sourcePath);
         lines = revisionInfo.Split(new string[] { "\n" }, StringSplitOptions.RemoveEmptyEntries);
+
+        Console.WriteLine("BuildInfo file did not exist. Falling back to build information from mercurial.");
       }
 
       BuildMeta meta = new BuildMeta();
@@ -207,6 +213,9 @@ namespace BuildMaker
       definesBuilder.Append(" /DZeroSource=\"{2}\"");
       definesBuilder.Append(" /DZeroOutput=\"{3}\"");
       String defines = String.Format(definesBuilder.ToString(), buildId, zeroEditorOutputSuffix, sourcePath, outputPath);
+
+      Console.WriteLine(defines);
+
       innoSetupInfo.Arguments = Path.Combine(cBuildOutput, "ZeroEngineInstall.iss") + defines;
       innoSetupInfo.FileName = @"C:\Program Files (x86)\Inno Setup 5\iscc.exe";
       

@@ -1,8 +1,7 @@
 #define MyAppName "ZeroLauncherPatch"
 #define MyAppNameVisual "Zero Launcher Patch"
-#define MyAppPublisher "DigiPen Institute of Technology"
-#define MyAppURL "http://zero.digipen.edu/"
-#define MyAppVersion "0.0.1.0"                                         
+#define MyAppPublisher "DigiPen USA Corporation"
+#define MyAppURL "http://zeroengine.io"                                       
 
 #define IconPath "{app}\"
 
@@ -14,6 +13,14 @@
 #define OutputFiles ZeroSource + "\BuildOutput\Out\Win32\Release\Temp\ZeroLauncherPackage"
 #endif
 
+#ifndef MajorId
+#define MajorId = 1
+#endif
+#ifndef MyAppVersion
+;build the version id up from the major id
+#define MyAppVersion MajorId + ".0.0.0"
+#endif
+
 [Setup]
 AppId={{E947C414-25CB-44AB-98B9-552D6958B943}          
 AppName={#MyAppName}
@@ -22,7 +29,7 @@ AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}
-DefaultDirName={localappdata}\ZeroLauncher_1.0
+DefaultDirName={localappdata}\ZeroLauncher_{#MajorId}.0
 DefaultGroupName={#MyAppName}
 AllowNoIcons=yes
 OutputBaseFilename=ZeroLauncherPatch

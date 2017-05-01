@@ -16,7 +16,7 @@ namespace ZeroLauncherVersionIdUpdater
 {
     class Program
   {
-    static String BaseUrl = "https://builds.zeroengine.io/ZeroLauncher.php";
+    static String BaseUrl = "https://builds.zeroengine.io";
 
     static String QueryMajorId()
     {

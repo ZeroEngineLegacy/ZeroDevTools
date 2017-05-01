@@ -2,8 +2,10 @@
 ///
 ///\file InterDocumentation.hpp
 /// contains classes for unpacking data from doxygen's xml output into a nicer format
-///
-/// Authors: Joshua Shlemmer
+///
+
+/// Authors: Joshua Shlemmer
+
 /// Copyright 2015-2016, DigiPen Institute of Technology
 ///
 //////////////////////////////////////////////////////////////////////////////
@@ -135,7 +137,8 @@ namespace Zero
   String CleanRedundantSpacesInDesc(StringParam description);
 
   /// takes in a trim doc and outputs anything missing description
-  void OutputListOfObjectsWithoutDesc(const DocumentationLibrary &trimDoc);
+  void OutputListOfObjectsWithoutDesc(const DocumentationLibrary &trimDoc,
+    IgnoreList *ignoreList = nullptr);
 
   bool ContainsFirstTypeInSecondType(TypeTokens &firstType, TypeTokens &secondType);
 
@@ -154,22 +157,20 @@ namespace Zero
   public:
     ZeroDeclareType(IgnoreList);
     /// returns true if directory/file passed in is on the ignore list
-    bool DirectoryIsOnIgnoreList(StringParam dir);
+    bool DirectoryIsOnIgnoreList(StringParam dir) const;
 
-    bool NameIsOnIgnoreList(StringParam name);
+    bool NameIsOnIgnoreList(StringParam name) const;
 
     bool empty(void);
-
-    void SortList(void);
 
     void CreateIgnoreListFromDocLib(StringParam doxyPath, DocumentationLibrary &doc);
 
     void Serialize(Serializer& stream);
 
     /// list of ignored directories relative to documentation location (can be single files too)
-    Array<String> mDirectories;
+    HashSet<String> mDirectories;
 
-    Array<String> mIgnoredNames;
+    HashSet<String> mIgnoredNames;
 
     String mDoxyPath;
   };
@@ -188,7 +189,7 @@ namespace Zero
     ~DocLogger();
 
     /// opens up the log file in write mode at path
-    void StartLogger(StringParam path);
+    void StartLogger(StringParam path, bool verbose);
 
     /// writes message to stdout as well as the log file
     void Write(const char*fmt...);
@@ -202,6 +203,8 @@ namespace Zero
     String mPath;
 
     bool mStarted;
+
+    bool mVerbose;
   };
 
   class RawNamespaceDoc

@@ -218,26 +218,10 @@ namespace Zero
     }
   }
 
-  // gets Text from a Text type node or a ref to a Text type node
-  //const char* GetTextFromNode(TiXmlNode* node)
-  //{
-  //  if (!node)
-  //    return nullptr;
-  //
-  //  if (node->Type() == TiXmlNode::TEXT)
-  //    return node->ToText()->Value();
-  //  else //Check if it has a child, if it does assume ref
-  //  {
-  //    TiXmlNode* child = node->FirstChild();
-  //
-  //    return child ? node->FirstChild()->ToText()->Value() : nullptr;
-  //  }
-  //}
-
+  // just keep trodding our way down the node structure until we get every single text node
+  // (I am tired of edge cases making us miss text so this is the brute force hammer)
   void GetTextFromAllChildrenNodesRecursively(TiXmlNode* node, StringBuilder* output)
   {
-    // just keep trodding our way down the node structure until we get every single text node
-    // (I am tired of edge cases making us miss text so this is the brute force hammer)
     for (TiXmlNode *child = node->FirstChild(); child != nullptr; child = child->NextSibling())
     {
       if (child->Type() != TiXmlNode::TEXT)
@@ -251,6 +235,7 @@ namespace Zero
     }
   }
 
+  // call other overload but return string instead of getting passed a string builder
   String GetTextFromAllChildrenNodesRecursively(TiXmlNode* node)
   {
     StringBuilder output;
@@ -547,7 +532,8 @@ namespace Zero
     return builder.ToString();
   }
 
-  void OutputListOfObjectsWithoutDesc(const DocumentationLibrary &trimDoc)
+  void OutputListOfObjectsWithoutDesc(const DocumentationLibrary &trimDoc,
+    IgnoreList *ignoreList)
   {
     DocLogger *log = DocLogger::Get();
 
@@ -556,6 +542,16 @@ namespace Zero
     for (uint i = 0; i < trimDoc.mClasses.Size(); ++i)
     {
       ClassDoc *currClass = trimDoc.mClasses[i];
+
+      String &className = currClass->mName;
+
+      // if we are already supposed to ignore this, we don't care it is undocumented
+      if (ignoreList && ignoreList->NameIsOnIgnoreList(className))
+      {
+        continue;
+      }
+
+
       if (currClass->mDescription == "")
         WriteLog("Class '%s' missing description\n", currClass->mName.c_str());
 
@@ -564,6 +560,14 @@ namespace Zero
         MethodDoc *currMethod = currClass->mMethods[j];
         if (currMethod->mDescription == "")
         {
+          String& methodName = currMethod->mName;
+
+          // if on the ignore list
+          if (ignoreList && ignoreList->NameIsOnIgnoreList(methodName))
+          {
+            continue;
+          }
+
           WriteLog("Method '%s.%s' missing description\n"
             , currClass->mName.c_str(), currMethod->mName.c_str());
         }
@@ -574,6 +578,14 @@ namespace Zero
         PropertyDoc *currProp = currClass->mProperties[j];
         if (currProp->mDescription == "")
         {
+          String& propName = currProp->mName;
+
+          // if on the ignore list
+          if (ignoreList && ignoreList->NameIsOnIgnoreList(propName))
+          {
+            continue;
+          }
+
           WriteLog("Property '%s.%s' missing description\n"
             , currClass->mName.c_str(), currProp->mName.c_str());
         }
@@ -639,7 +651,7 @@ namespace Zero
   ////////////////////////////////////////////////////////////////////////
   ZeroDefineType(IgnoreList);
 
-  bool IgnoreList::DirectoryIsOnIgnoreList(StringParam dir)
+  bool IgnoreList::DirectoryIsOnIgnoreList(StringParam dir) const
   {
     StringRange locationRange = dir.FindFirstOf(mDoxyPath);
 
@@ -651,9 +663,7 @@ namespace Zero
     else
       relativeDir = dir;
 
-    String match;
-    match = BinarySearch(mDirectories, relativeDir, match);
-    if (!match.Empty())
+    if (mDirectories.Contains(relativeDir))
       return true;
 
     // now recursivly check to see if we are in a directory that was ignored
@@ -661,7 +671,7 @@ namespace Zero
 
     while (subPath.SizeInBytes() > 2)
     {
-      if (!BinarySearch(mDirectories, relativeDir, match).Empty())
+      if (mDirectories.Contains(relativeDir))
         return true;
 
       subPath.PopBack();
@@ -671,7 +681,7 @@ namespace Zero
     return false;
   }
 
-  bool IgnoreList::NameIsOnIgnoreList(StringParam name)
+  bool IgnoreList::NameIsOnIgnoreList(StringParam name) const
   {
     // strip all namespaces off of the name
     String strippedName;
@@ -680,23 +690,16 @@ namespace Zero
       StringRange subStringStart = name.FindLastOf(':');
       subStringStart.IncrementByRune();
       strippedName = name.SubString(subStringStart.Begin(), name.End());
+
+      return mIgnoredNames.Contains(strippedName);
     }
 
-    String match;
-    match = BinarySearch(mIgnoredNames, strippedName, match);
-
-    return !match.Empty();
+    return mIgnoredNames.Contains(name);
   }
 
   bool IgnoreList::empty(void)
   {
     return mDirectories.Empty() || mIgnoredNames.Empty();
-  }
-
-  void IgnoreList::SortList(void)
-  {
-    Sort(mDirectories.All());
-    Sort(mIgnoredNames.All());
   }
 
   void IgnoreList::CreateIgnoreListFromDocLib(StringParam doxyPath, DocumentationLibrary &doc)
@@ -711,7 +714,7 @@ namespace Zero
       //GetFilesWithPartialName(doxyPath, doxName, &mDirectories);
 
       // add the name to the ignored names list
-      mIgnoredNames.PushBack(name);
+      mIgnoredNames.Insert(name);
     }
   }
 
@@ -729,10 +732,13 @@ namespace Zero
     if (mStarted)
       mLog.Close();
   }
-  void DocLogger::StartLogger(StringParam path)
+  void DocLogger::StartLogger(StringParam path, bool verbose)
   {
     this->mPath = path;
+
     mStarted = true;
+
+    mVerbose = verbose;
 
     StringRange folderPath = mPath.SubStringFromByteIndices(0, mPath.FindLastOf('\\').SizeInBytes());
 
@@ -765,15 +771,19 @@ namespace Zero
         ErrorIf(!mLog.Open(mPath, FileMode::Append, FileAccessPattern::Sequential),
           "failed to open log at: %s\n", mPath);
       }
-      // we timestamp logs
-      CalendarDateTime time = Time::GetLocalTime(Time::GetTime());
 
       StringBuilder builder;
 
-      // month first since we are heathens
-      builder << '[' << time.Hour << ':' << time.Minutes
-        << " (" << time.Month << '/' << time.Day 
-        << '/' << time.Year << ")] - ";
+      if (mVerbose)
+      {
+        // we timestamp logs if verbose
+        CalendarDateTime time = Time::GetLocalTime(Time::GetTime());
+
+        // month first since we are heathens
+        builder << '[' << time.Hour << ':' << time.Minutes
+          << " (" << time.Month << '/' << time.Day
+          << '/' << time.Year << ")] - ";
+      }
 
       builder << (const char *)msgBuffer;
 
@@ -955,6 +965,8 @@ namespace Zero
       classDoc->Build();
       mClassMap.Insert(classDoc->GenerateMapKey(), classDoc);
     }
+    Zero::Sort(mClasses.All(), DocComparePtrFn<RawClassDoc* >);
+
   }
 
   void RawDocumentationLibrary::Serialize(Serializer& stream)

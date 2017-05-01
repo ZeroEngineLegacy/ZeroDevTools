@@ -4,8 +4,7 @@ namespace Zero
   typedef HashMap<String, Array<ClassDoc*> > DocToTags;
   typedef DocToTags::range DocRange;
 
-  void WriteOutAllMarkdownFiles(Zero::DocGeneratorConfig& config);
-
+  ///// BASE MARKUP ///// 
   class BaseMarkupWriter
   {
   public:
@@ -23,8 +22,6 @@ namespace Zero
 
     void InsertNewSectionHeader(StringRef sectionName);
 
-    void InsertCollapsibleSection(void);
-
     StringBuilder mOutput;
 
     String mName;
@@ -35,7 +32,10 @@ namespace Zero
     uint mCurrentSectionHeaderLevel;
   };
 
-  class ClassMarkupWriter : public BaseMarkupWriter
+  ///// ReStructuredText ///// 
+  void WriteOutAllReStructuredTextFiles(Zero::DocGeneratorConfig& config);
+
+  class RstClassMarkupWriter : public BaseMarkupWriter
   {
   public:
     static void WriteClass(
@@ -44,7 +44,7 @@ namespace Zero
       DocumentationLibrary &lib,
       DocToTags& tagged);
 
-    ClassMarkupWriter(StringParam name, ClassDoc* classDoc);
+    RstClassMarkupWriter(StringParam name, ClassDoc* classDoc);
 
   protected:
     void InsertClassRstHeader(void);
@@ -55,28 +55,97 @@ namespace Zero
 
     void InsertProperty(PropertyDoc &propDoc);
 
+    void InsertCollapsibleSection(void);
+
     Array<String> mBases;
 
     ClassDoc *mClassDoc;
   };
 
-  class EventListWriter : public BaseMarkupWriter
+  class RstEventListWriter : public BaseMarkupWriter
   {
   public:
     static void WriteEventList(StringRef eventListFilepath, StringRef outputPath);
 
-    EventListWriter(StringParam name);
+    RstEventListWriter(StringParam name);
 
     void WriteEventEntry(StringParam eventEntry, StringParam type);
   };
 
-  class CommandRefWriter : public BaseMarkupWriter
+  class RstCommandRefWriter : public BaseMarkupWriter
   {
   public:
     static void WriteCommandRef(StringParam commandListFilepath, StringRef outputPath);
 
-    CommandRefWriter(StringParam name);
+    RstCommandRefWriter(StringParam name);
 
     void WriteCommandEntry(const CommandDoc &cmdDoc);
   };
+
+  ///// ReMarkup(Phabricator) /////
+  void WriteOutAllReMarkupFiles(Zero::DocGeneratorConfig& config);
+
+  class ReMarkupWriter : public BaseMarkupWriter
+  {
+  public:
+    ReMarkupWriter(StringParam name);
+
+  protected:
+    // Markup requires spaces not tabs so need to override
+    void IndentToCurrentLevel(void);
+
+    // just prints the language specifier for a code block
+    void InsertStartOfCodeBlock(StringParam name);
+
+    void InsertDivider();
+
+    void InsertLabel(StringParam label);
+
+    void InsertTypeLink(StringParam className);
+
+    static const String mEndLine;
+
+  };
+
+  class ReMarkupClassMarkupWriter : public ReMarkupWriter
+  {
+  public:
+    static void WriteClass( StringParam outputFile, ClassDoc* classDoc,
+      DocumentationLibrary &lib, DocToTags& tagged);
+
+    ReMarkupClassMarkupWriter(StringParam name, ClassDoc* classDoc);
+
+  protected:
+    void InsertClassHeader(void);
+
+    void InsertMethod(MethodDoc &method);
+
+    void InsertProperty(PropertyDoc &propDoc);
+
+    Array<String> mBases;
+
+    ClassDoc *mClassDoc;
+  };
+
+  class ReMarkupEventListWriter : public ReMarkupWriter
+  {
+  public:
+    static void WriteEventList(StringRef eventListFilepath, StringRef outputPath);
+
+    ReMarkupEventListWriter(StringParam name);
+
+    void WriteEventEntry(StringParam eventEntry, StringParam type);
+  };
+
+  class ReMarkupCommandRefWriter : public ReMarkupWriter
+  {
+  public:
+    static void WriteCommandRef(StringParam commandListFilepath, StringRef outputPath);
+
+    ReMarkupCommandRefWriter(StringParam name);
+
+    void WriteCommandEntry(const CommandDoc &cmdDoc);
+  };
+
+
 }

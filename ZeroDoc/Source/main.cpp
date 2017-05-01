@@ -81,13 +81,14 @@ bool ValidateConfig(DocGeneratorConfig &config)
 // wow lets see if we can somehow come up with a worse name
 void RunDocumentationGenerator(DocGeneratorConfig &config)
 {
-  if (config.mLogFile.SizeInBytes() > 0)
-  {
-    DocLogger::Get()->StartLogger(config.mLogFile);
-  }
-
   if (config.mVerbose)
     SetVerboseFlag();
+
+  if (config.mLogFile.SizeInBytes() > 0)
+  {
+    DocLogger::Get()->StartLogger(config.mLogFile, config.mVerbose);
+  }
+
   
   RawDocumentationLibrary *library = nullptr;
   RawTypedefLibrary tdLibrary;
@@ -107,18 +108,7 @@ void RunDocumentationGenerator(DocGeneratorConfig &config)
       }
     }
 
-    if (!config.mIgnoreSkeletonDocFile.Empty())
-    {
-      DocumentationLibrary ignoreSkele;
-      if (!Zero::LoadFromDataFile(ignoreSkele, config.mIgnoreSkeletonDocFile))
-      {
-        Error("Unable to load doc file at: %s", config.mIgnoreSkeletonDocFile.c_str());
-      }
-
-      library->mIgnoreList.CreateIgnoreListFromDocLib(config.mDoxygenPath ,ignoreSkele);
-    }
-
-    library->mIgnoreList.SortList();
+    //library->mIgnoreList.SortList();
 
     if (config.mZeroEventsFile.SizeInBytes())
     {
@@ -174,7 +164,7 @@ void RunDocumentationGenerator(DocGeneratorConfig &config)
       {
         Error("Unable to load doc file at: %s", config.mIgnoreFile.c_str());
       }
-      tdLibrary.mIgnoreList.SortList();
+      //tdLibrary.mIgnoreList.SortList();
     }
 
     tdLibrary.LoadTypedefsFromNamespaceDocumentation(config.mDoxygenPath);
@@ -247,8 +237,10 @@ void RunDocumentationGenerator(DocGeneratorConfig &config)
 
   SaveToDataFile(trimLib, config.mTrimmedOutput);
 
-  if (config.mVerbose)
-    OutputListOfObjectsWithoutDesc(trimLib);
+  if (config.mVerbose || config.mWarnOnUndocumentedBoundData)
+  {
+    OutputListOfObjectsWithoutDesc(trimLib, &library->mIgnoreList);
+  }
 }
 
 }//namespace Zero
@@ -291,7 +283,7 @@ int main(int argc, char* argv[])
 
   if (!config.mMarkupDirectory.Empty())
   {
-    Zero::WriteOutAllMarkdownFiles(config);
+    Zero::WriteOutAllReMarkupFiles(config);
   }
 
 

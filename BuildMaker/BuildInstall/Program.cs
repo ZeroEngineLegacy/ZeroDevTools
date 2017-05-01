@@ -54,19 +54,25 @@ namespace BuildInstall
     {
       Dictionary<String, List<String>> parsedArgs = ParseCommandLineArgs(args);
 
+      String sourcePath = Environment.ExpandEnvironmentVariables("%ZERO_SOURCE%");
+      String outputPath = Environment.ExpandEnvironmentVariables("%ZERO_OUTPUT%");
       String installerPrefix = "ZeroEngineSetup";
       String zeroEditorOutputSuffix = @"\Out\Win32\Release\ZeroEditor";
-      String branch = "default";
 
+      int zeroEngineTimeoutSeconds = 10;
+      if (parsedArgs.ContainsKey("-SourcePath"))
+        sourcePath = parsedArgs["-SourcePath"][0];
+      if (parsedArgs.ContainsKey("-OutputPath"))
+        outputPath = parsedArgs["-OutputPath"][0];
       if (parsedArgs.ContainsKey("-prefix"))
         installerPrefix = parsedArgs["-prefix"][0];
       if (parsedArgs.ContainsKey("-outputSuffix"))
         zeroEditorOutputSuffix = parsedArgs["-outputSuffix"][0];
-      if (parsedArgs.ContainsKey("-branch"))
-        branch = parsedArgs["-branch"][0];
+      if (parsedArgs.ContainsKey("-MaxTimeout"))
+        int.TryParse(parsedArgs["-MaxTimeout"][0], out zeroEngineTimeoutSeconds);
 
       InstallBuilder ib = new InstallBuilder();
-      String installerDirectory = ib.Run(installerPrefix, zeroEditorOutputSuffix, branch);
+      String installerDirectory = ib.Run(sourcePath, outputPath, installerPrefix, zeroEditorOutputSuffix, zeroEngineTimeoutSeconds);
       //ReleaseNoteBuilder rnb = new ReleaseNoteBuilder();
       //rnb.Run(installerDirectory);
     }

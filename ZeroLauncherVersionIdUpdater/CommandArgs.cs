@@ -29,9 +29,17 @@ namespace ZeroLauncherVersionIdUpdater
     public bool CreatePackageProperty { get { return CreatePackage; } set {CreatePackage = value;} }
     public bool CreatePackage = false;
 
+    [Option("CreatePatch", Required = false, HelpText = "Should a patch installer for the launcher be created. Only  meant for devs to locally update their launcher easily")]
+    public bool CreatePatchProperty { get { return CreatePatch; } set { CreatePatch = value; } }
+    public bool CreatePatch = false;
+
     [Option("Install", Required = false, HelpText = "Should the program package up the tools/resources or just create the version id file")]
     public bool GenerateInstallerProperty { get { return GenerateInstaller; } set { GenerateInstaller = value; } }
     public bool GenerateInstaller = false;
+
+    [Option("MajorId", Required = false, HelpText = "The major id to generate for the launcher")]
+    public int MajorIdProperty { get { return MajorId; } set { MajorId = value; } }
+    public int MajorId = -1;
 
     [HelpOption(HelpText = "Display this help screen.")]
     public string GetUsage()

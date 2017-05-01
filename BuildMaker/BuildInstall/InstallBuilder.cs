@@ -17,72 +17,208 @@ using System.ComponentModel;
 
 namespace BuildMaker
 {
+  // Represents a property to output for the build machine/server
+  class BuildProperty
+  {
+    public String mType;
+    public String mName;
+    public String mValue;
+
+    public BuildProperty() { }
+
+    public BuildProperty(String type, String name, String value)
+    {
+      mType = type;
+      mName = name;
+      mValue = value;
+    }
+  }
+
+  // Represents meta information for the build needed for the build server
+  class BuildMeta
+  {
+    public Dictionary<String, BuildProperty> mProperties = new Dictionary<String, BuildProperty>();
+
+    public BuildMeta()
+    {
+      // Populate a whole bunch of properties with default values. We only update properties if it already exists here
+      mProperties.Add("MajorVersion", new BuildProperty("int", "MajorVersion", "0"));
+      mProperties.Add("MinorVersion", new BuildProperty("int", "MinorVersion", "0"));
+      mProperties.Add("PatchVersion", new BuildProperty("int", "PatchVersion", "0"));
+      mProperties.Add("RevisionId", new BuildProperty("int", "RevisionId", "0"));
+      mProperties.Add("ExperimentalBranchName", new BuildProperty("string", "ExperimentalBranchName", ""));
+      mProperties.Add("BuildId", new BuildProperty("string", "BuildId", "0.0.0.0"));
+      mProperties.Add("ShortChangeSet", new BuildProperty("string", "ShortChangeSet", "0"));
+      mProperties.Add("ChangeSet", new BuildProperty("string", "ChangeSet", "\"0\""));
+      mProperties.Add("ChangeSetDate", new BuildProperty("string", "ChangeSetDate", "\"0-0-0\""));
+      mProperties.Add("Platform", new BuildProperty("string", "Platform", "\"Win32\""));
+    }
+
+    public String GetProperty(String name, String defaultValue)
+    {
+      if (!mProperties.ContainsKey(name))
+        return defaultValue;
+      return mProperties[name].mValue;
+    }
+
+    public String GetProperty(String name)
+    {
+      return GetProperty(name, "");
+    }
+
+    public String StripQuotes(String str)
+    {
+      return str.Trim('\"');
+    }
+
+    public String GetBuildId()
+    {
+      var str = GetProperty("BuildId");
+      return StripQuotes(str);
+    }
+
+    public String GetBuildNameWithoutExtension(String rootName)
+    {
+      return rootName + "." + GetBuildId();
+    }
+
+    public void SaveMeta(String filePath)
+    {
+      var builder = new StringBuilder();
+      foreach (var property in mProperties.Values)
+      {
+        // Skip experimental branch if it's an emtpy string
+        if (property.mName == "ExperimentalBranchName" && property.mValue.Length == 0)
+          continue;
+
+        String propStr = String.Format("{0} {1} = {2},", property.mType, property.mName, property.mValue);
+        builder.AppendLine(propStr);
+      }
+      File.WriteAllText(filePath, builder.ToString());
+    }
+  }
+
   class InstallBuilder
   {
-
-    public String GetRevisionNumber(String cZeroSource, String branch)
+    public static String GetRevisionInfo(String cZeroSource)
     {
-        //Get the build number.
-        ProcessStartInfo revisionNumberInfo = new ProcessStartInfo();
-        revisionNumberInfo.Arguments = String.Format("log -q -r \"max(parents())\"");
-        revisionNumberInfo.FileName = "hg";
-        revisionNumberInfo.WorkingDirectory = cZeroSource;
-        revisionNumberInfo.RedirectStandardOutput = true;
-        revisionNumberInfo.UseShellExecute = false;
-        Process revisionNumber = Process.Start(revisionNumberInfo);
-        String revNum = revisionNumber.StandardOutput.ReadToEnd();
-        String buildNumber = (revNum.Split(':'))[0];
-        revisionNumber.WaitForExit();
+      // Build up a string to get as much information from mercurial as
+      // possible for old versions (no major/minor/etc... version numbers)
+      var builder = new StringBuilder();
+      builder.Append("log -q -r \"max(parents())\" ");
+      builder.Append("--template \"RevisionId {rev}\\n");
+      builder.Append("BuildId \\\"0.0.0.{rev}\\\"\\n");
+      builder.Append("ChangeSet \\\"{node}\\\"\\n");
+      builder.Append("ShortChangeSet \\\"{node|short}\\\"\\n");
+      builder.Append("ChangeSetDate \\\"{date|shortdate}\\\"\"");
 
-        return buildNumber;
-    }
-
-    public String GetRevisionDate(String cZeroSource, String branch)
-    {
-      //Get the build number.
-      ProcessStartInfo procInfo = new ProcessStartInfo();
-      procInfo.Arguments = String.Format("log -q -r \"max(parents())\" --template \"{{date|shortdate}}\"", branch);
-      procInfo.FileName = "hg";
-      procInfo.WorkingDirectory = cZeroSource;
-      procInfo.RedirectStandardOutput = true;
-      procInfo.UseShellExecute = false;
-      Process process = Process.Start(procInfo);
-      String revNum = process.StandardOutput.ReadToEnd();
-      String buildDate = (revNum.Split(':'))[0];
+      ProcessStartInfo processInfo = new ProcessStartInfo();
+      processInfo.FileName = "hg";
+      processInfo.Arguments = builder.ToString();
+      processInfo.WorkingDirectory = cZeroSource;
+      processInfo.RedirectStandardOutput = true;
+      processInfo.UseShellExecute = false;
+      Process process = Process.Start(processInfo);
+      String result = process.StandardOutput.ReadToEnd();
       process.WaitForExit();
-
-      return buildDate.Replace('-', '.');
-
-      //return buildDate;
+      return result;
     }
-
-    public void OutputBuildInfo(String buildFilePath, String buildVersion, String fileName)
+    public void OutputBuildInfo(String buildFilePath, String buildVersion, String metaFileName, String fileName)
     {
       StringBuilder builder = new StringBuilder();
       builder.Append("{");
       builder.Append(String.Format("\"BuildVersion\": \"{0}\",", buildVersion));
-      builder.Append(String.Format("\"InstallerName\": \"{0}\"", fileName));
+      builder.Append(String.Format("\"InstallerName\": \"{0}\",", fileName));
+      builder.Append(String.Format("\"MetaFileName\": \"{0}\"", metaFileName));
       builder.Append("}");
 
       String fileData = builder.ToString();
       File.WriteAllText(buildFilePath, fileData);
     }
 
-    public String Run(String installerPrefix, String zeroEditorOutputSuffix, String branch)
+    public BuildMeta GetBuildInfo(String sourcePath, String outputPath, String zeroEditorOutputSuffix, int zeroEngineTimeoutSeconds)
     {
-      String cZeroSource = Environment.ExpandEnvironmentVariables("%ZERO_SOURCE%");
-      String cBuildOutput = Path.Combine(cZeroSource, "Build");
+      // Run the engine with the command "WriteBuildInfo" to have it output all build meta information. 
+      // Also pass it -newProject to force it to not open a project from the recent project list to help it load faster.
+      var tempFile = Path.GetTempFileName();
+      ProcessStartInfo startInfo = new ProcessStartInfo();
+      
+      startInfo.Arguments = String.Format("-WriteBuildInfo {0} -newProject", tempFile);
+      startInfo.FileName = Path.Combine(outputPath, zeroEditorOutputSuffix, "ZeroEditor.exe");
 
-      String buildNumber = this.GetRevisionNumber(cZeroSource, branch);
+      Console.WriteLine("Invoking Zero Editor at: " + startInfo.FileName);
+      Console.WriteLine("With arguments: " + startInfo.Arguments);
+
+      var process = Process.Start(startInfo);
+
+      // Old versions of the engine won't understand this argument, so wait a
+      // max amount of time and then kill the process
+      process.WaitForExit(zeroEngineTimeoutSeconds * 1000);
+      if (!process.HasExited)
+      {
+        try { process.Kill(); }
+        catch (Exception e) { }
+      }
+
+      // Try to read all lines from the output file.
+      var lines = File.ReadAllLines(tempFile);
+      if(lines.Length == 0)
+      {
+        // If the file doesn't exist then parse information for the revision from mercurial
+        // into the a string that has the same format as what zero should output, this way
+        // we can run the same update logic as normal.
+        string revisionInfo = InstallBuilder.GetRevisionInfo(sourcePath);
+        lines = revisionInfo.Split(new string[] { "\n" }, StringSplitOptions.RemoveEmptyEntries);
+
+        Console.WriteLine("BuildInfo file did not exist. Falling back to build information from mercurial.");
+      }
+
+      BuildMeta meta = new BuildMeta();
+      // Load each line as a "property"
+      var splitTokens = new string[] { " " };
+      foreach (var line in lines)
+      {
+        // A property should be a name-value pair separated by a space (spaces in strings is not supported for now)
+        var entries = line.Split(splitTokens, StringSplitOptions.RemoveEmptyEntries);
+        if (entries.Length != 2)
+          continue;
+
+        var propertyName = entries[0];
+        var propertyValue = entries[1];
+        // Update the property if it existed
+        if (meta.mProperties.ContainsKey(propertyName))
+          meta.mProperties[propertyName].mValue = propertyValue;
+      }
+      return meta;
+    }
+
+    public String Run(String sourcePath, String outputPath, String installerPrefix, String zeroEditorOutputSuffix, int zeroEngineTimeoutSeconds)
+    {
+      // Get the build's meta information from the current exe
+      var buildMeta = this.GetBuildInfo(sourcePath, outputPath, zeroEditorOutputSuffix, zeroEngineTimeoutSeconds);
+      
+      String cBuildOutput = Path.Combine(sourcePath, "Build");
+      String buildId = buildMeta.GetBuildId();
+      String newFileNameWithoutExtension = buildMeta.GetBuildNameWithoutExtension(installerPrefix);
+      String newFileName = newFileNameWithoutExtension + ".exe";
 
       //Print a nice message signifying the start of the install build.
       Console.WriteLine("Building the latest Zero Engine installer...");
 
       //Generate the Zero Engine installer using Inno Setup.
       ProcessStartInfo innoSetupInfo = new ProcessStartInfo();
-      innoSetupInfo.Arguments = Path.Combine(cBuildOutput, "ZeroEngineInstall.iss") + 
-                                String.Format(" /DMyAppVersion=\"{0}\" /DZeroEditorOutputSuffix=\"{1}\"", buildNumber, zeroEditorOutputSuffix);
+      StringBuilder definesBuilder = new StringBuilder();
+      definesBuilder.Append(" /DMyAppVersion=\"{0}\"");
+      definesBuilder.Append(" /DZeroEditorOutputSuffix=\"{1}\"");
+      definesBuilder.Append(" /DZeroSource=\"{2}\"");
+      definesBuilder.Append(" /DZeroOutput=\"{3}\"");
+      String defines = String.Format(definesBuilder.ToString(), buildId, zeroEditorOutputSuffix, sourcePath, outputPath);
+
+      Console.WriteLine(defines);
+
+      innoSetupInfo.Arguments = Path.Combine(cBuildOutput, "ZeroEngineInstall.iss") + defines;
       innoSetupInfo.FileName = @"C:\Program Files (x86)\Inno Setup 5\iscc.exe";
+      
       Process innoSetup;
       try
       {
@@ -97,22 +233,20 @@ namespace BuildMaker
         return null;
       
       }
-      //String innoError = innoSetup.StandardOutput.ReadToEnd();
       innoSetup.WaitForExit();
 
-      
-
-      //Get the date from the last commit
-      String date = "." + GetRevisionDate(cZeroSource, branch) + ".";
-
       //Rename the install executable.
-      String newFileName = installerPrefix + date + buildNumber + ".exe";
       File.Copy(Path.Combine(cBuildOutput, "Output", "ZeroEngineSetup.exe"),
                 Path.Combine(cBuildOutput, "Output", newFileName), true);
       File.Delete(Path.Combine(cBuildOutput, "Output", "ZeroEngineSetup.exe"));
 
       String buildFilePath = Path.Combine(cBuildOutput, "Output", "BuildInfo.data");
-      this.OutputBuildInfo(buildFilePath, buildNumber, newFileName);
+      String metaFileName = newFileNameWithoutExtension + ".meta";
+      var metaFilePath = Path.Combine(cBuildOutput, "Output", metaFileName);
+      this.OutputBuildInfo(buildFilePath, buildId, metaFileName, newFileName);
+
+      
+      buildMeta.SaveMeta(metaFilePath);
       //Open the folder
       //Process.Start("explorer.exe", 
       //              "/select, " + Path.Combine(cBuildOutput, "Output", newFileName));

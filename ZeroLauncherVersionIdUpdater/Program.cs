@@ -16,12 +16,18 @@ namespace ZeroLauncherVersionIdUpdater
 {
     class Program
   {
-    static String BaseUrl = "http://zero.digipen.edu/Builds/StandAlones/";
+    static String BaseUrl = "https://builds.zeroengine.io";
 
-    static void CreateVersionIdFile(String outDir)
+    static String QueryMajorId()
     {
-      String url = BaseUrl + "ZeroLauncherVersionId.txt";
-      String versionId = HttpDownloadHelpers.GetStringData(url);
+      String majorIdQuery = BaseUrl + "?Commands=RequestMajorVersionId";
+      return HttpDownloadHelpers.GetStringData(majorIdQuery);
+    }
+
+    static void CreateVersionIdFile(String outDir, int majorId)
+    {
+      String minorIdQuery = BaseUrl + "?Commands=CheckPatchId&MajorId=" + majorId;
+      String versionId = HttpDownloadHelpers.GetStringData(minorIdQuery);
 
       int id = int.Parse(versionId);
       ++id;
@@ -69,7 +75,7 @@ namespace ZeroLauncherVersionIdUpdater
       Directory.CreateDirectory(outDir);
 
       //curently we only need these files from the tools directory, don't copy more as it bloats the package size
-      string[] files = {"cudart32_30_14.dll", "FreeImage.dll", "ImageProcessor.exe", "nvdxt.exe", "nvtt.dll", 
+      string[] files = {"ImageProcessor.exe", "nvtt.dll", 
                          "ZeroCrashHandler.exe", "CommandLine.dll", "ICSharpCode.SharpZipLib.dll", "Newtonsoft.Json.dll", "GeometryProcessor.exe"};
 
       foreach (var file in files)
@@ -90,19 +96,21 @@ namespace ZeroLauncherVersionIdUpdater
       CopyDirectory(Path.Combine(sourceDir, "Resources", "ZeroLauncherResources"), Path.Combine(packageOutDir, "Resources", "ZeroLauncherResources"));
       CopyDirectory(Path.Combine(sourceDir, "Resources", "Loading"), Path.Combine(packageOutDir, "Resources", "Loading"));
       CopyDirectory(Path.Combine(sourceDir, "Resources", "Core"), Path.Combine(packageOutDir, "Resources", "Core"));
+      CopyDirectory(Path.Combine(sourceDir, "Resources", "FragmentCore"), Path.Combine(packageOutDir, "Resources", "FragmentCore"));
       File.Copy(Path.Combine(sourceDir, "Data", "ZeroLauncherEula.txt"), Path.Combine(packageOutDir, "ZeroLauncherEula.txt"));
 
       // Copy the default templates we install with over too
       CopyDirectory(Path.Combine(sourceDir, "Projects", "LauncherTemplates"), Path.Combine(packageOutDir, "Templates"));
     }
 
-    static void GenerateInstaller(String sourceDir, String zeroOutDir)
+    static void GenerateInstaller(String sourceDir, String zeroOutDir, int majorId)
     {
       //Generate the Zero Engine installer using Inno Setup.
       ProcessStartInfo innoSetupInfo = new ProcessStartInfo();
       innoSetupInfo.Arguments = Path.Combine(sourceDir, "Build", "ZeroLauncherInstaller.iss ") +
                                   String.Format("/DZeroSource=\"{0}\"" , sourceDir) +
-                                  String.Format(" /DZeroLauncherOutputPath=\"{0}\"", zeroOutDir);// +
+                                  String.Format(" /DZeroLauncherOutputPath=\"{0}\"", zeroOutDir) +
+                                  String.Format(" /DMajorId=\"{0}\"", majorId);// +
       innoSetupInfo.FileName = @"C:\Program Files (x86)\Inno Setup 5\iscc.exe";
       innoSetupInfo.RedirectStandardOutput = true;
       innoSetupInfo.RedirectStandardError = true;
@@ -127,6 +135,46 @@ namespace ZeroLauncherVersionIdUpdater
 
       //String innoError = innoSetup.StandardOutput.ReadToEnd();
       innoSetup.WaitForExit();
+    }
+
+    static void GeneratePatch(String sourceDir, String outputPackagePath, int majorId, String resultPatchPath)
+    {
+      //Generate the Zero Engine installer using Inno Setup.
+      ProcessStartInfo innoSetupInfo = new ProcessStartInfo();
+      innoSetupInfo.Arguments = "ZeroLauncherInstallerPatch.iss " +
+                                  String.Format("/DZeroSource=\"{0}\"", sourceDir) +
+                                  String.Format(" /DOutputFiles=\"{0}\"", outputPackagePath) +
+                                  String.Format(" /DMajorId=\"{0}\"", majorId);// +
+      innoSetupInfo.FileName = @"C:\Program Files (x86)\Inno Setup 5\iscc.exe";
+      innoSetupInfo.RedirectStandardOutput = true;
+      innoSetupInfo.RedirectStandardError = true;
+      innoSetupInfo.UseShellExecute = false;
+
+      Process innoSetup;
+      try
+      {
+        innoSetup = Process.Start(innoSetupInfo);
+      }
+      catch (Win32Exception /*win32*/)
+      {
+        Console.WriteLine("Inno Setup not found. Please install it and rerun " +
+                          "the build install maker.");
+        Console.WriteLine("Press any key to continue...");
+        Console.ReadKey();
+        return;
+
+      }
+      String output = innoSetup.StandardOutput.ReadToEnd();
+      String errs = innoSetup.StandardError.ReadToEnd();
+
+      innoSetup.WaitForExit();
+
+      String outputExeName = "ZeroLauncherPatch.exe";
+      String expectedOutputPath = Path.Combine("Output", outputExeName);
+      if(File.Exists(expectedOutputPath))
+      {
+        File.Copy(expectedOutputPath, Path.Combine(resultPatchPath, outputExeName), true);
+      }
     }
 
     static void Main(string[] args)
@@ -158,17 +206,16 @@ namespace ZeroLauncherVersionIdUpdater
       if (createPackage)
         Directory.CreateDirectory(packageOutDir);
 
+      if (commandArgs.MajorId == -1)
+        commandArgs.MajorId = int.Parse(QueryMajorId());
+
       //always create the id file
-      CreateVersionIdFile(commandArgs.OutDir);
+      CreateVersionIdFile(commandArgs.OutDir, commandArgs.MajorId);
 
       if (createPackage)
       {
         CreatePackage(commandArgs.SourceDir, commandArgs.ZeroOutDir, commandArgs.OutDir, packageOutDir);
         ZipPackage(packageOutDir, Path.Combine(commandArgs.OutDir, "ZeroLauncherPackage.zip"));
-
-        //open the package folder
-        if (commandArgs.OpenExplorer)
-          Process.Start(commandArgs.OutDir);
       }
       
       if(commandArgs.GenerateInstaller)
@@ -180,8 +227,23 @@ namespace ZeroLauncherVersionIdUpdater
         }
 
         CopyDirectory(packageOutDir, commandArgs.ZeroOutDir);
-        GenerateInstaller(commandArgs.SourceDir, commandArgs.ZeroOutDir);
+        GenerateInstaller(commandArgs.SourceDir, commandArgs.ZeroOutDir, commandArgs.MajorId);
       }
+
+      if (commandArgs.CreatePatch)
+      {
+        if (createPackage == false)
+        {
+          Console.WriteLine("Generate patch requires create package");
+          return;
+        }
+
+        GeneratePatch(commandArgs.SourceDir, packageOutDir, commandArgs.MajorId, commandArgs.OutDir);
+      }
+
+      //open the package folder
+      if (commandArgs.OpenExplorer && Directory.Exists(commandArgs.OutDir))
+        Process.Start(commandArgs.OutDir);
     }
   }
 }

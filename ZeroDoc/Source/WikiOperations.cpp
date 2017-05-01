@@ -70,12 +70,12 @@
 //    WriteData::Parse(data,sizeOfChar,numOfElements);
 //
 //    Zero::String str = Zero::String::Format("%s",data);
-//    if(str.size() < 8)
+//    if(str.Size() < 8)
 //      return;
 //
-//    if(str.sub_string(0,7) == Zero::String("<token>"))
+//    if(str.SubStringFromByteIndices(0,7) == Zero::String("<token>"))
 //    {
-//      mToken = str.sub_string(16,30);
+//      mToken = str.SubStringFromByteIndices(16,30);
 //      mValid = true;
 //    }
 //  }
@@ -306,7 +306,7 @@
 //
 //  curl_formadd(&post, &last, CURLFORM_COPYNAME, "sBody", 
 //               CURLFORM_PTRCONTENTS, doc.c_str(),
-//               CURLFORM_CONTENTSLENGTH, doc.size(),
+//               CURLFORM_CONTENTSLENGTH, doc.Size(),
 //               CURLFORM_CONTENTTYPE, "text/html", CURLFORM_END);
 //
 //  /* Set the form info */
@@ -357,7 +357,7 @@
 //
 //  curl_formadd(&post, &last, CURLFORM_COPYNAME, "sBody", 
 //               CURLFORM_PTRCONTENTS, pageContent.c_str(),
-//               CURLFORM_CONTENTSLENGTH, pageContent.size(),
+//               CURLFORM_CONTENTSLENGTH, pageContent.Size(),
 //               CURLFORM_CONTENTTYPE, "text/html", CURLFORM_END);
 //
 //  /* Set the form info */
@@ -405,7 +405,7 @@
 //  String eventHeader("");
 //  StringBuilder eventListHtml;
 //  outputString->Append("<p>");
-//  forRange(Array<EventEntry>::value_type& e, eventsToUpdate.all())
+//  forRange(Array<EventEntry>::value_type& e, eventsToUpdate.All())
 //  {
 //    if(eventHeader != e.mEventType)
 //    {
@@ -458,7 +458,7 @@
 //  doc.Build();
 //
 //  //Warn for classes that have documentation but are not parked to push to the wiki
-//  WarnNeedsWikiPage(pagesToUpdate, doc.Classes, config.DoxygenPath, 
+//  WarnNeedsWikiPage(pagesToUpdate, doc.Classes, config.mDoxygenPath, 
 //    config.DocumentationRoot, config.Verbose, config.Log);
 //
 //  //Log onto the wiki and get our token to use for further operations
@@ -472,17 +472,17 @@
 //  //Create a map of the wiki names and ids for only what we want to push to the wiki.
 //  typedef StringMap WikiMap;
 //  WikiMap wikiIndex;
-//  for(uint i = 0; i < pagesToUpdate.size(); ++i)
+//  for(uint i = 0; i < pagesToUpdate.Size(); ++i)
 //  {
 //    String pageName = pagesToUpdate[i].mPageToUpdate;
 //    String parentPageName = pagesToUpdate[i].mParentPage;
-//    String index = wikiIndices.findValue(pageName,"");
-//    if(!index.empty())
+//    String index = wikiIndices.FindValue(pageName,"");
+//    if(!index.Empty())
 //      wikiIndex[pageName] = index;
 //    else
 //    {
-//      String parentIndex = wikiIndices.findValue(parentPageName,"");
-//      if(!parentIndex.empty())
+//      String parentIndex = wikiIndices.FindValue(parentPageName,"");
+//      if(!parentIndex.Empty())
 //      {
 //        bool success = CreateWikiPage(token,pageName,parentIndex,wikiIndex,config.Verbose);
 //        if(!success)
@@ -500,15 +500,15 @@
 //  //set up a replacement for class names to replace in the wiki, this will set
 //  //up links on the page to other classes when they are referenced
 //  Array<Replacement> classReplacements;
-//  WikiMap::range r = wikiIndex.all();
+//  WikiMap::range r = wikiIndex.All();
 //  forRange(WikiMap::value_type& v, r)
 //  {
 //    String name = BuildString(v.first, "");
 //    String link = String::Format("<a class=\"uvb\" href=\"default.asp?W%s\">%s</a>", 
 //      v.second.c_str(), v.first.c_str());
-//    classReplacements.push_back(Replacement(name, link));
+//    classReplacements.PushBack(Replacement(name, link));
 //  }
-//  sort(classReplacements.all());
+//  Sort(classReplacements.All());
 //
 //  //Update all of the events on the event page, link relevant pages to them.
 //  StringBuilder eventList;
@@ -519,10 +519,10 @@
 //    token, config.Verbose);
 //
 //  //Upload the class' page to the wiki, making sure to perform the link replacements
-//  forRange(ClassDoc& classDoc, doc.Classes.all())
+//  forRange(ClassDoc& classDoc, doc.Classes.All())
 //  {
-//    String index = wikiIndex.findValue(classDoc.Name, "");
-//    if(!index.empty())
+//    String index = wikiIndex.FindValue(classDoc.Name, "");
+//    if(!index.Empty())
 //    {
 //      //should uncomment when testing (so we don't accidentally destroy the whole wiki)
 //      //if(classDoc.Name == "PhysicsEffect")

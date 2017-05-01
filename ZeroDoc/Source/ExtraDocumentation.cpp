@@ -7,6 +7,38 @@
 
 namespace Zero
 {
+  /// loop over documentation library and replace specified types and symbols
+  void NormalizeDocumentation(Zero::DocumentationLibrary &doc, Replacements &replacements)
+  {
+    forRange(ClassDoc& classDoc, doc.Classes.all())
+    {
+      // replace matched properties types
+      forRange(PropertyDoc &propDoc, classDoc.Properties.all())
+      {
+        propDoc.Type = Replace(replacements, propDoc.Type);
+      }
+
+      // replace matched method return types and argument types
+      forRange(MethodDoc &methDoc, classDoc.Methods.all())
+      {
+        methDoc.ReturnValue = Replace(replacements, methDoc.ReturnValue);
+
+        // for now since I am not sure if we ever rebuild the arguments string
+        // I am going to replace both the args array and the arguments string itself
+        methDoc.Arguments = Replace(replacements, methDoc.Arguments);
+        forRange(MethodDoc::Argument &arg, methDoc.ParsedArguments.all())
+        {
+          arg.Type = Replace(replacements, arg.Type);
+        }
+      }
+
+      // replace matched event types
+      forRange(EventDoc &eventDoc, classDoc.EventsSent.all())
+      {
+        eventDoc.EventType = Replace(replacements, eventDoc.EventType);
+      }
+    }
+  }
 
 void LoadAndReplaceDocumentation(StringParam path, DocumentationLibrary& libary, Array<Replacement>& replacements)
 {

@@ -43,13 +43,13 @@
     <ClCompile>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>Precompiled.hpp</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ZERO_SOURCE)\Extensions;$(ZERO_SOURCE)\External\GLEW\include;$(ZERO_SOURCE)\External\SOIL\include;$(ZERO_SOURCE)\External\Cg\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ZERO_SOURCE)\Extensions;$(ZERO_SOURCE)\External\Freetype\include;$(ZERO_SOURCE)\External\CEF\include;$(ZERO_SOURCE)\External\GLEW\include;$(ZERO_SOURCE)\External\SOIL\include;$(ZERO_SOURCE)\External\Cg\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <TargetMachine>MachineX86</TargetMachine>
-      <AdditionalLibraryDirectories>$(ZeroExtensionLibrariesSource)\External\libpng\lib;$(ZERO_SOURCE)\External\Curl\lib;$(ZeroExtensionLibrariesSource)\External\zlib\lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>zlib.lib;Winmm.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(ZERO_SOURCE)\External\Freetype\lib;$(ZERO_SOURCE)\External\GLEW\lib;$(ZERO_SOURCE)\External\CEF\lib;$(ZERO_SOURCE)\External\libpng\lib;$(ZERO_SOURCE)\External\Curl\lib;$(ZERO_SOURCE)\External\zlib\lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libcef.lib;zlib.lib;Winmm.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>COPY $(TargetPath) "$(ZERO_SOURCE)\DevTools" /Y</Command>
@@ -99,48 +99,53 @@
     <ClCompile Include="WikiOperations.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(ZeroStandardLibrariesSource)\Common\Common.vcxproj">
-      <Project>{3a62ce69-835e-4d16-86c2-5326625a18bc}</Project>
-    </ProjectReference>
-    <ProjectReference Include="$(ZeroStandardLibrariesSource)\Math\Math.vcxproj">
-      <Project>{767a1157-b18f-478e-b580-f6f624f9282a}</Project>
-    </ProjectReference>
-    <ProjectReference Include="$(ZeroExtensionLibrariesSource)\Serialization\Serialization.vcxproj">
-      <Project>{35d4371c-b7a6-4fc4-aba3-0be750125ce3}</Project>
-    </ProjectReference>
-    <ProjectReference Include="$(ZERO_SOURCE)\Systems\Engine\Engine.vcxproj">
-      <Project>{b45f9232-8734-48ea-ac16-29f41866d676}</Project>
-    </ProjectReference>
-    <ProjectReference Include="$(ZeroExtensionLibrariesSource)\Meta\Meta.vcxproj">
-      <Project>{b45f9232-8734-47ea-ac16-29f418d6d676}</Project>
-    </ProjectReference>
-    <ProjectReference Include="$(ZeroExtensionLibrariesSource)\Support\Support.vcxproj">
-      <Project>{767a1057-b18f-478e-b480-f6f624f9282a}</Project>
-    </ProjectReference>
-    <ProjectReference Include="$(ZeroStandardLibrariesSource)\Platform\Windows\WindowsPlatform.vcxproj">
-      <Project>{dbe8e33a-7e70-402c-bcf6-d1efee93fa76}</Project>
-    </ProjectReference>
-    <ProjectReference Include="$(ZERO_SOURCE)\Systems\Content\Content.vcxproj">
-      <Project>{e19019f5-9c2c-4329-aab5-db28e39cc0f2}</Project>
-    </ProjectReference>
-    <ProjectReference Include="$(ZeroExtensionLibrariesSource)\Geometry\Geometry.vcxproj">
-      <Project>{787f598d-f96e-48f5-8075-25d31fc7ed60}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\..\..\ExtensionLibraries\StandardLibraries\Platform\Platform.vcxproj">
-      <Project>{c26bf2c8-d6c3-441a-83aa-9ba656cdf41c}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\TinyXml\TinyXml.vcxproj">
-      <Project>{81266cb3-406e-4f01-9daa-b99b6e1b0ddc}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
     <None Include="DocTypeKeywords.inl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
     </None>
     <None Include="DocTypeTokens.inl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Systems\Content\Content.vcxproj">
+      <Project>{e19019f5-9c2c-4329-aab5-db28e39cc0f2}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Systems\Engine\Engine.vcxproj">
+      <Project>{b45f9232-8734-48ea-ac16-29f41866d676}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Systems\Physics\Physics.vcxproj">
+      <Project>{b1397fe7-b02a-4689-8f19-719bf0e70e7c}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\ZeroLibraries\Common\Common.vcxproj">
+      <Project>{3a62ce69-835e-4d16-86c2-5326625a18bc}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\ZeroLibraries\Geometry\Geometry.vcxproj">
+      <Project>{787f598d-f96e-48f5-8075-25d31fc7ed60}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\ZeroLibraries\Math\Math.vcxproj">
+      <Project>{767a1157-b18f-478e-b580-f6f624f9282a}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\ZeroLibraries\Meta\Meta.vcxproj">
+      <Project>{b45f9232-8734-47ea-ac16-29f418d6d676}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\ZeroLibraries\Platform\Platform.vcxproj">
+      <Project>{c26bf2c8-d6c3-441a-83aa-9ba656cdf41c}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\ZeroLibraries\Platform\Windows\WindowsPlatform.vcxproj">
+      <Project>{dbe8e33a-7e70-402c-bcf6-d1efee93fa76}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\ZeroLibraries\Serialization\Serialization.vcxproj">
+      <Project>{35d4371c-b7a6-4fc4-aba3-0be750125ce3}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\ZeroLibraries\Support\Support.vcxproj">
+      <Project>{767a1057-b18f-478e-b480-f6f624f9282a}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\ZeroLibraries\Zilch\Project\Zilch\Zilch.vcxproj">
+      <Project>{f3973b0b-d2ab-4f7d-8e81-fe0dc7cde27d}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\TinyXml\TinyXml.vcxproj">
+      <Project>{81266cb3-406e-4f01-9daa-b99b6e1b0ddc}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -3,11 +3,11 @@
   <PropertyGroup Label="UserMacros">
     <ZeroSource>$(SolutionDir)..\</ZeroSource>
     <ZERO_SOURCE>$(ZeroSource)</ZERO_SOURCE>
-    <ZilchSource>$(ZeroSource)\Zilch</ZilchSource>
+    <ZilchSource>$(ZeroSource)ZeroLibraries\Zilch\</ZilchSource>
     <ZILCH_SOURCE>$(ZilchSource)</ZILCH_SOURCE>
-    <ZeroExtensionLibrariesSource>$(ZeroSource)\ExtensionLibraries</ZeroExtensionLibrariesSource>
-    <ZeroStandardLibrariesSource>$(ZeroExtensionLibrariesSource)\StandardLibraries</ZeroStandardLibrariesSource>
-    <ZERO_OUTPUT>$(SolutionDir)\BuildOutput</ZERO_OUTPUT>
+    <ZeroExtensionLibrariesSource>$(ZeroSource)ZeroLibraries\</ZeroExtensionLibrariesSource>
+    <ZeroStandardLibrariesSource>$(ZeroExtensionLibrariesSource)</ZeroStandardLibrariesSource>
+    <ZERO_OUTPUT>$(ZeroSource)BuildOutput\</ZERO_OUTPUT>
   </PropertyGroup>
   <ImportGroup Label="PropertySheets">
     <Import Condition="exists('LocalPaths.props')" Project="LocalPaths.props" />

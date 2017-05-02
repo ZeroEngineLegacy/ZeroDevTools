@@ -1,7 +1,7 @@
 #pragma once
 #include "Support/StringMap.hpp"
 #include "Platform/FilePath.hpp"
-#include "StandardLibraries/Common/String/StringBuilder.hpp"
+#include "Common/String/StringBuilder.hpp"
 
 namespace Zero
 {

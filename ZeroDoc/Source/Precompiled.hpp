@@ -1,15 +1,10 @@
-//#include "Common/Utility/Standard.hpp"
-//#include "Common/CommonStandard.hpp"
-//#include "Support/SupportStandard.hpp"
-//#include "Math/MathStandard.hpp"
-//#include "Geometry/GeometryStandard.hpp"
-//#include "Meta/MetaStandard.hpp"
-//#include "Content/ContentStandard.hpp"
-//#include "Platform/PlatformStandard.hpp"
+#pragma once
+
+#include "Common/CommonStandard.hpp"
+#include "Math/MathStandard.hpp"
 #include "Zilch/Project/Zilch/Zilch.hpp"
-#include "Engine/EngineStandard.hpp"
 #include "Serialization/SerializationStandard.hpp"
-#include "Common/Utility/Standard.hpp"
+#include "Engine/EngineStandard.hpp"
 
 
 #pragma message("Including Windows...")

@@ -1,8 +1,9 @@
 #pragma once
 
-#include "Containers/ContainerCommon.hpp"
-#include "String/StringBuilder.hpp"
-#include "Utility/Typedefs.hpp"
+//#include "Containers/ContainerCommon.hpp"
+//#include "String/StringBuilder.hpp"
+//#include "Utility/Typedefs.hpp"
+#include "Common/CommonStandard.hpp"
 
 typedef Zero::String String;
 typedef const String& StringParam;
@@ -22,7 +23,7 @@ enum IntersectionType
 struct Parameters
 {
   ///Add a new parameter offset for this type.
-  void Add(cstr param) { params.push_back(param); }
+  void Add(cstr param) { params.PushBack(param); }
 
   ///Add all of the parameters for this variable into the builder.
   void FillOutParamters(StringBuilder& builder, StringParam varName)
@@ -35,7 +36,7 @@ struct Parameters
     }
 
     //otherwise, add all of the parameters with , in between
-    for(uint i = 0; i < params.size() - 1; ++i)
+    for(uint i = 0; i < params.Size() - 1; ++i)
     {
       builder.Append(varName);
       builder.Append(".");
@@ -45,7 +46,7 @@ struct Parameters
     //add the last parameter, but without a comma after it
     builder.Append(varName);
     builder.Append(".");
-    builder.Append(params[params.size() - 1]);
+    builder.Append(params[params.Size() - 1]);
   }
 
   Zero::Array<String> params;
@@ -61,7 +62,7 @@ struct ObjectParameters
 {
   ObjectParameters()
   {
-    objParams.resize(Size);
+    objParams.Resize(Size);
   }
 
   Parameters& operator[](uint i) { return objParams[i]; }

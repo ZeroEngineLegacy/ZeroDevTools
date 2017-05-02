@@ -5,14 +5,11 @@
 ///
 ///////////////////////////////////////////////////////////////////////////////
 #include <iostream>
-#include "Support/StringMap.hpp"
-#include "Support/Image.hpp"
-#include "Utility/Status.hpp"
-#include "Support/PngSupport.hpp"
-#include "Common/Containers/Array.hpp"
-#include "Math/ByteColor.hpp"
-#include "Platform/FileSystem.hpp"
-#include "Platform/FilePath.hpp"
+
+#include "Math/MathStandard.hpp"
+#include "Platform/PlatformStandard.hpp"
+#include "Platform/CommandLineSupport.hpp"
+#include "Support/SupportStandard.hpp"
 
 void CheckStatus(Zero::Status status, Zero::StringRef filePath)
 {
@@ -28,13 +25,13 @@ void CheckStatus(Zero::Status status, Zero::StringRef filePath)
 Zero::Pair<Math::IntVec2, Math::IntVec2> 
 FindPixelBoundingBox(Zero::Array<Math::IntVec2> &pixels, unsigned int width, unsigned int height)
 {
-  Zero::Array<Math::IntVec2>::range range = pixels.all();
+  Zero::Array<Math::IntVec2>::range range = pixels.All();
 
   Math::IntVec2 topLeftPixel = Math::IntVec2(width, height);
   Math::IntVec2 bottomRightPixel = Math::IntVec2(0, 0);
 
-  for (Zero::Array<Math::IntVec2>::iterator pixel = range.begin(); 
-       pixel != range.end();
+  for (Zero::Array<Math::IntVec2>::iterator pixel = range.Begin(); 
+       pixel != range.End();
        ++pixel)
   {
     bottomRightPixel.x = Math::Max(pixel->x, bottomRightPixel.x);
@@ -126,7 +123,7 @@ int DoDiff(Zero::Image &image1,
       unsigned int y = index / width;
       unsigned int x = index - (y * width);
 
-      wrongPixels.append(Math::IntVec2(x, y));
+      wrongPixels.Append(Math::IntVec2(x, y));
     }
 
     //Write out the pixels.
@@ -188,16 +185,19 @@ int DoDiff(Zero::Image &image1,
 
 int main(int argc, cstr* argv)
 {
+  Zero::Array<Zero::String> commandLineArray;
+  Zero::CommandLineToStringArray(commandLineArray, argv, argc);
+
   // Get our command line arguments.
   Zero::StringMap commandLineArgs;
-  Zero::ParseCommandLine(commandLineArgs, argv, argc);
-
-  Zero::String file1 = commandLineArgs.findValue("file1", "");
-  Zero::String file2 = commandLineArgs.findValue("file2", "");
+  ParseCommandLineStringArray(commandLineArgs, commandLineArray);
   
-  Zero::String diffImagePath = commandLineArgs.findValue("output1", "");
-  Zero::String SqImagePath = commandLineArgs.findValue("output2", "");
-  Zero::String BWImagePath = commandLineArgs.findValue("output3", "");
+  Zero::String file1 = commandLineArgs.FindValue("file1", "");
+  Zero::String file2 = commandLineArgs.FindValue("file2", "");
+  
+  Zero::String diffImagePath = commandLineArgs.FindValue("output1", "");
+  Zero::String SqImagePath = commandLineArgs.FindValue("output2", "");
+  Zero::String BWImagePath = commandLineArgs.FindValue("output3", "");
 
   double confidence = Zero::GetStringValue(commandLineArgs,"confidence", 1.0);
 

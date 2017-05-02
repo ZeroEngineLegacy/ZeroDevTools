@@ -1,10 +1,7 @@
 #include "Precompiled.hpp"
 
-#include "Engine/Documentation.hpp"
-#include "Serialization/Simple.hpp"
-#include "Serialization/Text.hpp"
+#include "Engine/EngineStandard.hpp"
 #include "Platform/CommandLineSupport.hpp"
-#include "Engine/Environment.hpp"
 #include "Startup/StartupStandard.hpp"
 
 // includes for engine initialization
@@ -250,25 +247,25 @@ void RunDocumentationGenerator(DocGeneratorConfig &config)
 
 void startup(void)
 {
-  ZilchRegisterSharedHandleManager(ReferenceCountedHandleManager);
-  ZilchRegisterSharedHandleManager(CogHandleManager);
-  ZilchRegisterSharedHandleManager(ComponentHandleManager);
-  ZilchRegisterSharedHandleManager(ResourceHandleManager);
-  //ZilchRegisterSharedHandleManager(WidgetHandleManager);
-  ZilchRegisterSharedHandleManager(ContentItemHandleManager);
-  ZeroRegisterThreadSafeHandleManager(SafeObject);
-  ZeroRegisterThreadSafeHandleManager(SafeEventObject);
-  //ZeroRegisterThreadSafeHandleManager(ThreadedWebRequest);
-  //ZeroRegisterThreadSafeHandleManager(NetHostRecord);
-  //ZeroRegisterThreadSafeHandleManager(NetChannel);
-  //ZeroRegisterThreadSafeHandleManager(NetChannelType);
-  //ZeroRegisterThreadSafeHandleManager(NetHost);
-  //ZeroRegisterThreadSafeHandleManager(NetProperty);
-  //ZeroRegisterThreadSafeHandleManager(NetPropertyType);
-  //ZeroRegisterThreadSafeHandleManager(ThreadedWebRequest);
-  //ZeroRegisterThreadSafeHandleManager(VertexBuffer);
-  //ZeroRegisterThreadSafeHandleManager(IndexBuffer);
-  ZeroRegisterThreadSafeHandleManager(Event);
+  //ZilchRegisterSharedHandleManager(ReferenceCountedHandleManager);
+  //ZilchRegisterSharedHandleManager(CogHandleManager);
+  //ZilchRegisterSharedHandleManager(ComponentHandleManager);
+  //ZilchRegisterSharedHandleManager(ResourceHandleManager);
+  ////ZilchRegisterSharedHandleManager(WidgetHandleManager);
+  //ZilchRegisterSharedHandleManager(ContentItemHandleManager);
+  //ZeroRegisterThreadSafeHandleManager(SafeObject);
+  //ZeroRegisterThreadSafeHandleManager(SafeEventObject);
+  ////ZeroRegisterThreadSafeHandleManager(ThreadedWebRequest);
+  ////ZeroRegisterThreadSafeHandleManager(NetHostRecord);
+  ////ZeroRegisterThreadSafeHandleManager(NetChannel);
+  ////ZeroRegisterThreadSafeHandleManager(NetChannelType);
+  ////ZeroRegisterThreadSafeHandleManager(NetHost);
+  ////ZeroRegisterThreadSafeHandleManager(NetProperty);
+  ////ZeroRegisterThreadSafeHandleManager(NetPropertyType);
+  ////ZeroRegisterThreadSafeHandleManager(ThreadedWebRequest);
+  ////ZeroRegisterThreadSafeHandleManager(VertexBuffer);
+  ////ZeroRegisterThreadSafeHandleManager(IndexBuffer);
+  //ZeroRegisterThreadSafeHandleManager(Event);
 
   ZeroRegisterThreadSafeReferenceCountedHandleManager(ThreadSafeReferenceCounted);
 

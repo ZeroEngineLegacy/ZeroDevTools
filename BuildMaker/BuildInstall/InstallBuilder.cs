@@ -157,7 +157,7 @@ namespace BuildMaker
       if (!process.HasExited)
       {
         try { process.Kill(); }
-        catch (Exception e) { }
+        catch (Exception) { }
       }
 
       // Try to read all lines from the output file.

@@ -568,11 +568,11 @@ void BuildOverlaps()
 
   std::ofstream stream;
   stream.open("ExtendedIntersection.hpp");
-  stream.write(headerStr.c_str(),headerStr.size());
+  stream.write(headerStr.c_str(),headerStr.SizeInBytes());
   stream.close();
 
   stream.open("ExtendedIntersection.cpp");
-  stream.write(sourceStr.c_str(),sourceStr.size());
+  stream.write(sourceStr.c_str(),sourceStr.SizeInBytes());
   stream.close();
 }
 
@@ -613,11 +613,11 @@ void BuildCollides()
 
   std::ofstream stream;
   stream.open("ExtendedCollision.hpp");
-  stream.write(headerStr.c_str(),headerStr.size());
+  stream.write(headerStr.c_str(),headerStr.SizeInBytes());
   stream.close();
 
   stream.open("ExtendedCollision.cpp");
-  stream.write(sourceStr.c_str(),sourceStr.size());
+  stream.write(sourceStr.c_str(),sourceStr.SizeInBytes());
   stream.close();
 }
 

@@ -34,8 +34,7 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>$(ZERO_OUTPUT)\Out\Win32\Debug\BuildMaker\</OutputPath>
-    <IntermediateOutputPath>$(ZERO_OUTPUT)\Int\Win32\Debug\BuildMaker\</IntermediateOutputPath>
+    <OutputPath>bin\Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -44,8 +43,7 @@
     <PlatformTarget>x86</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>$(ZERO_OUTPUT)\Out\Win32\Release\BuildMaker\</OutputPath>
-    <IntermediateOutputPath>$(ZERO_OUTPUT)\Int\Win32\Release\BuildMaker\</IntermediateOutputPath>
+    <OutputPath>bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>

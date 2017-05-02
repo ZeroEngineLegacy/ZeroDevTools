@@ -1,10 +1,11 @@
 #include "Precompiled.hpp"
 
-#include "Engine/Documentation.hpp"
-#include "Serialization/Simple.hpp"
-#include "Serialization/Text.hpp"
-#include "StandardLibraries/Platform/CommandLineSupport.hpp"
-#include "Engine/Environment.hpp"
+#include "Engine/EngineStandard.hpp"
+#include "Platform/CommandLineSupport.hpp"
+#include "Startup/StartupStandard.hpp"
+
+// includes for engine initialization
+#include "WindowsShell/WindowsSystem.hpp"
 
 #include "DocConfiguration.hpp"
 #include "RawDocumentation.hpp"
@@ -243,12 +244,101 @@ void RunDocumentationGenerator(DocGeneratorConfig &config)
   }
 }
 
+
+void startup(void)
+{
+  //ZilchRegisterSharedHandleManager(ReferenceCountedHandleManager);
+  //ZilchRegisterSharedHandleManager(CogHandleManager);
+  //ZilchRegisterSharedHandleManager(ComponentHandleManager);
+  //ZilchRegisterSharedHandleManager(ResourceHandleManager);
+  ////ZilchRegisterSharedHandleManager(WidgetHandleManager);
+  //ZilchRegisterSharedHandleManager(ContentItemHandleManager);
+  //ZeroRegisterThreadSafeHandleManager(SafeObject);
+  //ZeroRegisterThreadSafeHandleManager(SafeEventObject);
+  ////ZeroRegisterThreadSafeHandleManager(ThreadedWebRequest);
+  ////ZeroRegisterThreadSafeHandleManager(NetHostRecord);
+  ////ZeroRegisterThreadSafeHandleManager(NetChannel);
+  ////ZeroRegisterThreadSafeHandleManager(NetChannelType);
+  ////ZeroRegisterThreadSafeHandleManager(NetHost);
+  ////ZeroRegisterThreadSafeHandleManager(NetProperty);
+  ////ZeroRegisterThreadSafeHandleManager(NetPropertyType);
+  ////ZeroRegisterThreadSafeHandleManager(ThreadedWebRequest);
+  ////ZeroRegisterThreadSafeHandleManager(VertexBuffer);
+  ////ZeroRegisterThreadSafeHandleManager(IndexBuffer);
+  //ZeroRegisterThreadSafeHandleManager(Event);
+
+  ZeroRegisterThreadSafeReferenceCountedHandleManager(ThreadSafeReferenceCounted);
+
+  CommonLibrary::Initialize();
+
+  // Setup the core Zilch library
+  ZilchSetup *mZilchSetup = new ZilchSetup();
+
+  // We need the calling state to be set so we can create Handles for Meta Components
+  Zilch::Module module;
+  ExecutableState::CallingState = module.Link();
+
+  MetaDatabase::Initialize();
+  ZilchManager::Initialize();
+
+  // Initialize Zero Libraries
+  PlatformLibrary::Initialize();
+  GeometryLibrary::Initialize();
+  // Geometry doesn't know about the Meta Library, so it cannot add itself to the MetaDatabase
+  MetaDatabase::GetInstance()->AddNativeLibrary(GeometryLibrary::GetLibrary());
+  MetaLibrary::Initialize();
+  ContentMetaLibrary::Initialize();
+  SerializationLibrary::Initialize();
+  //SpatialPartitionLibrary::Initialize();
+
+  ZeroStartupSettings startupSettings;
+  startupSettings.TweakableFileName = "";
+  startupSettings.EmbededPackage = false;
+
+  Zero::EngineLibrary::Initialize(startupSettings);
+
+  //Zero::Engine engine;
+  Zero::StartSystemObjects();
+  Zero::InitializeTokens();
+  //Zero::EngineLibrary::Initialize("", false);
+
+  Zero::ZeroStartupSettings settings;
+  settings.TweakableFileName = "";
+  settings.EmbededPackage = false;
+
+  //Zero::ZeroStartup startup;
+  //Zero::Engine* engine = startup.Initialize(settings);
+
+ // Zero::Z::gEngine = ::new Zero::Engine();
+
+//  initEngineForDocTool(Zero::Z::gEngine);
+}
 }//namespace Zero
 
+/*
+{
+TimerBlock block("Initializing core systems.");
+
+//Create all core systems
+engine->AddSystem(CreateOsShellSystem());
+engine->AddSystem(CreateTimeSystem());
+engine->AddSystem(CreatePhysicsSystem());
+engine->AddSystem(CreateActionSystem());
+engine->AddSystem(CreateSoundSystem());
+engine->AddSystem(CreateGraphicsSystem());
+
+SystemInitializer initializer;
+initializer.mEngine = engine;
+initializer.Config = configCog;
+
+//Initialize all systems.
+engine->Initialize(initializer);
+}
+*/
 
 int main(int argc, char* argv[])
 {
-  Zero::InitializeTokens();
+  Zero::startup();
 
   printf("Raw Documentation Generator\n");
 

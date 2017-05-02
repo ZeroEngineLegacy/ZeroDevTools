@@ -649,7 +649,17 @@ namespace Zero
   ////////////////////////////////////////////////////////////////////////
   // IgnoreList
   ////////////////////////////////////////////////////////////////////////
-  ZeroDefineType(IgnoreList);
+  //ZeroDefineType(IgnoreList);
+  ZilchDefineType(IgnoreList, builder, type)
+  {
+
+  }
+
+  void IgnoreList::Serialize(Serializer& stream)
+  {
+    SerializeName(mDirectories);
+    SerializeName(mIgnoredNames);
+  }
 
   bool IgnoreList::DirectoryIsOnIgnoreList(StringParam dir) const
   {
@@ -716,12 +726,6 @@ namespace Zero
       // add the name to the ignored names list
       mIgnoredNames.Insert(name);
     }
-  }
-
-  void IgnoreList::Serialize(Serializer& stream)
-  {
-    SerializeName(mDirectories);
-    SerializeName(mIgnoredNames);
   }
 
   ////////////////////////////////////////////////////////////////////////
@@ -826,7 +830,11 @@ namespace Zero
   ////////////////////////////////////////////////////////////////////////
   // RawDocumentationLibrary
   ////////////////////////////////////////////////////////////////////////
-  ZeroDefineType(RawDocumentationLibrary);
+  //ZeroDefineType(RawDocumentationLibrary);
+  ZilchDefineType(RawDocumentationLibrary, builder, type)
+  {
+
+  }
 
   RawDocumentationLibrary::~RawDocumentationLibrary()
   {
@@ -1298,7 +1306,11 @@ namespace Zero
   ////////////////////////////////////////////////////////////////////////
   // RawClassDoc
   ////////////////////////////////////////////////////////////////////////
-  ZeroDefineType(RawClassDoc);
+  //ZeroDefineType(RawClassDoc);
+  ZilchDefineType(RawClassDoc, builder, type)
+  {
+
+  }
 
   RawClassDoc::RawClassDoc(void)
     : mHasBeenLoaded(false)
@@ -2531,7 +2543,11 @@ namespace Zero
   ////////////////////////////////////////////////////////////////////////
   // RawTypedefLibrary
   ////////////////////////////////////////////////////////////////////////
-  ZeroDefineType(RawTypedefLibrary);
+  //ZeroDefineType(RawTypedefLibrary);
+  ZilchDefineType(RawTypedefLibrary, builder, type)
+  {
+
+  }
 
   void RawTypedefLibrary::LoadTypedefsFromDocLibrary(RawDocumentationLibrary& docLib)
   {

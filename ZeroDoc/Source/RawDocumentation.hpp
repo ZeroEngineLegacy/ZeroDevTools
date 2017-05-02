@@ -12,10 +12,11 @@
 
 #pragma once
 
-#include <Engine/EngineStandard.hpp>
-#include <Engine/Documentation.hpp>
-#include "..\TinyXml\tinyxml.h"
+//#include <Engine/EngineStandard.hpp>
+#include "Engine/Documentation.hpp"
+#include "../TinyXml/tinyxml.h"
 #include "DocTypeTokens.hpp"
+
 
 #define WriteLog(...) DocLogger::Get()->Write(__VA_ARGS__)
 namespace Zero
@@ -142,11 +143,11 @@ namespace Zero
 
   bool ContainsFirstTypeInSecondType(TypeTokens &firstType, TypeTokens &secondType);
 
-  /// compares two document classes by alphebetical comparison of names
+  /// compares two document classes by alphabetical comparison of names
   template<typename T>
   bool DocCompareFn(const T& lhs, const T& rhs);
 
-  /// compares two document classes by alphebetical comparison of names (for pointer types)
+  /// compares two document classes by alphabetical comparison of names (for pointer types)
   template<typename T>
   bool DocComparePtrFn(const T& lhs, const T& rhs);
 
@@ -155,7 +156,8 @@ namespace Zero
   class IgnoreList : public Object
   {
   public:
-    ZeroDeclareType(IgnoreList);
+
+    ZilchDeclareType(TypeCopyMode::ReferenceType);
     /// returns true if directory/file passed in is on the ignore list
     bool DirectoryIsOnIgnoreList(StringParam dir) const;
 
@@ -329,7 +331,7 @@ namespace Zero
   {
   public:
     ///// PUBLIC METHODS ///// 
-    ZeroDeclareType(RawClassDoc);
+    ZilchDeclareType(TypeCopyMode::ReferenceType);
 
     RawClassDoc();
     RawClassDoc(StringParam name);
@@ -456,7 +458,7 @@ namespace Zero
   public:
     ///// PUBLIC METHODS ///// 
 
-    ZeroDeclareType(RawDocumentationLibrary);
+    ZilchDeclareType(TypeCopyMode::ReferenceType);
 
     ~RawDocumentationLibrary();
 
@@ -521,7 +523,7 @@ namespace Zero
   public:
     ///// PUBLIC METHODS ///// 
 
-    ZeroDeclareType(RawTypedefLibrary);
+    ZilchDeclareType(TypeCopyMode::ReferenceType);
 
     /// loads any typedefs saved in a doc library
     void LoadTypedefsFromDocLibrary(RawDocumentationLibrary& docLib);

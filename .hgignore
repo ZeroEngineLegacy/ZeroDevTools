@@ -13,6 +13,8 @@ syntax: glob
 
 ZeroDoc/LocalBuildEnvironment.cmd
 BuildMaker/LocalBuildEnvironment.cmd
+BuildMaker/BuildInstall/bin/*
+BuildMaker/BuildInstall/obj/*
 ZeroCrashHandler/ZeroCrashHandler/bin/
 ZeroCrashHandler/ZeroCrashHandler/obj/
 SourceIndexer/SourceIndexer/bin/

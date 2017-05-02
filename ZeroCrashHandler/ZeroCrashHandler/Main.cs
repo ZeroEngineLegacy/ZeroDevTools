@@ -137,7 +137,7 @@ namespace ZeroCrashHandler
 						fileText = File.ReadAllText(fileName);
 						break;
 					}
-					catch (System.Exception ex)
+					catch (System.Exception)
 					{
 						Thread.Sleep(200);
 					}
@@ -840,9 +840,9 @@ namespace ZeroCrashHandler
 				Stream stream2 = wresp.GetResponseStream();
 				StreamReader reader2 = new StreamReader(stream2);
 				var result = reader2.ReadToEnd();
-				result = result;
+				//result = result;
 			}
-			catch (Exception ex)
+			catch (Exception)
 			{
 				if (wresp != null)
 				{

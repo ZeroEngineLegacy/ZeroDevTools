@@ -34,7 +34,7 @@ void AddHeader(StringBuilder& builder, StringParam fileName)
 
 void WordWrapAppend(StringParam item, StringBuilder& builder, uint& currOffset, uint startingOffset)
 {
-  uint itemSize = item.size();
+  uint itemSize = item.SizeInBytes();
 
   //if the new string item will hit 80 characters minus one
   //(account for \ length), then wrap them to a new line starting
@@ -67,10 +67,10 @@ void BuildMacroDefinition(uint values, StringParam macroName, StringBuilder& bui
 {
   String str = String::Format("#define %s%d(",macroName.c_str(),values);
   builder.Append(str);
-  uint startingCharDistance = str.size();
+  uint startingCharDistance = str.SizeInBytes();
   builder.Append("name,mode,");
 
-  uint currSize = startingCharDistance + String("name,mode,").size();
+  uint currSize = startingCharDistance + String("name,mode,").SizeInBytes();
   for(uint i = 0; i < values; ++i)
   {
     String item;
@@ -104,7 +104,7 @@ void BuildInternalEnum(uint values, StringBuilder& builder, StringParam tab)
   String start = "enum       Enum {";
   start = Zero::BuildString(tab,start);
 
-  startingCharDistance = start.size();
+  startingCharDistance = start.SizeInBytes();
   currSize = startingCharDistance;
   builder.Append(start);
   for(uint i = 0; i < values; ++i)
@@ -126,7 +126,7 @@ void BuildEnumSize(uint values, StringBuilder& builder, StringParam tab)
   //Add the Size value
   str = String::Format("%senum {Size = %d};",tab.c_str(),values);
   builder.Append(str);
-  FillToEnd(builder,str.size());
+  FillToEnd(builder,str.SizeInBytes());
 }
 
 void BuildNamesArray(uint values, StringBuilder& builder, StringParam tab, bool uniqueNames = false)
@@ -142,7 +142,7 @@ void BuildNamesArray(uint values, StringBuilder& builder, StringParam tab, bool 
 
   start = "static const cstr Names[] = {";
   start = Zero::BuildString(tab,start);
-  startingCharDistance = start.size();
+  startingCharDistance = start.SizeInBytes();
   currSize = startingCharDistance;
   builder.Append(start);
   for(uint i = 0; i < values + 1; ++i)
@@ -170,7 +170,7 @@ void BuildValuesArray(uint values, StringBuilder& builder, StringParam tab, bool
 
   start = "static const uint Values[] = {";
   start = Zero::BuildString(tab, start);
-  startingCharDistance = start.size();
+  startingCharDistance = start.SizeInBytes();
   currSize = startingCharDistance;
   builder.Append(start);
   for (uint i = 0; i < values + 1; ++i)
@@ -202,16 +202,16 @@ void ExpandNames(uint values, StringBuilder& builder, bool uniqueNames = false)
   //add the Type typedef
   str = Zero::BuildString(tab,String("namespace name"));
   builder.Append(str);
-  FillToEnd(builder,str.size());
+  FillToEnd(builder,str.SizeInBytes());
   str = Zero::BuildString(tab,String("{"));
   builder.Append(str);
-  FillToEnd(builder,str.size());
+  FillToEnd(builder,str.SizeInBytes());
   str = Zero::BuildString(tab,String("typedef uint Type;"));
   builder.Append(str);
-  FillToEnd(builder,str.size());
+  FillToEnd(builder,str.SizeInBytes());
   str = Zero::BuildString(tab, String("static const cstr EnumName = #name;"));
   builder.Append(str);
-  FillToEnd(builder, str.size());
+  FillToEnd(builder, str.SizeInBytes());
 
   ////add the Enum values
   BuildInternalEnum(values,builder,tab);
@@ -227,7 +227,7 @@ void ExpandNames(uint values, StringBuilder& builder, bool uniqueNames = false)
 
   str = Zero::BuildString(tab,"}");
   builder.Append(str);
-  FillToEnd(builder,str.size());
+  FillToEnd(builder,str.SizeInBytes());
 
   //builder.Append(Zero::BuildString(tab,"enum {}////used to force a closing semi-colon\n"));
   builder.Append("\n");
@@ -239,10 +239,10 @@ void DeclareBlock(uint values, StringBuilder& builder, StringParam declareStr, S
 
   str = String::Format("#define Declare%s%d(",declareStr.c_str(),values);
   builder.Append(str);
-  uint startingCharDistance = str.size();
+  uint startingCharDistance = str.SizeInBytes();
   builder.Append("name,");
 
-  uint currSize = startingCharDistance + String("name,").size();
+  uint currSize = startingCharDistance + String("name,").SizeInBytes();
   for(uint i = 0; i < values; ++i)
   {
     String item;
@@ -269,20 +269,20 @@ void DeclareBlock(uint values, StringBuilder& builder, StringParam declareStr, S
   FillToEnd(builder,currSize);
 
 
-  startingCharDistance = String("#define ").size();
+  startingCharDistance = String("#define ").SizeInBytes();
   for(uint i = 0; i < startingCharDistance; ++i)
     builder.Append(" ");
 
   String start = String::Format("_ExpandNames%d(",values);
   if(uniqueNames)
     start = String::Format("_ExpandUniqueNames%d(",values);
-  startingCharDistance += start.size();
+  startingCharDistance += start.SizeInBytes();
   builder.Append(start);
 
   str = String::Format("name,%s,",modeStr.c_str());
   builder.Append(str);
   
-  currSize = startingCharDistance + str.size();
+  currSize = startingCharDistance + str.SizeInBytes();
   for(uint i = 0; i < values; ++i)
   {
     String item;
@@ -309,7 +309,7 @@ void DeclareBlock(uint values, StringBuilder& builder, StringParam declareStr, S
   if(addNone)
   {
     FillToEnd(builder,currSize);
-    uint startSize = String("#define ").size();
+    uint startSize = String("#define ").SizeInBytes();
     //add white space padding at the front to line up the next line
     for(uint i = 0; i < startSize; ++i)
       builder.Append(" ");
@@ -339,7 +339,7 @@ int main()
 
   std::ofstream stream;
   stream.open("EnumDeclaration.hpp");
-  stream.write(sourceStr.c_str(),sourceStr.size());
+  stream.write(sourceStr.c_str(),sourceStr.SizeInBytes());
   stream.close();
   
   builder.Deallocate();
@@ -358,7 +358,7 @@ int main()
   source = sourceStr.c_str();
 
   stream.open("NamedEnumDeclaration.hpp");
-  stream.write(sourceStr.c_str(),sourceStr.size());
+  stream.write(sourceStr.c_str(),sourceStr.SizeInBytes());
   stream.close();
 
   return 0;

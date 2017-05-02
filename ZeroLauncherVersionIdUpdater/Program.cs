@@ -67,7 +67,7 @@ namespace ZeroLauncherVersionIdUpdater
         DeleteDirectory(dir);
 
       try { Directory.Delete(sourceDir); }
-      catch (Exception ex) { }
+      catch (Exception) { }
     }
 
     static void CopyTools(String toolsDir, String outDir)

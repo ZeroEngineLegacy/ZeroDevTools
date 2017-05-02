@@ -1,6 +1,13 @@
-#include "Common/Utility/Standard.hpp"
+#pragma once
 
-//#pragma message("Including Windows...")
+#include "Common/CommonStandard.hpp"
+#include "Math/MathStandard.hpp"
+#include "Zilch/Project/Zilch/Zilch.hpp"
+#include "Serialization/SerializationStandard.hpp"
+#include "Engine/EngineStandard.hpp"
+
+
+#pragma message("Including Windows...")
 
 
 #ifdef _WINDOWS_

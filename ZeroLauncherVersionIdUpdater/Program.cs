@@ -26,7 +26,7 @@ namespace ZeroLauncherVersionIdUpdater
       // out a dummy version id file with a very large version id.
       String exeDirectory = Path.GetDirectoryName(exePath);
       String outFileName = Path.Combine(exeDirectory, "ZeroLauncherVersionId.txt");
-      File.WriteAllText(outFileName, "9000000000");
+      File.WriteAllText(outFileName, "9000000");
 
       BuildMeta meta = new BuildMeta();
       meta.SetupLauncher();

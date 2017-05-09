@@ -19,7 +19,7 @@ namespace ZeroLauncherVersionIdUpdater
   {
     static String BaseUrl = "https://builds.zeroengine.io";
 
-    static String QueryMajorId(String exePath, String sourcePath)
+    static String QueryMajorId(String exePath, String sourcePath, int maxTimeout)
     {
       // The launcher will always end up using the patched version if it is installed on
       // the computer. To get around this, force it to use the local version by writing
@@ -30,7 +30,7 @@ namespace ZeroLauncherVersionIdUpdater
 
       BuildMeta meta = new BuildMeta();
       meta.SetupLauncher();
-      meta.GetBuildInfoFromExe(exePath, sourcePath);
+      meta.GetBuildInfoFromExe(exePath, sourcePath, maxTimeout);
 
       // Delete the dummy file we created
       File.Delete(outFileName);
@@ -222,7 +222,7 @@ namespace ZeroLauncherVersionIdUpdater
 
       String launcherExePath = Path.Combine(commandArgs.ZeroOutDir, "ZeroLauncher.exe");
       if (commandArgs.MajorId == -1)
-        commandArgs.MajorId = int.Parse(QueryMajorId(launcherExePath, commandArgs.SourceDir));
+        commandArgs.MajorId = int.Parse(QueryMajorId(launcherExePath, commandArgs.SourceDir, commandArgs.MaxTimeout));
 
       //always create the id file
       CreateVersionIdFile(commandArgs.OutDir, commandArgs.MajorId);

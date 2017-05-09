@@ -41,6 +41,10 @@ namespace ZeroLauncherVersionIdUpdater
     public int MajorIdProperty { get { return MajorId; } set { MajorId = value; } }
     public int MajorId = -1;
 
+    [Option("MaxTimeout", Required = false, HelpText = "The max timeout (in seconds) for running the launcher")]
+    public int MaxTimeoutProperty { get { return MaxTimeout; } set { MaxTimeout = value; } }
+    public int MaxTimeout = 100;
+
     [HelpOption(HelpText = "Display this help screen.")]
     public string GetUsage()
     {

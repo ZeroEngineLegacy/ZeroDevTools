@@ -79,7 +79,11 @@ namespace SharedBuildHelpers
       process.WaitForExit(timoutInSeconds * 1000);
       if (!process.HasExited)
       {
-        try { process.Kill(); }
+        try
+        {
+          Console.WriteLine("Process took longer than {0}. Killing the process.", timoutInSeconds * 1000);
+          process.Kill();
+        }
         catch (Exception) { }
       }
 

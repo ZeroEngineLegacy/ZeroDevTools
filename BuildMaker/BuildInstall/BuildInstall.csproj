@@ -58,6 +58,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\SharedBuildHelpers\SharedBuildHelpers.csproj">
+      <Project>{497dc8e0-7da0-439e-b485-753fca6612bc}</Project>
+      <Name>SharedBuildHelpers</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
     <Compile Include="InstallBuilder.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

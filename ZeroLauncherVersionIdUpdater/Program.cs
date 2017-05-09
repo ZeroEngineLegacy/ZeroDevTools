@@ -1,5 +1,6 @@
 ﻿using CommandLine;
 using CommandLine.Text;
+using SharedBuildHelpers;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
@@ -18,10 +19,23 @@ namespace ZeroLauncherVersionIdUpdater
   {
     static String BaseUrl = "https://builds.zeroengine.io";
 
-    static String QueryMajorId()
+    static String QueryMajorId(String exePath, String sourcePath)
     {
-      String majorIdQuery = BaseUrl + "?Commands=RequestMajorVersionId";
-      return HttpDownloadHelpers.GetStringData(majorIdQuery);
+      // The launcher will always end up using the patched version if it is installed on
+      // the computer. To get around this, force it to use the local version by writing
+      // out a dummy version id file with a very large version id.
+      String exeDirectory = Path.GetDirectoryName(exePath);
+      String outFileName = Path.Combine(exeDirectory, "ZeroLauncherVersionId.txt");
+      File.WriteAllText(outFileName, "9000000000");
+
+      BuildMeta meta = new BuildMeta();
+      meta.SetupLauncher();
+      meta.GetBuildInfoFromExe(exePath, sourcePath);
+
+      // Delete the dummy file we created
+      File.Delete(outFileName);
+
+      return meta.GetProperty("LauncherMajorVersion");
     }
 
     static void CreateVersionIdFile(String outDir, int majorId)
@@ -206,8 +220,9 @@ namespace ZeroLauncherVersionIdUpdater
       if (createPackage)
         Directory.CreateDirectory(packageOutDir);
 
+      String launcherExePath = Path.Combine(commandArgs.ZeroOutDir, "ZeroLauncher.exe");
       if (commandArgs.MajorId == -1)
-        commandArgs.MajorId = int.Parse(QueryMajorId());
+        commandArgs.MajorId = int.Parse(QueryMajorId(launcherExePath, commandArgs.SourceDir));
 
       //always create the id file
       CreateVersionIdFile(commandArgs.OutDir, commandArgs.MajorId);

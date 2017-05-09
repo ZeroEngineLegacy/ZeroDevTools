@@ -15,6 +15,8 @@ ZeroDoc/LocalBuildEnvironment.cmd
 BuildMaker/LocalBuildEnvironment.cmd
 BuildMaker/BuildInstall/bin/*
 BuildMaker/BuildInstall/obj/*
+SharedBuildHelpers/bin/*
+SharedBuildHelpers/obj/*
 ZeroCrashHandler/ZeroCrashHandler/bin/
 ZeroCrashHandler/ZeroCrashHandler/obj/
 SourceIndexer/SourceIndexer/bin/

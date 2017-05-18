@@ -8,8 +8,11 @@
     <ZeroExtensionLibrariesSource>$(ZeroSource)\ZeroLibraries\</ZeroExtensionLibrariesSource>
     <ZeroStandardLibrariesSource>$(ZeroExtensionLibrariesSource)</ZeroStandardLibrariesSource>
     <ZERO_OUTPUT>$(ZeroSource)\BuildOutput\</ZERO_OUTPUT>
+    <LibrariesBuildPath>$(ZeroStandardLibrariesSource)\Build</LibrariesBuildPath>
+    <BuildsPath>$(LibrariesBuildPath)</BuildsPath>
   </PropertyGroup>
   <ImportGroup Label="PropertySheets">
+    <Import Condition="exists('$(LibrariesBuildPath)\CoreConfiguration.props')" Project="$(LibrariesBuildPath)\CoreConfiguration.props" />
     <Import Condition="exists('LocalPaths.props')" Project="LocalPaths.props" />
   </ImportGroup>
 </Project>

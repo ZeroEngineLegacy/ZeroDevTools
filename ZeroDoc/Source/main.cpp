@@ -1,11 +1,10 @@
 #include "Precompiled.hpp"
 
-#include "Engine/EngineStandard.hpp"
+#include "Engine/Documentation.hpp"
+//#include "Serialization/Simple.hpp"
+//#include "Serialization/Text.hpp"
 #include "Platform/CommandLineSupport.hpp"
-#include "Startup/StartupStandard.hpp"
-
-// includes for engine initialization
-#include "WindowsShell/WindowsSystem.hpp"
+#include "Engine/Environment.hpp"
 
 #include "DocConfiguration.hpp"
 #include "RawDocumentation.hpp"
@@ -25,7 +24,7 @@ Usage: [-flags] [-option \"argument\"]\n\
 Flags:\n\
 replaceTypes - if true, we will replace any typedefs in documentation with the underlying type\n\n\
 loadTypedefs - if true, we will load typedefs from the output directory before doing any doc parsing\n\n\
-loadTypedefsFromDoxygen - if true, we will load our typedefs info in a seperate pass over doxygen namespace docs\n\n\
+loadTypedefsFromDoxygen - if true, we will load our typedefs info in a separate pass over doxygen namespace docs\n\n\
 verbose - if true, some extra parsing information will be logged/output\n\n\
 tagAllAsUnbound - if true, we tag everything we load as unbound types\n\n\
 help - if true, we will print the help text then exit\n\n\
@@ -121,7 +120,9 @@ void RunDocumentationGenerator(DocGeneratorConfig &config)
     if (config.mZeroDocFile.SizeInBytes() > 0)
     {
       Zero::DocumentationLibrary doc;
-      if (!Zero::LoadFromDataFile(doc, config.mZeroDocFile))
+
+      //!Zero::LoadFromDataFile(doc, config.mZeroDocFile))
+      if (!Zero::LoadDocumentationSkeleton(doc, config.mZeroDocFile))
       {
         Error("Unable to load doc file at: %s", config.mZeroDocFile.c_str());
       }
@@ -230,13 +231,14 @@ void RunDocumentationGenerator(DocGeneratorConfig &config)
 
   library->FillTrimmedDocumentation(trimLib);
 
-  trimLib.LoadFromMeta();
+  //trimLib.LoadFromMeta();
 
   trimLib.FinalizeDocumentation();
 
   WriteLog("saving Trimmed Documentation File as: %s\n", config.mTrimmedOutput.c_str());
 
-  SaveToDataFile(trimLib, config.mTrimmedOutput);
+  SaveTrimDocToDataFile(trimLib, config.mTrimmedOutput);
+  //trimLib->La
 
   if (config.mVerbose || config.mWarnOnUndocumentedBoundData)
   {
@@ -244,101 +246,15 @@ void RunDocumentationGenerator(DocGeneratorConfig &config)
   }
 }
 
-
-void startup(void)
-{
-  //ZilchRegisterSharedHandleManager(ReferenceCountedHandleManager);
-  //ZilchRegisterSharedHandleManager(CogHandleManager);
-  //ZilchRegisterSharedHandleManager(ComponentHandleManager);
-  //ZilchRegisterSharedHandleManager(ResourceHandleManager);
-  ////ZilchRegisterSharedHandleManager(WidgetHandleManager);
-  //ZilchRegisterSharedHandleManager(ContentItemHandleManager);
-  //ZeroRegisterThreadSafeHandleManager(SafeObject);
-  //ZeroRegisterThreadSafeHandleManager(SafeEventObject);
-  ////ZeroRegisterThreadSafeHandleManager(ThreadedWebRequest);
-  ////ZeroRegisterThreadSafeHandleManager(NetHostRecord);
-  ////ZeroRegisterThreadSafeHandleManager(NetChannel);
-  ////ZeroRegisterThreadSafeHandleManager(NetChannelType);
-  ////ZeroRegisterThreadSafeHandleManager(NetHost);
-  ////ZeroRegisterThreadSafeHandleManager(NetProperty);
-  ////ZeroRegisterThreadSafeHandleManager(NetPropertyType);
-  ////ZeroRegisterThreadSafeHandleManager(ThreadedWebRequest);
-  ////ZeroRegisterThreadSafeHandleManager(VertexBuffer);
-  ////ZeroRegisterThreadSafeHandleManager(IndexBuffer);
-  //ZeroRegisterThreadSafeHandleManager(Event);
-
-  ZeroRegisterThreadSafeReferenceCountedHandleManager(ThreadSafeReferenceCounted);
-
-  CommonLibrary::Initialize();
-
-  // Setup the core Zilch library
-  ZilchSetup *mZilchSetup = new ZilchSetup();
-
-  // We need the calling state to be set so we can create Handles for Meta Components
-  Zilch::Module module;
-  ExecutableState::CallingState = module.Link();
-
-  MetaDatabase::Initialize();
-  ZilchManager::Initialize();
-
-  // Initialize Zero Libraries
-  PlatformLibrary::Initialize();
-  GeometryLibrary::Initialize();
-  // Geometry doesn't know about the Meta Library, so it cannot add itself to the MetaDatabase
-  MetaDatabase::GetInstance()->AddNativeLibrary(GeometryLibrary::GetLibrary());
-  MetaLibrary::Initialize();
-  ContentMetaLibrary::Initialize();
-  SerializationLibrary::Initialize();
-  //SpatialPartitionLibrary::Initialize();
-
-  ZeroStartupSettings startupSettings;
-  startupSettings.TweakableFileName = "";
-  startupSettings.EmbededPackage = false;
-
-  Zero::EngineLibrary::Initialize(startupSettings);
-
-  //Zero::Engine engine;
-  Zero::StartSystemObjects();
-  Zero::InitializeTokens();
-  //Zero::EngineLibrary::Initialize("", false);
-
-  Zero::ZeroStartupSettings settings;
-  settings.TweakableFileName = "";
-  settings.EmbededPackage = false;
-
-  //Zero::ZeroStartup startup;
-  //Zero::Engine* engine = startup.Initialize(settings);
-
- // Zero::Z::gEngine = ::new Zero::Engine();
-
-//  initEngineForDocTool(Zero::Z::gEngine);
-}
 }//namespace Zero
 
-/*
-{
-TimerBlock block("Initializing core systems.");
-
-//Create all core systems
-engine->AddSystem(CreateOsShellSystem());
-engine->AddSystem(CreateTimeSystem());
-engine->AddSystem(CreatePhysicsSystem());
-engine->AddSystem(CreateActionSystem());
-engine->AddSystem(CreateSoundSystem());
-engine->AddSystem(CreateGraphicsSystem());
-
-SystemInitializer initializer;
-initializer.mEngine = engine;
-initializer.Config = configCog;
-
-//Initialize all systems.
-engine->Initialize(initializer);
-}
-*/
 
 int main(int argc, char* argv[])
 {
-  Zero::startup();
+  Zero::InitializeTokens();
+
+  // setup zilch with no doc strings since we won't need them (Sense we are making them)
+  Zilch::ZilchSetup *zilchSetup = new ZilchSetup(SetupFlags::NoDocumentationStrings);
 
   printf("Raw Documentation Generator\n");
 

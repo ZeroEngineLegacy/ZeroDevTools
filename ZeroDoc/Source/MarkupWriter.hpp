@@ -1,4 +1,5 @@
 #include "Engine/EngineContainers.hpp"
+
 namespace Zero
 {
   typedef HashMap<String, Array<ClassDoc*> > DocToTags;
@@ -103,6 +104,10 @@ namespace Zero
 
     void InsertTypeLink(StringParam className);
 
+    void InsertHeaderLink(StringParam name, StringParam link);
+
+    void InsertHeaderLink(StringParam name);
+
     static const String mEndLine;
 
   };
@@ -122,9 +127,40 @@ namespace Zero
 
     void InsertProperty(PropertyDoc &propDoc);
 
+    // Will probably be removed since we are going to use jump table
+    void WriteMethodTable(void);
+    // Will probably be removed since we are going to use jump table
+    void WritePropertyTable(void); 
+
+    void InsertJumpTable(void);
+
     Array<String> mBases;
 
     ClassDoc *mClassDoc;
+  };
+
+  class ReMarkupEnumListWriter : public ReMarkupWriter
+  {
+  public:
+    ReMarkupEnumListWriter(StringRef name);
+
+    static void WriteEnumList(StringParam outputFile, DocumentationLibrary &lib);
+
+    void InsertEnumEntry(EnumDoc* enumDoc);
+
+    void InsertEnumTable(const Array<EnumDoc*>& enumList);
+  };
+
+  class ReMarkupFlagsListWriter : public ReMarkupWriter
+  {
+  public:
+    ReMarkupFlagsListWriter(StringRef name);
+
+    static void WriteFlagsList(StringParam outputFile, DocumentationLibrary &lib);
+
+    void InsertFlagsEntry(EnumDoc *flags);
+
+    void InsertFlagTable(const Array<EnumDoc*>& enumList);
   };
 
   class ReMarkupEventListWriter : public ReMarkupWriter
@@ -134,7 +170,9 @@ namespace Zero
 
     ReMarkupEventListWriter(StringParam name);
 
-    void WriteEventEntry(StringParam eventEntry, StringParam type);
+    void WriteEventEntry(EventDoc* eventDoc, StringParam type);
+
+    void WriteEventTable(const Array<EventDoc *>& flagsList);
   };
 
   class ReMarkupCommandRefWriter : public ReMarkupWriter

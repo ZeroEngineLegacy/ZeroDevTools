@@ -20,9 +20,107 @@
 namespace Zero
 {
 
+  bool LoadCommandList(CommandDocList& commandList, StringRef absPath)
+  {
+    Status status;
+    DataTreeLoader loader;
+
+    if (!loader.OpenFile(status, absPath))
+    {
+      Error("Unable to load command list file: %s\n", absPath);
+      return false;
+    }
+
+    PolymorphicNode dummyNode;
+    loader.GetPolymorphic(dummyNode);
+
+    loader.SerializeField("Commands", commandList.mCommands);
+
+    loader.Close();
+
+    printf("...successfully loaded doc skeleton from file...\n");
+    return true;
+  }
+
+  bool LoadEventList(EventDocList& eventList, StringRef absPath)
+  {
+    Status status;
+    DataTreeLoader loader;
+
+    if (!loader.OpenFile(status, absPath))
+    {
+      Error("Unable to load command list file: %s\n", absPath);
+      return false;
+    }
+
+    PolymorphicNode docNode;
+    loader.GetPolymorphic(docNode);
+
+    PolymorphicNode eventListObject;
+    loader.GetPolymorphic(eventListObject);
+
+    loader.SerializeField("Events", eventList.mEvents);
+
+    loader.Close();
+
+    printf("...successfully loaded doc skeleton from file...\n");
+    return true;
+  }
+
+  bool SaveTrimDocToDataFile(DocumentationLibrary &lib, StringRef absPath)
+  {
+    Status status;
+
+    TextSaver saver;
+    saver.Open(status, absPath.c_str());
+
+    if (status.Failed())
+    {
+      Error(status.Message.c_str());
+      return false;
+    }
+
+    saver.StartPolymorphic("DocumentationLibrary");
+
+    saver.SerializeField("Classes", lib.mClasses);
+
+    saver.SerializeField("Enums", lib.mEnums);
+
+    saver.SerializeField("Flags", lib.mFlags);
+
+    saver.EndPolymorphic();
+
+    saver.Close();
+    return true;
+  }
+
   ////////////////////////////////////////////////////////////////////////
   // Helpers
   ////////////////////////////////////////////////////////////////////////
+  bool LoadDocumentationSkeleton(DocumentationLibrary &skeleton, StringRef file)
+  {
+    Status status;
+    DataTreeLoader loader;
+
+     if (!loader.OpenFile(status, file))
+    {
+      Error("Unable to load documentation skeleton file: %s\n", file);
+      return false;
+    }
+     
+     PolymorphicNode docLibraryNode;
+     loader.GetPolymorphic(docLibraryNode);
+
+
+    loader.SerializeField("Classes", skeleton.mClasses);
+    loader.SerializeField("Enums", skeleton.mEnums);
+    loader.SerializeField("Flags", skeleton.mFlags);
+    
+    loader.Close();
+
+    printf("...successfully loaded doc skeleton from file...\n");
+    return true;
+  }
 
   String GetArgumentIfString(TypeTokens &fnCall, uint argPos)
   {
@@ -165,9 +263,35 @@ namespace Zero
   {
     StringBuilder builder;
 
+    TypeTokens newList;
+
+    // We don't care about the last token since it is not going to be a scope resolution
     for (uint i = 0; i < tokens.Size(); ++i)
     {
-      const DocToken &token = tokens[i];
+      const DocToken &currToken = tokens[i];
+      // If I don't find a token "::", skip this token we don't care about it
+      if (currToken.mEnumTokenType != DocTokenType::ScopeResolution)
+      {
+        newList.Append(currToken);
+      }
+      // Check to the right of the scope resolution token for an enum.
+      // If there is an enum token
+      else if (tokens[i + 1].mText == "Enum")
+      {
+        // Skip "::" and skip the enum token
+        ++i;
+      }
+      // If no enum
+      else
+      {
+        // Skip "::" and remove token to the left of it
+        newList.PopBack();
+      }
+    }
+
+    for (uint i = 0; i < newList.Size(); ++i)
+    {
+      const DocToken &token = newList[i];
 
       builder.Append(token.mText);
 
@@ -626,7 +750,21 @@ namespace Zero
     return true;
   }
 
-  // compares two document classes by alphebetical comparison of names
+  String TrimNamespacesOffOfName(StringParam name)
+  {
+    // if it is an enum, take the namespace name
+    if (name.Contains("Enum"))
+    {
+      return name.SubString(name.Begin(), name.FindFirstOf(':').Begin());
+    }
+    // otherwise, we are going to trim off all namespaces
+    else
+    {
+      return name.SubString(name.FindLastOf(':').End(), name.End());
+    }
+  }
+
+  // compares two document classes by alphabetical comparison of names
   template<typename T>
   bool DocCompareFn(const T& lhs, const T& rhs)
   {
@@ -660,6 +798,13 @@ namespace Zero
     SerializeName(mDirectories);
     SerializeName(mIgnoredNames);
   }
+
+  template<> struct Zero::Serialization::Trait<IgnoreList>
+  {
+
+    enum { Type = StructureType::Object };
+    static inline cstr TypeName() { return "IgnoreList"; }
+  };
 
   bool IgnoreList::DirectoryIsOnIgnoreList(StringParam dir) const
   {
@@ -814,6 +959,13 @@ namespace Zero
     SerializeName(mNames);
   }
 
+  template<> struct Zero::Serialization::Trait<RawNamespaceDoc>
+  {
+
+    enum { Type = StructureType::Object };
+    static inline cstr TypeName() { return "RawNamespaceDoc"; }
+  };
+
   void RawNamespaceDoc::GetNamesFromTokens(TypeTokens& tokens)
   {
     for (uint i = 0; i < tokens.Size(); ++i)
@@ -835,6 +987,13 @@ namespace Zero
   {
 
   }
+
+  template<> struct Zero::Serialization::Trait<RawDocumentationLibrary>
+  {
+
+    enum { Type = StructureType::Object };
+    static inline cstr TypeName() { return "RawDocumentationLibrary"; }
+  };
 
   RawDocumentationLibrary::~RawDocumentationLibrary()
   {
@@ -858,6 +1017,8 @@ namespace Zero
 
   void RawDocumentationLibrary::FillTrimmedDocumentation(DocumentationLibrary &trimLib)
   {
+    trimLib.mEnums = mEnums;
+    trimLib.mFlags = mFlags;
     for (uint i = 0; i < mClasses.Size(); ++i)
     {
       ClassDoc* newClass = new ClassDoc();
@@ -882,8 +1043,15 @@ namespace Zero
       // if we have no classpath that means the class was never loaded to begin with
       if (classDoc->mRelativePath == "")
       {
-        WriteLog("empty Class found by the name of: %s\n", classDoc->mName.c_str());
-        continue;
+        if (classDoc->mLibrary == "Core")
+        {
+          classDoc->mRelativePath = BuildString("\\BaseZilchTypes\\", classDoc->mName, ".data");
+        }
+        else
+        {
+          WriteLog("empty Class found by the name of: %s\n", classDoc->mName.c_str());
+          continue;
+        }
       }
 
       StringRange path = 
@@ -895,8 +1063,9 @@ namespace Zero
       }
 
       // save class to file by the classes name, check return for fail print output
-      if (!SaveToDataFile(*classDoc, absOutputPath))
+      if (!classDoc->SaveToFile(absOutputPath))
       {
+        WriteLog("failed to write raw class data file at: %s\n", absOutputPath.c_str());
         Error("failed to write documentation to file at: %s\n", absOutputPath.c_str());
         continue;
       }
@@ -905,8 +1074,8 @@ namespace Zero
     }
 
     String docLibFile = BuildString(directory, "\\", "Library", ".data");
-
-    if (!SaveToDataFile(*this, docLibFile))
+    //SaveToFile
+    if (!SaveToFile(docLibFile))
     {
       WriteLog("failed to write library data file at: %s\n", docLibFile.c_str());
       Error("failed to write library data file at: %s\n", docLibFile.c_str());
@@ -980,6 +1149,28 @@ namespace Zero
   void RawDocumentationLibrary::Serialize(Serializer& stream)
   {
     SerializeName(mClassPaths);
+    SerializeName(mEnums);
+    SerializeName(mFlags);
+  }
+
+  bool RawDocumentationLibrary::SaveToFile(StringRef absPath)
+  {
+    Status status;
+
+    TextSaver saver;
+    saver.Open(status, absPath.c_str());
+
+    if (status.Failed())
+    {
+      Error(status.Message.c_str());
+      return false;
+    }
+
+    saver.StartPolymorphic("Doc");
+    saver.SerializeField("RawDocumentationLibrary", *this);
+
+    saver.Close();
+    return true;
   }
 
   bool RawDocumentationLibrary::LoadFromDocumentationDirectory(StringParam directory)
@@ -1087,6 +1278,9 @@ namespace Zero
     MacroDatabase *macroDb = MacroDatabase::GetInstance();
 
     macroDb->mDoxyPath = doxyPath;
+
+    mEnums = library.mEnums;
+    mFlags = library.mFlags;
     // first add all the classes by name to the library
     forRange(ClassDoc *classDoc, library.mClasses.All())
     {
@@ -1123,15 +1317,51 @@ namespace Zero
 
   void RawDocumentationLibrary::LoadEventsList(StringParam absPath)
   {
-    if (!LoadFromDataFile(mEvents, absPath, DataFileFormat::Text, true))
-      Error("Unable to load events list: %s\n", absPath);
+    Status status;
+    DataTreeLoader loader;
+
+    if (!loader.OpenFile(status, absPath))
+    {
+        Error("Unable to load events list: %s\n", absPath);
+    }
+    
+    // this gets the unnamed object containing events array
+    PolymorphicNode dummyNode;
+    loader.GetPolymorphic(dummyNode);
+
+    // gets the events array
+    PolymorphicNode listNode;
+    //loader.GetPolymorphic(listNode);
+
+    loader.SerializeField("Events", mEvents.mEvents);
+
+    loader.Close();
+
+    printf("...successfully loaded eventList from file...\n");
   }
 
   void RawDocumentationLibrary::SaveEventListToFile(StringParam absPath)
   {
+    mEvents.Sort();
     CreateDirectoryAndParents(absPath.SubString(absPath.Begin(), absPath.FindLastOf('\\').Begin()));
 
-    SaveToDataFile(mEvents, absPath);
+    Status status;
+
+    TextSaver saver;
+
+    saver.Open(status, absPath.c_str());
+
+    if (status.Failed())
+    {
+      Error("Failed to open file to save raw events list at location : %s\n", absPath);
+      WriteLog("Failed to open file to save raw events list at location : %s\n", absPath);
+      return;
+    }
+
+    saver.StartPolymorphic("Doc");
+    saver.SerializeField("EventDocList", mEvents);
+    saver.EndPolymorphic();
+    saver.Close();
   }
 
   RawClassDoc *RawDocumentationLibrary::GetClassByName(StringParam name,Array<String> &namespaces)
@@ -1169,6 +1399,13 @@ namespace Zero
     SerializeName(mDescription);
     SerializeName(mTokens);
   }
+
+  template<> struct Zero::Serialization::Trait<RawVariableDoc>
+  {
+
+    enum { Type = StructureType::Object };
+    static inline cstr TypeName() { return "RawVariableDoc"; }
+  };
 
   RawVariableDoc::RawVariableDoc(TiXmlElement* element)
   {
@@ -1246,17 +1483,24 @@ namespace Zero
     SerializeName(mNamespace);
   }
 
+  template<> struct Zero::Serialization::Trait<RawTypedefDoc>
+  {
+
+    enum { Type = StructureType::Object };
+    static inline cstr TypeName() { return "RawTypedefDoc"; }
+  };
+
   ////////////////////////////////////////////////////////////////////////
-  // RawEnumDoc
+  // EnumDoc
   ////////////////////////////////////////////////////////////////////////
 
-  RawEnumDoc::RawEnumDoc(TiXmlElement* element, TiXmlNode* enumDef)
+  void LoadEnumFromDoxy(EnumDoc& enumDoc, TiXmlElement* element, TiXmlNode* enumDef)
   {
-    mName = GetElementValue(element, gElementTags[eNAME]);
+    enumDoc.mName = GetElementValue(element, gElementTags[eNAME]);
 
     // unnamed enums are automatically given a name by doxygen, remove it
-    if (mName.FindFirstOf('@') != "")
-      mName = "";
+    if (enumDoc.mName.FindFirstOf('@') != "")
+      enumDoc.mName = "";
 
     TiXmlNode* DescNode = GetFirstNodeOfChildType(element, "briefdescription");
 
@@ -1267,30 +1511,32 @@ namespace Zero
       {
         if (descEle->Type() == TiXmlNode::TEXT)
         {
-          mDescription = descEle->GetText();
+          enumDoc.mDescription = descEle->GetText();
         }
         else
         {
           StringBuilder desc;
           GetTextFromChildrenNodes(descEle, &desc);
-          mDescription = desc.ToString();
+          enumDoc.mDescription = desc.ToString();
         }
       }
-      mDescription = mDescription.Trim();
-      mDescription = CleanRedundantSpacesInDesc(mDescription);
+      enumDoc.mDescription = enumDoc.mDescription.Trim();
+      enumDoc.mDescription = CleanRedundantSpacesInDesc(enumDoc.mDescription);
     }
 
     // we use these for iteration
     TiXmlNode* firstElement = GetFirstNodeOfChildType(element, "enumvalue");
     TiXmlNode* endNode = GetEndNodeOfChildType(element, "enumvalue");
 
-    for (TiXmlNode* node = firstElement; node != endNode; node = node->NextSibling())
+    int i = 0;
+    for (TiXmlNode* node = firstElement; node != endNode; node = node->NextSibling(), ++i)
     {
-      mEnumValues.PushBack(node->FirstChildElement()->GetText());
+      // TODO: Actually parse for enumvalue descriptions
+      enumDoc.mEnumValues.FindOrInsert(node->FirstChildElement()->GetText(),"");
     }
 
   }
-
+  /*
   void RawEnumDoc::Serialize(Serializer& stream)
   {
     SerializeNameDefault(mName, String(""));
@@ -1299,9 +1545,13 @@ namespace Zero
 
     SerializeNameDefault(mEnumValues, Array<String>());
   }
-  ////////////////////////////////////////////////////////////////////////
-  // EventDoc
-  ////////////////////////////////////////////////////////////////////////
+
+  template<> struct Zero::Serialization::Trait<RawEnumDoc>
+  {
+
+    enum { Type = StructureType::Object };
+    static inline cstr TypeName() { return "RawEnumDoc"; }
+  };*/
 
   ////////////////////////////////////////////////////////////////////////
   // RawClassDoc
@@ -1339,16 +1589,18 @@ namespace Zero
     { 
       delete typedefDoc;
     }
-
-    forRange(RawEnumDoc* enumDoc, mEnums.All())
-    {
-      delete enumDoc;
-    }
   }
 
   void RawClassDoc::LoadFromSkeleton(const ClassDoc &skeleClass)
   {
     mTags = skeleClass.mTags;
+
+    mLibrary = skeleClass.mLibrary;
+
+    if (mLibrary == "Core")
+    {
+      mRelativePath = BuildString("\\BaseZilchTypes\\", skeleClass.mName, ".data");
+    }
 
     forRange(PropertyDoc *prop, skeleClass.mProperties.All())
     {
@@ -1366,23 +1618,55 @@ namespace Zero
     Build();
   }
 
+  template<> struct Zero::Serialization::Trait<RawClassDoc>
+  {
+
+    enum { Type = StructureType::Object };
+    static inline cstr TypeName() { return "RawClassDoc"; }
+  };
+
   void RawClassDoc::Serialize(Serializer& stream)
   {
     SerializeName(mName);
     SerializeName(mNamespace);
+    SerializeName(mLibrary);
     SerializeName(mRelativePath);
     SerializeName(mHeaderFile);
     SerializeName(mBodyFile);
     SerializeName(mBaseClass);
     SerializeName(mDescription);
     SerializeName(mTypedefs);
-    SerializeName(mEnums);
     SerializeName(mEvents);
     SerializeName(mVariables);
     SerializeName(mMethods);
   }
 
-  // we could change this to take a bool wether to override or not
+  bool RawClassDoc::SaveToFile(StringRef absPath)
+  {
+    Status status;
+
+    TextSaver saver;
+
+    //AGAHNNGS why are core stuff just not saving?!?! SADFASDFASD
+
+    saver.Open(status, absPath.c_str());
+    if (status.Failed())
+    {
+      Error(status.Message.c_str());
+      return false;
+    }
+    
+
+    saver.StartPolymorphic("Doc");
+
+    saver.SerializeField("RawClassDoc", *this);
+
+    saver.Close();
+
+    return true;
+  }
+
+  // we could change this to take a bool whether to override or not
   void RawClassDoc::Add(RawClassDoc& classDoc)
   {
     const Array<RawMethodDoc* > empty;
@@ -1402,6 +1686,12 @@ namespace Zero
         {
           if (sameNamedMeth->mParsedParameters == methodDoc->mParsedParameters)
           {
+            // same function already documented, check if it needs a description before breaking
+            if (sameNamedMeth->mDescription.Empty())
+            {
+              sameNamedMeth->mDescription = methodDoc->mDescription;
+            }
+
             // just break, once we find one, the rest of the methods don't matter
             sameSigExists = true;
             break;
@@ -1463,6 +1753,7 @@ namespace Zero
     trimClass->mDescription = mDescription;
     trimClass->mEventsSent = mEvents;
     trimClass->mTags = mTags;
+    trimClass->mLibrary = mLibrary;
 
     for (uint i = 0; i < trimClass->mEventsSent.Size(); ++i)
     {
@@ -1470,7 +1761,7 @@ namespace Zero
       trimClass->mEventsMap[eventDoc->mName] = eventDoc;
     }
 
-    // pull out all variables as properites (Removing leading 'm' where exists)
+    // pull out all variables as properties (Removing leading 'm' where exists)
     for (uint i = 0; i < mVariables.Size(); ++i)
     {
       RawVariableDoc* rawVar = mVariables[i];
@@ -2135,7 +2426,7 @@ namespace Zero
         switch (kind->Value()[0])
         {
         case 'v': // if we are a variable
-          // only save the variable if we are saving all varibles or if it is one of our known vals
+          // only save the variable if we are saving all variables or if it is one of our known vals
           if (!onlySaveValidProperteies
             || mVariableMap.ContainsKey(GetElementValue(memberElement, gElementTags[eNAME])))
           {
@@ -2152,8 +2443,22 @@ namespace Zero
           break;
         }
         case 'e': //else if we are an enum
-          mEnums.PushBack(new RawEnumDoc(memberElement, pMemberDef));
+        {
+          EnumDoc *enumDoc = new EnumDoc();
+          LoadEnumFromDoxy(*enumDoc, memberElement, pMemberDef);
+          // if we already had this, remove the new one (TODO: Merge documentation)
+          if (mParentLibrary->mEnumMap.ContainsKey(enumDoc->mName))
+          {
+            delete enumDoc;
+            break;
+          }
+
+          // otherwise, save it to the parent library
+          mParentLibrary->mEnums.PushBack(enumDoc);
+          mParentLibrary->mEnumMap[enumDoc->mName] = enumDoc;
+
           break;
+        }
         case 'f':  // function or friend
 
           if (strcmp(kind->Value(), "friend") == 0)
@@ -2382,6 +2687,13 @@ namespace Zero
     SerializeName(mTokens);
   }
 
+  template<> struct Zero::Serialization::Trait<RawMethodDoc>
+  {
+
+    enum { Type = StructureType::Object };
+    static inline cstr TypeName() { return "RawMethodDoc"; }
+  };
+
   RawMethodDoc::RawMethodDoc(void)
   { 
     mReturnTokens = new TypeTokens; 
@@ -2549,6 +2861,13 @@ namespace Zero
 
   }
 
+  template<> struct Zero::Serialization::Trait<RawTypedefLibrary>
+  {
+
+    enum { Type = StructureType::Object };
+    static inline cstr TypeName() { return "RawTypedefLibrary"; }
+  };
+
   void RawTypedefLibrary::LoadTypedefsFromDocLibrary(RawDocumentationLibrary& docLib)
   {
     WriteLog("\nLoading Typedefs from Intermediate Documentation Library\n\n");
@@ -2693,7 +3012,11 @@ namespace Zero
       CreateDirectoryAndParents(directory);
     }
 
-    SaveToDataFile(*this, absPath);
+    if (!SaveToFile(absPath))
+    {
+      Error("Failed to write raw typedef documentation\n");
+      WriteLog("Failed to write raw typedef documentation\n");
+    }
     printf("done writing raw typedef documentation file\n");
   }
 
@@ -2702,12 +3025,54 @@ namespace Zero
     SerializeName(mTypedefArray);
   }
 
-  bool RawTypedefLibrary::LoadFromFile(StringRef filepath)
-  {    
-    if (!LoadFromDataFile(*this, filepath, DataFileFormat::Text, true))
+  bool RawTypedefLibrary::SaveToFile(StringRef absPath)
+  {
+    Status status;
+
+    TextSaver saver;
+
+    saver.Open(status, absPath.c_str());
+
+    if (status.Failed())
     {
+      Error(status.Message.c_str());
       return false;
     }
+
+    saver.StartPolymorphic("Doc");
+
+    saver.SerializeField("RawTypedefLibrary", *this);
+
+    saver.EndPolymorphic();
+
+    return true;
+  }
+
+  bool RawTypedefLibrary::LoadFromFile(StringRef filepath)
+  {    
+    //if (!LoadFromDataFile(*this, filepath, DataFileFormat::Text, true))
+    //{
+    //  return false;
+    //}
+
+    Status status;
+
+    DataTreeLoader loader;
+
+    loader.OpenFile(status, filepath.c_str());
+
+    if (status.Failed())
+    {
+      Error(status.Message.c_str());
+      return false;
+    }
+
+    PolymorphicNode dummyNode;
+    loader.GetPolymorphic(dummyNode);
+
+    loader.SerializeField("Typedefs", mTypedefArray);
+
+    loader.Close();
 
     // just to be safe, sort the serialized array (even though it already should be)
     Zero::Sort(mTypedefArray.All(), TypedefDocCompareFn);
@@ -2729,7 +3094,7 @@ namespace Zero
     }
   }
 
-  // this is literaly just the Normalize Tokens function with an extra param for typedefs
+  // this is literally just the Normalize Tokens function with an extra param for typedefs
   bool NormalizeTypedefWithTypedefs(StringParam typedefKey, TypeTokens& tokens,
     RawTypedefLibrary* defLib, RawNamespaceDoc& classNamespace)
   {

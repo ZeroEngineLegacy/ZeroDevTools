@@ -7,16 +7,17 @@
 #include "Support/FileSupport.hpp"
 #include "Platform/FilePath.hpp"
 #include "MarkupWriter.hpp"
-
-/*
-#include "Serialization/Text.hpp"
-#include "Pages.hpp"
-*/
+#include "RawDocumentation.hpp"
+#include "DocTypeParser.hpp"
 
 namespace Zero
 {
-UnsortedMap<String, String> gClassLinkMap;
+UnsortedMap<String, String> gLinkMap;
 String gBaseLink = "zero_engine_documentation/zero_editor_documentation/code_reference/";
+String gBaseClassLink = BuildString(gBaseLink, "class_reference/");
+String gBaseZilchTypesLink = BuildString(gBaseLink, "zilch_base_types/");
+String gBaseEnumTypesLink = BuildString(gBaseLink, "EnumList/#");
+String gBaseFlagsTypesLink = BuildString(gBaseLink, "FlagsList/#");
 
 void WriteTagIndices(String outputDir, DocToTags& tagged, DocumentationLibrary &docLib)
 {
@@ -83,7 +84,7 @@ void WriteOutAllReStructuredTextFiles(Zero::DocGeneratorConfig& config)
     CreateDirectoryAndParents(directory);
 
     DocumentationLibrary doc;
-    LoadFromDataFile(doc, config.mTrimmedOutput);
+    LoadDocumentationSkeleton(doc, config.mTrimmedOutput);
     doc.FinalizeDocumentation();
 
     DocToTags tagged;
@@ -290,7 +291,7 @@ void RstClassMarkupWriter::InsertMethod(MethodDoc &method)
   IndentToCurrentLevel();
 
   mOutput << ".. cpp:function:: " << method.mReturnType << " " 
-    << mName << "::" << method.mName << method.mParameters << "\n\n";
+     << method.mName << method.mParameters << "\n\n";
 
   if (!method.mDescription.Empty())
   {
@@ -313,7 +314,7 @@ void RstClassMarkupWriter::InsertProperty(PropertyDoc &propDoc)
 
   IndentToCurrentLevel();
 
-  mOutput << ".. cpp:member:: " <<  propDoc.mType << " " << mName << "::" << propDoc.mName << "\n\n";
+  mOutput << ".. cpp:member:: " <<  propDoc.mType << " "  << propDoc.mName << "\n\n";
 
   if (!propDoc.mDescription.Empty())
   {
@@ -349,7 +350,7 @@ void RstEventListWriter::WriteEventList(StringRef eventListFilepath, StringRef o
 
   // actually load event list now. (If this fails it probably means the file is mis-formatted)
   EventDocList eventListDoc;
-  LoadFromDataFile(eventListDoc, eventListFilepath);
+  LoadEventList(eventListDoc, eventListFilepath);
 
   Array<EventDoc *> &eventArray = eventListDoc.mEvents;
 
@@ -408,7 +409,7 @@ void RstCommandRefWriter::WriteCommandRef(StringParam commandListFilepath, Strin
 
   // actually load event list now. (If this fails it probably means the file is mis-formatted)
   CommandDocList cmdListDoc;
-  LoadFromDataFile(cmdListDoc, commandListFilepath);
+  LoadCommandList(cmdListDoc, commandListFilepath);
 
   Array<CommandDoc *> &cmdArray = cmdListDoc.mCommands;
 
@@ -493,7 +494,8 @@ void WriteOutAllReMarkupFiles(Zero::DocGeneratorConfig& config)
     CreateDirectoryAndParents(directory);
 
     DocumentationLibrary doc;
-    LoadFromDataFile(doc, config.mTrimmedOutput);
+    LoadDocumentationSkeleton(doc, config.mTrimmedOutput);
+    //LoadFromDataFile(doc, config.mTrimmedOutput);
     doc.FinalizeDocumentation();
 
     DocToTags tagged;
@@ -505,36 +507,114 @@ void WriteOutAllReMarkupFiles(Zero::DocGeneratorConfig& config)
       << "Zero Engine Code Reference \n" 
       << "========================== \n"
       << "\n---  \n";
-    // initialize the classLinkMap so it contains all the lings
+
+    // create the base wikipage for zilch core types
+    StringBuilder zilchCoreIndex;
+   
+    codeRefIndex << "\n---  \n"
+      << "Zilch Base Types Reference \n"
+      << "========================== \n"
+      << "\n---  \n";
+
+    // Add all flags to the linkMap
+    forRange(auto& flagDoc, doc.mFlags.All())
+    {
+      gLinkMap[flagDoc->mName] = BuildString(gBaseFlagsTypesLink, flagDoc->mName);
+    }
+    // Add all enums to the linkMap
+    forRange(auto& enumDoc, doc.mEnums.All())
+    {
+      gLinkMap[enumDoc->mName] = BuildString(gBaseEnumTypesLink, enumDoc->mName);
+    }
+    // Add all classes to the linkMap
     forRange(ClassDoc* classDoc, doc.mClasses.All())
     {
-      gClassLinkMap[classDoc->mName] = BuildString(gBaseLink, classDoc->mName);
+      // check for core library types assuming those are just zilch
+      if (classDoc->mLibrary == "Core")
+      {
+        // if we have brackets in the typename, get rid of them, they mess up documentation
+        if (classDoc->mName.Contains("["))
+        {
+          StringRange foundBracket = classDoc->mName.FindFirstOf("[");
+          String cleanedName = classDoc->mName.SubString(classDoc->mName.Begin(), foundBracket.Begin());
+
+          gLinkMap[cleanedName] = BuildString(gBaseZilchTypesLink, cleanedName);
+          gLinkMap[classDoc->mName] = BuildString(gBaseZilchTypesLink, cleanedName);
+        }
+        // otherwise, just output it regularly
+        else
+        {
+          gLinkMap[classDoc->mName] = BuildString(gBaseZilchTypesLink, classDoc->mName);
+        }
+      }
+      else
+      {
+        gLinkMap[classDoc->mName] = BuildString(gBaseClassLink, classDoc->mName);
+
+        // add a version that does not have the extra type information
+        if (classDoc->mName.Contains("["))
+        {
+          auto foundBracket = classDoc->mName.FindFirstOf("[");
+          gLinkMap[classDoc->mName.SubString(classDoc->mName.Begin(), foundBracket.Begin())]
+            = BuildString(gBaseClassLink, classDoc->mName);
+        }
+      }
     }
     //Upload the class' page to the wiki, making sure to perform the link replacements
     forRange(ClassDoc* classDoc, doc.mClasses.All())
     {
-      String filename = BuildString(classDoc->mName, ".txt");
+      if (classDoc->mLibrary == "Core")
+      {
+        String filename = BuildString(classDoc->mName, ".txt");
 
-      String fullPath = FilePath::Combine(directory, "Reference");
+        String fullPath = FilePath::Combine(directory, "BaseZilchReference");
 
-      CreateDirectoryAndParents(fullPath);
+        CreateDirectoryAndParents(fullPath);
 
-      fullPath = FilePath::Combine(fullPath, filename);
+        fullPath = FilePath::Combine(fullPath, filename);
 
-      fullPath = FilePath::Normalize(fullPath);
+        fullPath = FilePath::Normalize(fullPath);
 
-      ReMarkupClassMarkupWriter::WriteClass(fullPath, classDoc, doc, tagged);
+        ReMarkupClassMarkupWriter::WriteClass(fullPath, classDoc, doc, tagged);
 
-      // [[wiki page | name]]
-      codeRefIndex << gBullet << "[[" << gClassLinkMap[classDoc->mName]
-        << " | " << classDoc->mName << "]] \n";;
+        // [[wiki page | name]]
+        zilchCoreIndex << gBullet << "[[" << gLinkMap[classDoc->mName]
+          << " | " << classDoc->mName << "]] \n";
+      }
+      else
+      {
+        String filename = BuildString(classDoc->mName, ".txt");
 
+        String fullPath = FilePath::Combine(directory, "ClassReference");
+
+        CreateDirectoryAndParents(fullPath);
+
+        fullPath = FilePath::Combine(fullPath, filename);
+
+        fullPath = FilePath::Normalize(fullPath);
+
+        ReMarkupClassMarkupWriter::WriteClass(fullPath, classDoc, doc, tagged);
+
+        // [[wiki page | name]]
+        codeRefIndex << gBullet << "[[" << gLinkMap[classDoc->mName]
+          << " | " << classDoc->mName << "]] \n";
+      }
     }
 
     WriteStringRangeToFile(FilePath::Combine(directory, "ClassRef.txt"), codeRefIndex.ToString());
+    WriteStringRangeToFile(FilePath::Combine(directory, "ZilchBaseRef.txt"), zilchCoreIndex.ToString());
 
     WriteTagIndices(directory, tagged, doc);
 
+    // Output seperate enum list
+    String enumOutput = FilePath::Combine(config.mMarkupDirectory, "EnumList.txt");
+    enumOutput = FilePath::Normalize(enumOutput);
+    ReMarkupEnumListWriter::WriteEnumList(enumOutput, doc);
+
+    // output seperate flags list
+    String flagsOutput = FilePath::Combine(config.mMarkupDirectory, "FlagsList.txt");
+    flagsOutput = FilePath::Normalize(flagsOutput);
+    ReMarkupFlagsListWriter::WriteFlagsList(flagsOutput, doc);
   }
 
   // check if we outputting commands
@@ -545,14 +625,23 @@ void WriteOutAllReMarkupFiles(Zero::DocGeneratorConfig& config)
     ReMarkupCommandRefWriter::WriteCommandRef(config.mCommandListFile, output);
   }
 
-  // check if we are outputing events
+  // check if we are outputting events
   if (!config.mEventsOutputLocation.Empty())
   {
     String output = FilePath::Combine(config.mMarkupDirectory, "EventList.txt");
     output = FilePath::Normalize(output);
     ReMarkupEventListWriter::WriteEventList(config.mEventsOutputLocation, output);
   }
+}
 
+void ReMarkupWriter::InsertHeaderLink(StringParam name, StringParam link)
+{
+  mOutput << "[[" << name << "#" << link << "]]";
+}
+
+void ReMarkupWriter::InsertHeaderLink(StringParam name)
+{
+  InsertHeaderLink(name, name);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -589,25 +678,38 @@ void ReMarkupWriter::InsertLabel(StringParam label)
 
 void ReMarkupWriter::InsertTypeLink(StringParam className)
 {
-  // THIS VERSION ONLY LINKS TYPES IN THE DOCUMENTATION LIBRARY
-  /*
-  if (!gClassLinkMap.ContainsKey(className))
-  {
-  mOutput << className;
-  return;
-  }
-
-  mOutput << "[[" << gClassLinkMap[className] << " | " << className << "]]";
-  */
-
-  // THIS VERSION ATTEMPTS TO LINK EVERYTHING BUT VOID
+  // this version attempt to link everything but void
   if (className.ToLower() == "void")
   {
     mOutput << className;
     return;
   }
 
-  mOutput << "[[" << gBaseLink << className << " | " << className << "]]";
+  TypeTokens tokens;
+
+  AppendTokensFromString(DocLangDfa::Get(), className, &tokens);
+
+  forRange(auto& token, tokens.All())
+  {
+    // if token is recognized as a linkable type, link it
+    if (gLinkMap.ContainsKey(token.mText))
+    {
+      mOutput << "[[" << gLinkMap[token.mText] << " | " << token.mText << "]]";
+    }
+
+    else if (true)
+    {
+
+    }
+    else
+    {
+      // otherwise, just add it to output
+      mOutput << token.mText;
+    }
+  }
+  //TODO: Have this capable to detect if something is a zilch base type or a class
+  //TODO: "className" might actually be a compound type
+  //mOutput << "[[" << gBaseClassLink << className << " | " << className << "]]";
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -630,6 +732,9 @@ void ReMarkupClassMarkupWriter::WriteClass(StringParam outputFile,
   // top of the file
   writer.InsertClassHeader();
   StartHeaderSection(writer);
+
+
+  writer.InsertJumpTable();
 
   // Properties
   //writer.mOutput << ".. _Reference" << writer.mName << "Properties:\n\n";
@@ -667,50 +772,71 @@ ReMarkupClassMarkupWriter::ReMarkupClassMarkupWriter(StringParam name, ClassDoc*
 
 void ReMarkupClassMarkupWriter::InsertClassHeader(void)
 {
+  //=================
+  mOutput << "= " << mClassDoc->mName;
+  InsertDivider();
   return;
 }
 
 void ReMarkupClassMarkupWriter::InsertMethod(MethodDoc &method)
 {
   StartIndentSection((*this));
+  // subheader for the method name
+  mOutput << "====" << method.mName << mEndLine;
+  // print the description directly under the header
+  mOutput << method.mDescription << mEndLine;
 
-  InsertStartOfCodeBlock(method.mName);
+  // TODO: print the cpp codeblock
+
+  //print the zilch codeblock
+  InsertStartOfCodeBlock("Zilch");
   IndentToCurrentLevel();
-  mOutput << method.mReturnType << " " << mName
-    << "::" << method.mName << method.mParameters << mEndLine;
+  mOutput << "function " << method.mName << "(";// Initialize(init : CogInitializer)
 
-  if (!method.mDescription.Empty())
+  for(uint i = 0; i < method.mParameterList.Size(); ++i)
   {
-    mOutput << method.mDescription << mEndLine;
+    ParameterDoc *param = method.mParameterList[i];
+
+    // insert a comma in the start if we are not the first parameter
+    if (i > 0)
+    {
+      mOutput << ", ";
+    }
+
+    mOutput << param->mName << " : " << param->mType;
   }
 
-  // put link to return type 
-  mOutput << gBullet << gBold << "ReturnType: " << gBold;
-  InsertTypeLink(method.mReturnType);
+  mOutput << ")";
+
+  if (!method.mReturnType.Empty() && method.mReturnType != "Void")
+    mOutput << " : " << method.mReturnType;
+
+  mOutput << ";" << mEndLine;
+
+  // print parameter table
+  mOutput << "|Name|Type|Description|\n|---|---|---|\n";
+
+  forRange(ParameterDoc *param, method.mParameterList.All())
+  {
+    mOutput << "|" << param->mName << "|";
+    InsertTypeLink(param->mType);
+    mOutput << "|";
+    if (param->mDescription.Empty())
+    {
+      mOutput << " ";
+    }
+    else
+    {
+      mOutput << param->mDescription;
+    }
+    mOutput << "|\n";
+  }
   mOutput << mEndLine;
 
-  InsertLabel("Parameters:");
-
-  if (method.mParameterList.Size() == 0)
-  {
-    mOutput << gBullet << gBold << "Name: " << gBold << " None" << mEndLine;
-  }
-  else
-  {
-    forRange(ParameterDoc *param, method.mParameterList.All())
-    {
-      //TODO: Turn these into links
-      mOutput << gBullet << gBold << "Name: " << gBold << " " << param->mName << "  ";
-      mOutput << gBold << "Type: " << gBold << " ";
-      InsertTypeLink(param->mType);
-      mOutput << mEndLine;
-
-      if (param->mDescription != "")
-      {
-        mOutput << param->mDescription << mEndLine;
-      }
-    }
-  }
+  // put link to return type 
+  mOutput << "=====ReturnType: ";
+  InsertTypeLink(method.mReturnType);
+  mOutput << mEndLine;
 
   EndIndentSection((*this));
   InsertDivider();
@@ -721,25 +847,266 @@ void ReMarkupClassMarkupWriter::InsertProperty(PropertyDoc &propDoc)
   if (propDoc.mType.Empty())
     return;
 
-
   StartIndentSection((*this));
-  InsertStartOfCodeBlock(propDoc.mName);
+  // subheader for the method name
+  mOutput << "====" << propDoc.mName << mEndLine;
+  // print the description directly under the header
+  mOutput << propDoc.mDescription << mEndLine;
+
+  // TODO: print the cpp codeblock
+
+  //print the zilch codeblock
+  InsertStartOfCodeBlock("Zilch");
   IndentToCurrentLevel();
-  mOutput << propDoc.mType << " " << mName << "::" << propDoc.mName << mEndLine;
+  mOutput << "var " << propDoc.mName << " : " << propDoc.mType << ";" << mEndLine;
 
-  if (!propDoc.mDescription.Empty())
-  {
-    mOutput << propDoc.mDescription << mEndLine;
-  }
-
-  //Insert the type of the property
-  mOutput << gBullet << gBold << "Type: " << gBold;
+  mOutput << "======Type: ";
   InsertTypeLink(propDoc.mType);
   mOutput << mEndLine;
 
-
   EndIndentSection((*this));
   InsertDivider();
+}
+
+void ReMarkupClassMarkupWriter::WriteMethodTable(void)
+{
+  mOutput << "|Name|Description|\n|---|---|\n";
+
+  forRange(MethodDoc *method, mClassDoc->mMethods.All())
+  {
+    mOutput << "|";
+    InsertHeaderLink(method->mName);
+    mOutput<< "|";
+
+    if (method->mDescription.Empty())
+    {
+      mOutput << " ";
+    }
+    else
+    {
+      mOutput << method->mDescription;
+    }
+
+    mOutput << "|\n";
+  }
+  mOutput << mEndLine;
+}
+
+void ReMarkupClassMarkupWriter::WritePropertyTable(void)
+{
+  mOutput << "|Name|Description|" << mEndLine << "|---|---|" << mEndLine;
+
+  forRange(PropertyDoc *prop, mClassDoc->mProperties.All())
+  {
+    mOutput << "|";
+    InsertHeaderLink(prop->mName);
+    mOutput<< "|";
+
+    if (prop->mDescription.Empty())
+    {
+      mOutput << " ";
+    }
+    else
+    {
+      mOutput << prop->mDescription;
+    }
+    mOutput << "|" << mEndLine;
+  }
+}
+
+void ReMarkupClassMarkupWriter::InsertJumpTable(void)
+{
+  // if we don't have stuff to jump to, don't make a jump table
+  if (mClassDoc->mMethods.Empty() && mClassDoc->mProperties.Empty())
+    return;
+
+
+  uint dualIterator = 0;
+  bool methodListLonger = false;
+  uint smallestListSize;
+  
+  if (mClassDoc->mMethods.Size() > mClassDoc->mProperties.Size())
+  {
+    methodListLonger = true;
+    smallestListSize = mClassDoc->mProperties.Size();
+  }
+  else
+  {
+    smallestListSize = mClassDoc->mMethods.Size();
+  }
+
+  // print the top of the table
+  mOutput << "|Methods|Properties|\n|---|---|\n";
+
+  for (; dualIterator < smallestListSize; ++dualIterator)
+  {
+    mOutput << "|";
+    InsertHeaderLink(mClassDoc->mMethods[dualIterator]->mName);
+    mOutput << "|";
+    InsertHeaderLink(mClassDoc->mProperties[dualIterator]->mName);
+    mOutput<< "|\n";
+  }
+  // print the rest of the methods if we had more methods then properties
+  if (methodListLonger)
+  {
+    for (uint i = dualIterator; i < mClassDoc->mMethods.Size(); ++i)
+    {
+      mOutput << "|";
+      InsertHeaderLink(mClassDoc->mMethods[i]->mName);
+      mOutput << "| |\n";
+    }
+  }
+  else
+  {
+    for (uint i = dualIterator; i < mClassDoc->mProperties.Size(); ++i)
+    {
+      mOutput << "| |";
+      InsertHeaderLink(mClassDoc->mProperties[i]->mName);
+      mOutput << "|\n";
+    }
+  }
+  mOutput << mEndLine;
+}
+
+////////////////////////////////////////////////////////////////////////
+// ReMarkupEnumListWriter
+////////////////////////////////////////////////////////////////////////
+ReMarkupEnumListWriter::ReMarkupEnumListWriter(StringRef name) : ReMarkupWriter(name)
+{
+
+}
+
+
+void ReMarkupEnumListWriter::WriteEnumList(StringParam outputFile, DocumentationLibrary &lib)
+{
+  // create the eventList
+  ReMarkupEnumListWriter writer("Enum List");
+
+  writer.InsertNewSectionHeader("Enum List");
+
+  writer.InsertDivider();
+
+  // insert table of enums
+  writer.InsertEnumTable(lib.mEnums);
+
+  writer.InsertDivider();
+
+  // loop over all enums and list them under headers
+  forRange(EnumDoc* enumToWrite, lib.mEnums)
+  {
+    writer.InsertEnumEntry(enumToWrite);
+  }
+
+  writer.WriteOutputToFile(outputFile);
+}
+
+void ReMarkupEnumListWriter::InsertEnumEntry(EnumDoc* enumDoc)
+{
+  // name
+  // description
+  // values
+  // value description (if any)
+
+  StartIndentSection((*this));
+  // subheader for the method name
+  mOutput << "====" << enumDoc->mName << mEndLine;
+  // print the description directly under the header
+  mOutput << enumDoc->mDescription << mEndLine;
+
+  mOutput << "|EnumValue|Description|\n|---|---|\n";
+
+  forRange(auto &enumDescPair, enumDoc->mEnumValues.All())
+  {
+    mOutput << "|" << enumDescPair.first << "|" << enumDescPair.second << "|\n";
+  }
+  EndIndentSection((*this));
+  InsertDivider();
+  mOutput << mEndLine;
+}
+
+void ReMarkupEnumListWriter::InsertEnumTable(const Array<EnumDoc*>& enumList)
+{
+  // print the top of the table
+  mOutput << "|Enum||\n|---|\n";
+
+  forRange(EnumDoc* doc, enumList.All( ))
+  {
+    mOutput << "|";
+    InsertHeaderLink(doc->mName);
+    mOutput << "|\n";
+  }
+  mOutput << mEndLine;
+}
+
+////////////////////////////////////////////////////////////////////////
+// ReMarkupFlagsListWriter
+////////////////////////////////////////////////////////////////////////
+ReMarkupFlagsListWriter::ReMarkupFlagsListWriter(StringRef name) : ReMarkupWriter(name)
+{
+}
+
+
+void ReMarkupFlagsListWriter::WriteFlagsList(StringParam outputFile, DocumentationLibrary &lib)
+{
+  // create the eventList
+  ReMarkupFlagsListWriter writer("Flags List");
+
+  writer.InsertNewSectionHeader("Flags List");
+
+  writer.InsertDivider();
+
+  // insert table of enums
+  writer.InsertFlagTable(lib.mFlags);
+
+  writer.InsertDivider();
+
+  // loop over all enums and list them under headers
+  forRange(EnumDoc* flagsToWrite, lib.mFlags)
+  {
+    writer.InsertFlagsEntry(flagsToWrite);
+  }
+
+  writer.WriteOutputToFile(outputFile);
+}
+
+
+
+void ReMarkupFlagsListWriter::InsertFlagsEntry(EnumDoc *flags)
+{
+  // name
+  // description
+  // values
+  // value description (if any)
+
+  StartIndentSection((*this));
+  // subheader for the method name
+  mOutput << "====" << flags->mName << mEndLine;
+  // print the description directly under the header
+  mOutput << flags->mDescription << mEndLine;
+
+  mOutput << "|FlagName|Description|\n|---|---|\n";
+
+  forRange(auto& enumDescPair, flags->mEnumValues.All())
+  {
+    mOutput << "|" << enumDescPair.first << "|" << enumDescPair.second << "|\n";
+  }
+  EndIndentSection((*this));
+  InsertDivider();
+  mOutput << mEndLine;
+}
+
+void ReMarkupFlagsListWriter::InsertFlagTable(const Array<EnumDoc*>& flagsList)
+{
+  // print the top of the table
+  mOutput << "|Flags||\n|---|\n";
+
+  forRange(EnumDoc *doc, flagsList.All())
+  {
+    mOutput << "|";
+    InsertHeaderLink(doc->mName);
+    mOutput << "|\n";
+  }
+  mOutput << mEndLine;
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -748,8 +1115,6 @@ void ReMarkupClassMarkupWriter::InsertProperty(PropertyDoc &propDoc)
 void ReMarkupEventListWriter::WriteEventList(StringRef eventListFilepath, StringRef outputPath)
 {
   // load the file if we can
-
-  // get outta here with that nonexistent file
   if (!FileExists(eventListFilepath))
   {
     printf("%s does not exist.", eventListFilepath.c_str());
@@ -758,7 +1123,7 @@ void ReMarkupEventListWriter::WriteEventList(StringRef eventListFilepath, String
 
   // actually load event list now. (If this fails it probably means the file is mis-formatted)
   EventDocList eventListDoc;
-  LoadFromDataFile(eventListDoc, eventListFilepath);
+  LoadEventList(eventListDoc, eventListFilepath);
 
   Array<EventDoc *> &eventArray = eventListDoc.mEvents;
 
@@ -769,13 +1134,17 @@ void ReMarkupEventListWriter::WriteEventList(StringRef eventListFilepath, String
 
   writer.InsertDivider();
 
+  writer.WriteEventTable(eventArray);
+
+  writer.InsertDivider();
+
   // create top of file
   StartHeaderSection(writer);
 
   // iterate over all events and insert them
   forRange(EventDoc *eventDoc, eventArray.All())
   {
-    writer.WriteEventEntry(eventDoc->mName, eventDoc->mType);
+    writer.WriteEventEntry(eventDoc, eventDoc->mType);
   }
 
   EndHeaderSection(writer);
@@ -788,9 +1157,9 @@ ReMarkupEventListWriter::ReMarkupEventListWriter(StringParam name) : ReMarkupWri
 
 }
 
-void ReMarkupEventListWriter::WriteEventEntry(StringParam eventEntry, StringParam type)
+void ReMarkupEventListWriter::WriteEventEntry(EventDoc* eventDoc, StringParam type)
 {
-  InsertNewSectionHeader(eventEntry);
+  InsertNewSectionHeader(eventDoc->mName);
 
   //mOutput << ".. include:: EventListDescriptions/" << eventEntry << ".rst\n\n"
   //  << ":cpp:type:`" << type << "`\n\n";
@@ -799,8 +1168,43 @@ void ReMarkupEventListWriter::WriteEventEntry(StringParam eventEntry, StringPara
   InsertTypeLink(type);
   mOutput << mEndLine;
 
+  if (!eventDoc->mSenders.Empty())
+  {
+    mOutput << gBold << "Senders :" << gBold << mEndLine;
+
+    StartIndentSection((*this));
+    IndentToCurrentLevel();
+
+    forRange(StringRef sender, eventDoc->mSenders.All())
+    {
+      mOutput << gBullet;
+      InsertTypeLink(sender);
+      mOutput <<"\n";
+    }
+
+    EndIndentSection((*this));
+    mOutput << mEndLine;
+  }
+
   InsertDivider();
 }
+
+void ReMarkupEventListWriter::WriteEventTable(const Array<EventDoc*>& eventList)
+{
+  // print the top of the table
+  mOutput << "|Event|EventType|\n|---|---|\n";
+
+  forRange(EventDoc* event, eventList.All())
+  {
+    mOutput << "|";
+    InsertHeaderLink(event->mName); 
+    mOutput << "|";
+    InsertTypeLink(event->mType);
+    mOutput << "|\n";
+  }
+  mOutput << mEndLine;
+}
+
 ////////////////////////////////////////////////////////////////////////
 // ReMarkupCommandRefWriter
 ////////////////////////////////////////////////////////////////////////
@@ -816,7 +1220,8 @@ void ReMarkupCommandRefWriter::WriteCommandRef(StringParam commandListFilepath, 
 
   // actually load event list now. (If this fails it probably means the file is mis-formatted)
   CommandDocList cmdListDoc;
-  LoadFromDataFile(cmdListDoc, commandListFilepath);
+  
+  LoadCommandList(cmdListDoc, commandListFilepath);
 
   Array<CommandDoc *> &cmdArray = cmdListDoc.mCommands;
 

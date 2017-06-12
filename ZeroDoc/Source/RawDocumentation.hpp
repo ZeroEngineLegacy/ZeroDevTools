@@ -77,6 +77,16 @@ namespace Zero
   class RawDocumentationLibrary;
 
   ///// HELPERS ///// 
+  bool LoadCommandList(CommandDocList& commandList, StringRef absPath);
+
+  bool LoadEventList(EventDocList& eventList, StringRef absPath);
+
+  /// Helper for saving trim documentation since we cannot use "SaveToDataFile" in 'DevTools'
+  bool SaveTrimDocToDataFile(DocumentationLibrary &lib, StringRef absPath);
+
+  /// Loads the documentation skeleton in a way that doesn't require all of meta
+  bool LoadDocumentationSkeleton(DocumentationLibrary &skeleton, StringRef file);
+
   /// Gets all of the text from the passed in node and all its children, text is added to output
   void GetTextFromAllChildrenNodesRecursively(TiXmlNode* node, StringBuilder* output);
 
@@ -142,6 +152,9 @@ namespace Zero
     IgnoreList *ignoreList = nullptr);
 
   bool ContainsFirstTypeInSecondType(TypeTokens &firstType, TypeTokens &secondType);
+
+  String TrimNamespacesOffOfName(StringParam name);
+
 
   /// compares two document classes by alphabetical comparison of names
   template<typename T>
@@ -306,6 +319,7 @@ namespace Zero
     String mType;
   };
 
+  /*
   class RawEnumDoc
   {
   public:
@@ -326,6 +340,9 @@ namespace Zero
     String mName;
     String mDescription;
   };
+  */
+  // Enum has no additional information so we are just going to have an xml helper and call it good
+  void LoadEnumFromDoxy(EnumDoc& enumDoc, TiXmlElement* element, TiXmlNode* enumDef);
 
   class RawClassDoc : public Object
   {
@@ -348,6 +365,8 @@ namespace Zero
 
     /// serialize the class doc
     void Serialize(Serializer& stream);
+
+    bool SaveToFile(StringRef absPath);
 
     /// add data from passed in classdoc into this one
     void Add(RawClassDoc& classDoc);
@@ -393,7 +412,7 @@ namespace Zero
     /// grabs meta database and loads tags and events from meta
     void LoadEventsAndTagsFromMeta(void);
 
-    /// generates key fror classmap that incorperates namespace into classname
+    /// generates key for classmap that incorporates namespace into classname
     String GenerateMapKey(void);
 
     void FillErrorInformation(StringParam fnTokenName, StringRef fnName, TypeTokens &tokens);
@@ -409,7 +428,6 @@ namespace Zero
     Array<RawVariableDoc*> mVariables;
 
     Array<RawTypedefDoc*> mTypedefs;
-    Array<RawEnumDoc*> mEnums;
 
     Array<EventDoc*> mEvents;
 
@@ -425,6 +443,7 @@ namespace Zero
 
     String mName;
     String mBaseClass;
+    String mLibrary;
     String mDescription;
 
     // relative to root of source directory
@@ -468,7 +487,8 @@ namespace Zero
     /// serialize this object
     void Serialize(Serializer& stream);
 
-    /// fills the internal documentation class from this raw documentation library
+    bool SaveToFile(StringRef absPath);
+
     void FillTrimmedDocumentation(DocumentationLibrary &trimLib);
 
     /// loop over all classes, save their doc strings into files at directory
@@ -508,9 +528,15 @@ namespace Zero
     ///// PUBLIC DATA ///// 
     HashMap<String, RawClassDoc*> mClassMap;
 
+    HashMap<String, EnumDoc *> mEnumMap;
+
     Array<RawClassDoc*> mClasses;
 
     Array<String> mClassPaths;
+
+    Array<EnumDoc *> mEnums;
+
+    Array<EnumDoc *> mFlags;
 
     IgnoreList mIgnoreList;
 
@@ -539,13 +565,15 @@ namespace Zero
     /// serialize this typedef library
     void Serialize(Serializer& stream);
 
+    bool SaveToFile(StringRef absPath);
+
     /// load data from file at 'filepath' into this directory
     bool LoadFromFile(StringRef filepath);
 
     /// this is called after parsing all of the typedefs for easy reference
     void BuildMap(void);
 
-    /// recursivly replace types until all typedefs are fully expanded
+    /// recursively replace types until all typedefs are fully expanded
     void ExpandAllTypedefs(void);
 
     ///// PUBLIC DATA///// 

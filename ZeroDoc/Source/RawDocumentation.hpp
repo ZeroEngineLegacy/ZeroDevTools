@@ -77,15 +77,15 @@ namespace Zero
   class RawDocumentationLibrary;
 
   ///// HELPERS ///// 
-  bool LoadCommandList(CommandDocList& commandList, StringRef absPath);
+  bool LoadCommandList(CommandDocList& commandList, StringParam absPath);
 
-  bool LoadEventList(EventDocList& eventList, StringRef absPath);
+  bool LoadEventList(EventDocList& eventList, StringParam absPath);
 
   /// Helper for saving trim documentation since we cannot use "SaveToDataFile" in 'DevTools'
-  bool SaveTrimDocToDataFile(DocumentationLibrary &lib, StringRef absPath);
+  bool SaveTrimDocToDataFile(DocumentationLibrary &lib, StringParam absPath);
 
   /// Loads the documentation skeleton in a way that doesn't require all of meta
-  bool LoadDocumentationSkeleton(DocumentationLibrary &skeleton, StringRef file);
+  bool LoadDocumentationSkeleton(DocumentationLibrary &skeleton, StringParam file);
 
   /// Gets all of the text from the passed in node and all its children, text is added to output
   void GetTextFromAllChildrenNodesRecursively(TiXmlNode* node, StringBuilder* output);
@@ -106,13 +106,13 @@ namespace Zero
   String TrimTypeTokens(const TypeTokens& tokens);
 
   /// returns first child of element with value containing tag type 'type'
-  TiXmlNode* GetFirstNodeOfChildType(TiXmlElement* element, StringRef type);
+  TiXmlNode* GetFirstNodeOfChildType(TiXmlElement* element, StringParam type);
 
   /// returns one past the last chiled of tag type 'type', returns null if it DNE
-  TiXmlNode* GetEndNodeOfChildType(TiXmlElement* element, StringRef type);
+  TiXmlNode* GetEndNodeOfChildType(TiXmlElement* element, StringParam type);
 
   /// does as it says, removes all spaces from str and outputs it into the stringbuilder
-  void CullAllSpacesFromString(StringRef str, StringBuilder* output);
+  void CullAllSpacesFromString(StringParam str, StringBuilder* output);
 
   /// gets value text from node, does assume node it of type ref or text
   //const char* GetTextFromNode(TiXmlNode* node);
@@ -366,7 +366,7 @@ namespace Zero
     /// serialize the class doc
     void Serialize(Serializer& stream);
 
-    bool SaveToFile(StringRef absPath);
+    bool SaveToFile(StringParam absPath);
 
     /// add data from passed in classdoc into this one
     void Add(RawClassDoc& classDoc);
@@ -394,17 +394,17 @@ namespace Zero
     void SortAndPruneEventArray(void);
 
     /// get the path for this classDoc from the root of the doxygen directory
-    bool SetRelativePath(StringRef doxyPath, StringRef filePath);
+    bool SetRelativePath(StringParam doxyPath, StringParam filePath);
 
     /// loads from xmlDoc that will be loaded from doxyPath
-    bool LoadFromXmlDoc(TiXmlDocument* doc, StringRef doxyPath,
-      StringRef filePath, IgnoreList *ignoreList = nullptr);
+    bool LoadFromXmlDoc(TiXmlDocument* doc, StringParam doxyPath,
+      StringParam filePath, IgnoreList *ignoreList = nullptr);
 
     /// loads from the xmldoc that is passed in as a parameter
     bool LoadFromXmlDoc(TiXmlDocument* doc);
 
     /// try to get description for method by name passed, will also check base class
-    const StringRef GetDescriptionForMethod(StringRef methodName);
+    const StringParam GetDescriptionForMethod(StringParam methodName);
 
     /// replaces typedef'd types with the underlying type
     void NormalizeAllTypes(RawTypedefLibrary* defLib);
@@ -415,7 +415,7 @@ namespace Zero
     /// generates key for classmap that incorporates namespace into classname
     String GenerateMapKey(void);
 
-    void FillErrorInformation(StringParam fnTokenName, StringRef fnName, TypeTokens &tokens);
+    void FillErrorInformation(StringParam fnTokenName, StringParam fnName, TypeTokens &tokens);
 
     void AddIfNewException(StringParam fnName, ExceptionDoc *errorDoc);
 
@@ -487,7 +487,7 @@ namespace Zero
     /// serialize this object
     void Serialize(Serializer& stream);
 
-    bool SaveToFile(StringRef absPath);
+    bool SaveToFile(StringParam absPath);
 
     void FillTrimmedDocumentation(DocumentationLibrary &trimLib);
 
@@ -509,6 +509,8 @@ namespace Zero
     /// loads all the documentation from the entire doxygen directory minus ignored files
     bool LoadFromDoxygenDirectory(StringParam doxyPath);
 
+    void LoadAllEnumDocumentationFromDoxygen(StringParam doxyPath);
+
     /// loads list of classes, tags, and events from skeleton documentation library
     /// returns false if list of classes was empty (i.e. there was nothing to load)
     bool LoadFromSkeletonFile(StringParam doxyPath, const DocumentationLibrary &library);
@@ -528,7 +530,7 @@ namespace Zero
     ///// PUBLIC DATA ///// 
     HashMap<String, RawClassDoc*> mClassMap;
 
-    HashMap<String, EnumDoc *> mEnumMap;
+    HashMap<String, EnumDoc *> mEnumAndFlagMap;
 
     Array<RawClassDoc*> mClasses;
 
@@ -560,15 +562,15 @@ namespace Zero
     ~RawTypedefLibrary(void);
 
     /// serialize the type def library to the specified directory (abs path)
-    void GenerateTypedefDataFile(StringRef directory);
+    void GenerateTypedefDataFile(StringParam directory);
 
     /// serialize this typedef library
     void Serialize(Serializer& stream);
 
-    bool SaveToFile(StringRef absPath);
+    bool SaveToFile(StringParam absPath);
 
     /// load data from file at 'filepath' into this directory
-    bool LoadFromFile(StringRef filepath);
+    bool LoadFromFile(StringParam filepath);
 
     /// this is called after parsing all of the typedefs for easy reference
     void BuildMap(void);

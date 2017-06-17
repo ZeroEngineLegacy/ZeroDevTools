@@ -130,6 +130,8 @@ void RunDocumentationGenerator(DocGeneratorConfig &config)
       library->LoadFromSkeletonFile(config.mDoxygenPath, doc);
 
       doc.FinalizeDocumentation();
+
+      library->LoadAllEnumDocumentationFromDoxygen(config.mDoxygenPath);
     }
     // otherwise get documentation from every single class file
     else

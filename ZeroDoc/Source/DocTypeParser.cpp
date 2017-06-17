@@ -336,14 +336,14 @@ void ExpandCommentVariables(String* comment)
 
       if (i >= commentTokens.Size())
       {
-        DocLogger::Get()->Write("ingnoring unnamed comment option");
+        DocLogger::Get()->Write("ignoring unnamed comment option");
         break;
       }
 
       commentToken = &commentTokens[i];
 
       // check if this token is actually a comment variable/option
-      StringRef value = MacroDatabase::GetInstance()->SearchMacroExpandStackForOption(commentToken->mText);
+      String value = MacroDatabase::GetInstance()->SearchMacroExpandStackForOption(commentToken->mText);
 
       // make sure we actually found the option
       if (value != "")
@@ -493,8 +493,9 @@ void TypeNode::AddToClassDoc(RawClassDoc* doc)
   Error("TypeNodes should never directly be added to doc");
 }
 
-// NOTE: Ignoring namespace for now
 //NamedType = Namespace*<Identifier> <Asterisk>* <Ampersand>?
+//For templates, could be changed to:
+//NamedType = Namespace*<Identifier> (<LessThen><NamedType><GreaterThen>)? <Asterisk>* <Ampersand>?
 UniquePointer<TypeNode> DocTypeParser::NamedType(void)
 {
   DocToken *currToken = nullptr;

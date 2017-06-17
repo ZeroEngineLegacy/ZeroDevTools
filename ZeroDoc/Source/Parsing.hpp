@@ -7,6 +7,6 @@ namespace Zero
 {
 
 String BuildDoc(ClassDoc& classDoc, Replacements& replacements);
-void Check(StringRef className, StringRef element, StringRef string);
+void Check(String& className, String& element, String& string);
 
 }//namespace Zero

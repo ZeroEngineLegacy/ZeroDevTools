@@ -113,5 +113,5 @@ namespace Zero
   void ReadToken(DocDfaState* startingState, const char* stream, DocToken& outToken);
 
   /// Appends tokens from str to the end of the TypeTokens in output
-  void AppendTokensFromString(DocDfaState* startingState, StringRef str, TypeTokens *output);
+  void AppendTokensFromString(DocDfaState* startingState, StringParam str, TypeTokens *output);
 }

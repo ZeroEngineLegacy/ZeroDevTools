@@ -20,7 +20,7 @@
 namespace Zero
 {
 
-  bool LoadCommandList(CommandDocList& commandList, StringRef absPath)
+  bool LoadCommandList(CommandDocList& commandList, StringParam absPath)
   {
     Status status;
     DataTreeLoader loader;
@@ -42,7 +42,7 @@ namespace Zero
     return true;
   }
 
-  bool LoadEventList(EventDocList& eventList, StringRef absPath)
+  bool LoadEventList(EventDocList& eventList, StringParam absPath)
   {
     Status status;
     DataTreeLoader loader;
@@ -67,7 +67,7 @@ namespace Zero
     return true;
   }
 
-  bool SaveTrimDocToDataFile(DocumentationLibrary &lib, StringRef absPath)
+  bool SaveTrimDocToDataFile(DocumentationLibrary &lib, StringParam absPath)
   {
     Status status;
 
@@ -97,7 +97,7 @@ namespace Zero
   ////////////////////////////////////////////////////////////////////////
   // Helpers
   ////////////////////////////////////////////////////////////////////////
-  bool LoadDocumentationSkeleton(DocumentationLibrary &skeleton, StringRef file)
+  bool LoadDocumentationSkeleton(DocumentationLibrary &skeleton, StringParam file)
   {
     Status status;
     DataTreeLoader loader;
@@ -309,7 +309,7 @@ namespace Zero
   }
 
   // returns first child of element with value containing tag type 'type'
-  TiXmlNode* GetFirstNodeOfChildType(TiXmlElement* element, StringRef type)
+  TiXmlNode* GetFirstNodeOfChildType(TiXmlElement* element, StringParam type)
   {
     for (TiXmlNode* node = element->FirstChild(); node; node = node->NextSibling())
     {
@@ -320,7 +320,7 @@ namespace Zero
   }
 
   // returns one past the last chiled of tag type 'type', returns null if it DNE
-  TiXmlNode* GetEndNodeOfChildType(TiXmlElement* element, StringRef type)
+  TiXmlNode* GetEndNodeOfChildType(TiXmlElement* element, StringParam type)
   {
     TiXmlNode* prevNode = nullptr;
     for (TiXmlNode* node = element->LastChild(); node; node = node->PreviousSibling())
@@ -333,7 +333,7 @@ namespace Zero
   }
 
   // does as it says, removes all spaces from str and outputs it into the stringbuilder
-  void CullAllSpacesFromString(StringRef str, StringBuilder* output)
+  void CullAllSpacesFromString(StringParam str, StringBuilder* output)
   {
     forRange(Rune c, str.All())
     {
@@ -488,6 +488,8 @@ namespace Zero
   {
     bool madeReplacements = false;
 
+    
+
     // loop over tokens
     for (uint i = 0; i < tokens.Size(); ++i)
     {
@@ -495,6 +497,13 @@ namespace Zero
       Array<String>& names = classNamespace.mNames;
 
       DocToken& token = tokens[i];
+
+      // A lot of types have "Param" in them, just trim it from the type
+      StringRange paramRange = token.mText.FindLastOf("Param");
+      if (!paramRange.Empty())
+      {
+        token.mText = token.mText.SubString(token.mText.Begin(), paramRange.Begin());
+      }
 
       // check any namespaces this token list is inside
       
@@ -862,7 +871,7 @@ namespace Zero
     // for each class inside of the library
     for (uint i = 0; i < doc.mClasses.Size(); ++i)
     {
-      StringRef name = doc.mClasses[i]->mName;
+      String& name = doc.mClasses[i]->mName;
       String doxName = GetDoxygenName(name);
 
       // add array of all of the files that pertain to that class to ignored directories
@@ -1033,7 +1042,7 @@ namespace Zero
   // remove file of same name if it already exists/overwrite it
   // write string out to file at location
   // output error if we fail
-  void RawDocumentationLibrary::GenerateCustomDocumentationFiles(StringRef directory)
+  void RawDocumentationLibrary::GenerateCustomDocumentationFiles(StringParam directory)
   {
     WriteLog("writing raw documentation library to directory: %s\n\n", directory.c_str());
     forRange(RawClassDoc* classDoc, mClasses.All())
@@ -1153,7 +1162,7 @@ namespace Zero
     SerializeName(mFlags);
   }
 
-  bool RawDocumentationLibrary::SaveToFile(StringRef absPath)
+  bool RawDocumentationLibrary::SaveToFile(StringParam absPath)
   {
     Status status;
 
@@ -1227,7 +1236,7 @@ namespace Zero
     // for each filepath
     for (uint i = 0; i < classFilepaths.Size(); ++i)
     {
-      StringRef filepath = classFilepaths[i];
+      String& filepath = classFilepaths[i];
 
       // open the doxy file
       TiXmlDocument doc;
@@ -1271,7 +1280,155 @@ namespace Zero
     }
     return false;
   }
+
+  void LoadDocumentationForEnumFromDoxygen(TiXmlNode* fnNode)
+  {
+    // this is probably 
+    // we are starting at the "name node"
+
+
+    // get the brief description.
+
+    // check for xml in the brief description and hand it to TiXml
+
+    // save descriptions for enum values
+  }
   
+  void RawDocumentationLibrary::LoadAllEnumDocumentationFromDoxygen(StringParam doxyPath)
+  {
+    WriteLog("Loading Enums from Doxygen namespace XML Files at: %s\n\n", doxyPath.c_str());
+
+    // for every namespace doxy file
+    Array<String> namespaceFilepaths;
+
+    GetFilesWithPartialName(doxyPath, "namespace", mIgnoreList, &namespaceFilepaths);
+
+    forRange(String& filepath, namespaceFilepaths.All())
+    {
+      // load the file
+      TiXmlDocument macroFile;
+
+      if (!macroFile.LoadFile(filepath.c_str()))
+      {
+        Error("unable to load file '%s", filepath.c_str());
+      }
+
+
+      // for each filepath
+      forRange(String& filename, namespaceFilepaths.All())
+      {
+        // open the doxy file
+        TiXmlDocument doc;
+        if (!doc.LoadFile(filename.c_str()))
+        {
+          // print error on failure to load
+          WriteLog("ERROR: unable to load file at: %s\n", filename.c_str());
+          continue;
+        }
+
+        // get doxygen node
+        // get compounddef node
+        TiXmlElement* namespaceDef = doc.FirstChildElement(gElementTags[eDOXYGEN])
+          ->FirstChildElement(gElementTags[eCOMPOUNDDEF]);
+
+        TiXmlNode* firstSectDef = GetFirstNodeOfChildType(namespaceDef, gElementTags[eSECTIONDEF]);
+        TiXmlNode* endSectDef = GetEndNodeOfChildType(namespaceDef, gElementTags[eSECTIONDEF]);
+
+        TiXmlElement* funcSection = nullptr;
+
+        // find the function section
+        for (TiXmlNode* node = firstSectDef; node != endSectDef; node = node->NextSibling())
+        {
+          TiXmlElement* element = node->ToElement();
+
+          // kind is always first attribute for sections
+          TiXmlAttribute* attrib = element->FirstAttribute();
+
+          if (attrib && strcmp(attrib->Value(), "func") == 0)
+          {
+            funcSection = element;
+            break;
+          }
+        }
+        // now that we find the function section, look for function with "DeclareEnum"
+        if (!funcSection)
+          continue;
+
+        // for each function
+        for (TiXmlNode* funcNode = funcSection->FirstChild();
+          funcNode != nullptr; funcNode = funcNode->NextSibling())
+        {
+          TiXmlElement* funcAsElement = funcNode->ToElement();
+
+          TiXmlNode* fnNameNode = GetFirstNodeOfChildType(funcAsElement, gElementTags[eNAME]);
+
+          if (fnNameNode)
+          {
+            String functionName = fnNameNode->FirstChild()->Value();
+
+            if (functionName.Contains("DeclareEnum") || functionName.Contains("DeclareBitfield"))
+            {
+              // get the first param because it should have the enum/bitfield's name
+              // paramNode->typenode->textnode->value
+              String enumName = GetFirstNodeOfChildType(funcAsElement, gElementTags[ePARAM])
+                ->FirstChild()->FirstChild()->Value();
+
+              if (!mEnumAndFlagMap.ContainsKey(enumName))
+              {
+                break;
+              }
+
+              EnumDoc* enumDocToFill = mEnumAndFlagMap[enumName];
+
+              // get the description
+              TiXmlNode* descNode = GetFirstNodeOfChildType(funcAsElement, gElementTags[eBRIEFDESCRIPTION]);
+
+              if (!descNode || !descNode->FirstChild())
+              {
+                break;
+              }
+              // now we see if there is a brief description to load
+              String description = descNode->FirstChild()->Value();
+
+              if (description.Empty())
+              {
+                break;
+              }
+
+              // '<param name=' should mark the start of the xml. 
+              StringRange xmlStart = description.FindFirstOf("<param name=");
+
+              // even if no found match, this still works since xmlStart will just be end
+              enumDocToFill->mDescription 
+                = description.SubString(description.Begin(), xmlStart.Begin());
+
+              // if we found xml in the description
+              if (!xmlStart.Empty())
+              {
+                String xmlString = description.SubString(xmlStart.Begin(), description.End());
+                // pass the xml to tinyXml so it parses it for us
+                TiXmlDocument commentDoc;
+
+                commentDoc.Parse(xmlString.c_str());
+
+                // extract out names and descriptions
+                TiXmlNode* enumValDescNode = commentDoc.FirstChild();
+
+                // put the substring of start to beginning of found match into the enum descr
+              }
+
+            }
+
+            // once we read the name we are done with this child
+            break;
+          }
+          // if the name of the function has "DeclareEnum or DeclareBitfield"
+            // 
+        }
+      }
+    }
+  }
+
   bool RawDocumentationLibrary::LoadFromSkeletonFile(StringParam doxyPath,
     const DocumentationLibrary &library)
   {
@@ -1281,8 +1438,17 @@ namespace Zero
 
     mEnums = library.mEnums;
     mFlags = library.mFlags;
+
+    forRange(EnumDoc* enumDoc, mEnums.All())
+    {
+      mEnumAndFlagMap[enumDoc->mName] = enumDoc;
+    }
+    forRange(EnumDoc* flagDoc, mFlags.All())
+    {
+      mEnumAndFlagMap[flagDoc->mName] = flagDoc;
+    }
     // first add all the classes by name to the library
-    forRange(ClassDoc *classDoc, library.mClasses.All())
+    forRange(ClassDoc* classDoc, library.mClasses.All())
     {
       // if we have already documented this, skip it
       if (mClassMap.ContainsKey(classDoc->mName) 
@@ -1369,7 +1535,7 @@ namespace Zero
     if (mClassMap.ContainsKey(name))
       return mClassMap[name];
 
-    forRange(StringRef nameSpace, namespaces.All())
+    forRange(String& nameSpace, namespaces.All())
     {
       String newKey = BuildString(nameSpace, name);
 
@@ -1420,7 +1586,9 @@ namespace Zero
     StringBuilder retTypeStr;
     BuildFullTypeString(element, &retTypeStr);
 
-    AppendTokensFromString(DocLangDfa::Get(), retTypeStr.ToString(), mTokens);
+    String retTypeString = retTypeStr.ToString();
+
+    AppendTokensFromString(DocLangDfa::Get(), retTypeString, mTokens);
   }
 
   ////////////////////////////////////////////////////////////////////////
@@ -1641,7 +1809,7 @@ namespace Zero
     SerializeName(mMethods);
   }
 
-  bool RawClassDoc::SaveToFile(StringRef absPath)
+  bool RawClassDoc::SaveToFile(StringParam absPath)
   {
     Status status;
 
@@ -1918,7 +2086,7 @@ namespace Zero
       if (commaCount == paramNum)
       {
         // i - 2 because i is currently at 1 past the comma index
-        StringRef eventName = tokens[i - 2].mText;
+        String& eventName = tokens[i - 2].mText;
 
         EventDoc *eventDoc = nullptr;
 
@@ -1983,7 +2151,7 @@ namespace Zero
 
   // param number technically starts at 1 since 0 means no param for this fn
   // need to give this some newfangled way to detect what function we are in
-  void RawClassDoc::FillErrorInformation(StringParam fnTokenName, StringRef fnName, TypeTokens &tokens)
+  void RawClassDoc::FillErrorInformation(StringParam fnTokenName, StringParam fnName, TypeTokens &tokens)
   {
     if (!mMethodMap.ContainsKey(fnName))
     {
@@ -2021,8 +2189,8 @@ namespace Zero
 
       AppendTokensFromString(DocLangDfa::Get(), codeString, &tokens);
 
-      // the next block is all of the send and recieve event fns we want to parse
-      // if boolean argument is false, it is a send function, otherwise, recieve
+      // the next block is all of the send and receive event fns we want to parse
+      // if boolean argument is false, it is a send function, otherwise, receive
 
       if (FillEventInformation("DispatchEvent", 1, false, libEventList, classDoc, tokens))
       {
@@ -2274,7 +2442,7 @@ namespace Zero
     }
   }
 
-  bool RawClassDoc::SetRelativePath(StringRef doxyPath, StringRef filePath)
+  bool RawClassDoc::SetRelativePath(StringParam doxyPath, StringParam filePath)
   {
     StringRange relPath = filePath.SubStringFromByteIndices(doxyPath.SizeInBytes(), filePath.SizeInBytes());
 
@@ -2339,8 +2507,8 @@ namespace Zero
     return true;
   }
 
-  bool RawClassDoc::LoadFromXmlDoc(TiXmlDocument* doc, StringRef doxyPath,
-    StringRef filePath, IgnoreList *ignoreList)
+  bool RawClassDoc::LoadFromXmlDoc(TiXmlDocument* doc, StringParam doxyPath,
+    StringParam filePath, IgnoreList *ignoreList)
   {
     if (ignoreList && ignoreList->DirectoryIsOnIgnoreList(BuildString(doxyPath,filePath)))
     {
@@ -2447,7 +2615,7 @@ namespace Zero
           EnumDoc *enumDoc = new EnumDoc();
           LoadEnumFromDoxy(*enumDoc, memberElement, pMemberDef);
           // if we already had this, remove the new one (TODO: Merge documentation)
-          if (mParentLibrary->mEnumMap.ContainsKey(enumDoc->mName))
+          if (mParentLibrary->mEnumAndFlagMap.ContainsKey(enumDoc->mName))
           {
             delete enumDoc;
             break;
@@ -2455,7 +2623,7 @@ namespace Zero
 
           // otherwise, save it to the parent library
           mParentLibrary->mEnums.PushBack(enumDoc);
-          mParentLibrary->mEnumMap[enumDoc->mName] = enumDoc;
+          mParentLibrary->mEnumAndFlagMap[enumDoc->mName] = enumDoc;
 
           break;
         }
@@ -2629,7 +2797,7 @@ namespace Zero
     return true;
   }
 
-  const StringRef RawClassDoc::GetDescriptionForMethod(StringParam methodName)
+  const String& RawClassDoc::GetDescriptionForMethod(StringParam methodName)
   {
     // check if we have a method with a mDescription by that name
     forRange(RawMethodDoc* method, mMethodMap[methodName].All())
@@ -3000,7 +3168,7 @@ namespace Zero
   {
   }
 
-  void RawTypedefLibrary::GenerateTypedefDataFile(const String& directory)
+  void RawTypedefLibrary::GenerateTypedefDataFile(const StringParam directory)
   {
     String absPath = BuildString(directory, "\\Typedefs.data");
 
@@ -3025,7 +3193,7 @@ namespace Zero
     SerializeName(mTypedefArray);
   }
 
-  bool RawTypedefLibrary::SaveToFile(StringRef absPath)
+  bool RawTypedefLibrary::SaveToFile(StringParam absPath)
   {
     Status status;
 
@@ -3048,7 +3216,7 @@ namespace Zero
     return true;
   }
 
-  bool RawTypedefLibrary::LoadFromFile(StringRef filepath)
+  bool RawTypedefLibrary::LoadFromFile(StringParam filepath)
   {    
     //if (!LoadFromDataFile(*this, filepath, DataFileFormat::Text, true))
     //{
@@ -3194,7 +3362,7 @@ namespace Zero
       replacements = false;
       for (uint i = 0; i < replacementList.Size(); ++i)
       {
-        StringRef name = replacementList[i];
+        String& name = replacementList[i];
         RawTypedefDoc *tDef = mTypedefs[name];
     
         if (NormalizeTypedefWithTypedefs(name,tDef->mDefinition, this, tDef->mNamespace))

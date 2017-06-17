@@ -14,14 +14,14 @@ namespace Zero
       , mCurrentIndentationLevel(0)
       , mCurrentSectionHeaderLevel(0){}
 
-    void WriteOutputToFile(StringRef outputDirectory);
+    void WriteOutputToFile(StringParam outputDirectory);
 
   protected:
     void IndentToCurrentLevel(void);
 
     void InsertNewUnderline(uint length, uint headerLevel = 0);
 
-    void InsertNewSectionHeader(StringRef sectionName);
+    void InsertNewSectionHeader(StringParam sectionName);
 
     StringBuilder mOutput;
 
@@ -66,7 +66,7 @@ namespace Zero
   class RstEventListWriter : public BaseMarkupWriter
   {
   public:
-    static void WriteEventList(StringRef eventListFilepath, StringRef outputPath);
+    static void WriteEventList(StringParam eventListFilepath, StringParam outputPath);
 
     RstEventListWriter(StringParam name);
 
@@ -76,7 +76,7 @@ namespace Zero
   class RstCommandRefWriter : public BaseMarkupWriter
   {
   public:
-    static void WriteCommandRef(StringParam commandListFilepath, StringRef outputPath);
+    static void WriteCommandRef(StringParam commandListFilepath, StringParam outputPath);
 
     RstCommandRefWriter(StringParam name);
 
@@ -142,7 +142,7 @@ namespace Zero
   class ReMarkupEnumListWriter : public ReMarkupWriter
   {
   public:
-    ReMarkupEnumListWriter(StringRef name);
+    ReMarkupEnumListWriter(StringParam name);
 
     static void WriteEnumList(StringParam outputFile, DocumentationLibrary &lib);
 
@@ -154,7 +154,7 @@ namespace Zero
   class ReMarkupFlagsListWriter : public ReMarkupWriter
   {
   public:
-    ReMarkupFlagsListWriter(StringRef name);
+    ReMarkupFlagsListWriter(StringParam name);
 
     static void WriteFlagsList(StringParam outputFile, DocumentationLibrary &lib);
 
@@ -166,7 +166,7 @@ namespace Zero
   class ReMarkupEventListWriter : public ReMarkupWriter
   {
   public:
-    static void WriteEventList(StringRef eventListFilepath, StringRef outputPath);
+    static void WriteEventList(StringParam eventListFilepath, StringParam outputPath);
 
     ReMarkupEventListWriter(StringParam name);
 
@@ -178,7 +178,7 @@ namespace Zero
   class ReMarkupCommandRefWriter : public ReMarkupWriter
   {
   public:
-    static void WriteCommandRef(StringParam commandListFilepath, StringRef outputPath);
+    static void WriteCommandRef(StringParam commandListFilepath, StringParam outputPath);
 
     ReMarkupCommandRefWriter(StringParam name);
 

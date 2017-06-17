@@ -58,21 +58,38 @@ TiXmlElement* FindElementWithAttribute(TiXmlElement* element, cstr attribute, cs
 
 void RecursiveExtract(StringBuilder& builder, TiXmlNode* node)
 {
-  if(TiXmlText* text = node->ToText())
-    builder << " " << text->Value();
+  bool thisIsAReference = false;
+  // if we are a type reference, we need to start with a space since tixml eats it
+  if (String(node->Value()) == gElementTags[eREF])
+    thisIsAReference = true;
+
+  TiXmlText *text = node->ToText();
+
+  if (text)
+  {
+    const char *textString = text->Value();
+
+    if (thisIsAReference 
+      || (textString != nullptr && tolower(textString[0]) >= 'a' && tolower(textString[0]) <= 'z'))
+    {
+      builder << " ";
+    }
+
+    builder << text->Value();
+  }
 
   if(TiXmlElement* element = node->ToElement())
   {
     TiXmlNode* child = element->FirstChild();
     while(child)
     {
+      TiXmlElement* childElement = child->ToElement();
+      
       RecursiveExtract(builder, child);
 
       child = child->NextSibling();
     }
-    builder << " ";
   }
-
 }
 
 String DoxyToString(TiXmlElement* parent, cstr name)

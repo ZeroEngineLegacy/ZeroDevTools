@@ -22,7 +22,7 @@ namespace Zero
   // MacroData
   ////////////////////////////////////////////////////////////////////////
   // this constructor should really only be used by tests
-  MacroData::MacroData(StringRef macroString)
+  MacroData::MacroData(String& macroString)
   {
     AppendTokensFromString(DocLangDfa::Get(), macroString, &mMacroBody);
   }
@@ -69,9 +69,9 @@ namespace Zero
   ////////////////////////////////////////////////////////////////////////
   // MacroCall
   ////////////////////////////////////////////////////////////////////////
-  StringRef MacroCall::GetOption(StringParam optionName)
+  String MacroCall::GetOption(StringParam optionName)
   {
-    StringRef lowerName = optionName.ToLower();
+    String lowerName = optionName.ToLower();
     // first see if it is in our option map
     if (mOptions.ContainsKey(lowerName))
     {
@@ -81,7 +81,7 @@ namespace Zero
     // if it is not see if it was a macro parameter
     for (uint i = 0; i < mMacro->mParameters.Size(); ++i)
     {
-      StringRef arg = mMacro->mParameters[i].ToLower();
+      String arg = mMacro->mParameters[i].ToLower();
 
       if (arg == lowerName)
       {
@@ -110,7 +110,7 @@ namespace Zero
 
       StringRange varName = commentVar.SubStringFromByteIndices(1, commentVar.SizeInBytes());
 
-      StringRef varValue = MacroDatabase::GetInstance()->SearchMacroExpandStackForOption(varName);
+      String varValue = MacroDatabase::GetInstance()->SearchMacroExpandStackForOption(varName);
 
       if (varValue != "")
       {
@@ -191,7 +191,7 @@ namespace Zero
 
     for (uint i = 0; i < mMacro->mParameters.Size(); ++i)
     {
-      StringRef param = mMacro->mParameters[i];
+      String& param = mMacro->mParameters[i];
       argMap[param] = mMacroArgs[i];
     }
 
@@ -502,13 +502,13 @@ namespace Zero
     }
   }
 
-  StringRef MacroDatabase::SearchMacroExpandStackForOption(StringRef option)
+  String MacroDatabase::SearchMacroExpandStackForOption(StringParam option)
   {
     for (int i = mMacroExpandStack.Size() - 1; i >= 0; --i)
     {
       MacroCall* call = mMacroExpandStack[i];
 
-      StringRef optionValue = call->GetOption(option);
+      String optionValue = call->GetOption(option);
 
       if (optionValue != "")
       {
@@ -522,7 +522,7 @@ namespace Zero
   // Test Functions / Test Helpers
   ////////////////////////////////////////////////////////////////////////
 
-  MacroData *SaveMacroFromString(StringRef name, StringRef macroString)
+  MacroData *SaveMacroFromString(String& name, String& macroString)
   {
     TypeTokens tokens;
 

@@ -75,7 +75,7 @@ namespace Zero
     }
   }
 
-  void AppendTokensFromString(DocDfaState* startingState, StringRef str, TypeTokens *output)
+  void AppendTokensFromString(DocDfaState* startingState, StringParam str, TypeTokens *output)
   {
     const char *stream = str.c_str();
 

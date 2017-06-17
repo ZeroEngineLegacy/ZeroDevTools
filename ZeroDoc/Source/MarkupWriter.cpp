@@ -79,7 +79,7 @@ void WriteOutAllReStructuredTextFiles(Zero::DocGeneratorConfig& config)
   // check if we are outputting class markup
   if (FileExists(config.mTrimmedOutput.c_str()))
   {
-    StringRef directory = config.mMarkupDirectory;
+    String& directory = config.mMarkupDirectory;
 
     CreateDirectoryAndParents(directory);
 
@@ -164,7 +164,7 @@ void BaseMarkupWriter::IndentToCurrentLevel(void)
   mOutput << String::Repeat('\t', mCurrentIndentationLevel);
 }
 
-void BaseMarkupWriter::WriteOutputToFile(StringRef file)
+void BaseMarkupWriter::WriteOutputToFile(StringParam file)
 {
   WriteStringRangeToFile(file, mOutput.ToString());
 }
@@ -194,7 +194,7 @@ void BaseMarkupWriter::InsertNewUnderline(uint length, uint headerLevel)
   mOutput << "\n\n";
 }
 
-void BaseMarkupWriter::InsertNewSectionHeader(StringRef sectionName)
+void BaseMarkupWriter::InsertNewSectionHeader(StringParam sectionName)
 {
   mOutput << sectionName << "\n";
   InsertNewUnderline(sectionName.SizeInBytes());
@@ -210,7 +210,7 @@ void RstClassMarkupWriter::WriteClass(
   DocToTags& tagged)
 {
   // first things first, set up the tags for this class
-  forRange(StringRef tag, classDoc->mTags.All())
+  forRange(String& tag, classDoc->mTags.All())
   {
     tagged[tag].PushBack(classDoc);
   }
@@ -337,7 +337,7 @@ void RstClassMarkupWriter::InsertCollapsibleSection()
 ////////////////////////////////////////////////////////////////////////
 // RstEventListWriter
 ////////////////////////////////////////////////////////////////////////
-void RstEventListWriter::WriteEventList(StringRef eventListFilepath, StringRef outputPath)
+void RstEventListWriter::WriteEventList(StringParam eventListFilepath, StringParam outputPath)
 {
   // load the file if we can
 
@@ -397,7 +397,7 @@ void RstEventListWriter::WriteEventEntry(StringParam eventEntry, StringParam typ
 ////////////////////////////////////////////////////////////////////////
 // RstCommandRefWriter
 ////////////////////////////////////////////////////////////////////////
-void RstCommandRefWriter::WriteCommandRef(StringParam commandListFilepath, StringRef outputPath)
+void RstCommandRefWriter::WriteCommandRef(StringParam commandListFilepath, StringParam outputPath)
 {
   // load the file
   // get outta here with that nonexistent file
@@ -453,7 +453,7 @@ void RstCommandRefWriter::WriteCommandEntry(const CommandDoc &cmdDoc)
   else
   {
     // actually list tags
-    forRange(StringRef tag, cmdDoc.mTags.All())
+    forRange(String& tag, cmdDoc.mTags.All())
     {
       mOutput << "*\t" << tag << "\n\n";
     }
@@ -489,7 +489,7 @@ void WriteOutAllReMarkupFiles(Zero::DocGeneratorConfig& config)
   // check if we are outputting class markup
   if (FileExists(config.mTrimmedOutput.c_str()))
   {
-    StringRef directory = config.mMarkupDirectory;
+    String& directory = config.mMarkupDirectory;
 
     CreateDirectoryAndParents(directory);
 
@@ -721,7 +721,7 @@ void ReMarkupClassMarkupWriter::WriteClass(StringParam outputFile,
 
 
   // first things first, set up the tags for this class
-  forRange(StringRef tag, classDoc->mTags.All())
+  forRange(String& tag, classDoc->mTags.All())
   {
     tagged[tag].PushBack(classDoc);
   }
@@ -971,7 +971,7 @@ void ReMarkupClassMarkupWriter::InsertJumpTable(void)
 ////////////////////////////////////////////////////////////////////////
 // ReMarkupEnumListWriter
 ////////////////////////////////////////////////////////////////////////
-ReMarkupEnumListWriter::ReMarkupEnumListWriter(StringRef name) : ReMarkupWriter(name)
+ReMarkupEnumListWriter::ReMarkupEnumListWriter(StringParam name) : ReMarkupWriter(name)
 {
 
 }
@@ -1041,7 +1041,7 @@ void ReMarkupEnumListWriter::InsertEnumTable(const Array<EnumDoc*>& enumList)
 ////////////////////////////////////////////////////////////////////////
 // ReMarkupFlagsListWriter
 ////////////////////////////////////////////////////////////////////////
-ReMarkupFlagsListWriter::ReMarkupFlagsListWriter(StringRef name) : ReMarkupWriter(name)
+ReMarkupFlagsListWriter::ReMarkupFlagsListWriter(StringParam name) : ReMarkupWriter(name)
 {
 }
 
@@ -1112,7 +1112,7 @@ void ReMarkupFlagsListWriter::InsertFlagTable(const Array<EnumDoc*>& flagsList)
 ////////////////////////////////////////////////////////////////////////
 // ReMarkupEventListWriter
 ////////////////////////////////////////////////////////////////////////
-void ReMarkupEventListWriter::WriteEventList(StringRef eventListFilepath, StringRef outputPath)
+void ReMarkupEventListWriter::WriteEventList(StringParam eventListFilepath, StringParam outputPath)
 {
   // load the file if we can
   if (!FileExists(eventListFilepath))
@@ -1175,7 +1175,7 @@ void ReMarkupEventListWriter::WriteEventEntry(EventDoc* eventDoc, StringParam ty
     StartIndentSection((*this));
     IndentToCurrentLevel();
 
-    forRange(StringRef sender, eventDoc->mSenders.All())
+    forRange(String& sender, eventDoc->mSenders.All())
     {
       mOutput << gBullet;
       InsertTypeLink(sender);
@@ -1208,7 +1208,7 @@ void ReMarkupEventListWriter::WriteEventTable(const Array<EventDoc*>& eventList)
 ////////////////////////////////////////////////////////////////////////
 // ReMarkupCommandRefWriter
 ////////////////////////////////////////////////////////////////////////
-void ReMarkupCommandRefWriter::WriteCommandRef(StringParam commandListFilepath, StringRef outputPath)
+void ReMarkupCommandRefWriter::WriteCommandRef(StringParam commandListFilepath, StringParam outputPath)
 {
   // load the file
   // get outta here with that nonexistent file
@@ -1267,7 +1267,7 @@ void ReMarkupCommandRefWriter::WriteCommandEntry(const CommandDoc &cmdDoc)
   else
   {
     // actually list tags
-    forRange(StringRef tag, cmdDoc.mTags.All())
+    forRange(String& tag, cmdDoc.mTags.All())
     {
       mOutput << gBullet << tag << mEndLine;
     }

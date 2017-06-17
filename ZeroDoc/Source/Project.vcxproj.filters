@@ -16,9 +16,6 @@
     <ClInclude Include="WikiOperations.hpp">
       <Filter>Source</Filter>
     </ClInclude>
-    <ClInclude Include="Parsing.hpp">
-      <Filter>Source</Filter>
-    </ClInclude>
     <ClInclude Include="TinyXmlHelpers.hpp">
       <Filter>Source</Filter>
     </ClInclude>
@@ -55,9 +52,6 @@
       <Filter>Source</Filter>
     </ClCompile>
     <ClCompile Include="WikiOperations.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
-    <ClCompile Include="Parsing.cpp">
       <Filter>Source</Filter>
     </ClCompile>
     <ClCompile Include="TinyXmlHelpers.cpp">

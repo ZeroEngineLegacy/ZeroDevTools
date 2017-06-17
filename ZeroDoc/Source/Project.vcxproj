@@ -77,7 +77,6 @@
     <ClInclude Include="MarkupWriter.hpp" />
     <ClInclude Include="RawDocumentation.hpp" />
     <ClInclude Include="Logging.hpp" />
-    <ClInclude Include="Parsing.hpp" />
     <ClInclude Include="Precompiled.hpp" />
     <ClInclude Include="TinyXmlHelpers.hpp" />
     <ClInclude Include="WikiOperations.hpp" />
@@ -91,7 +90,6 @@
     <ClCompile Include="RawDocumentation.cpp" />
     <ClCompile Include="Logging.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="Parsing.cpp" />
     <ClCompile Include="Precompiled.cpp">
       <PrecompiledHeader Condition="'$(Platform)'=='Win32'">Create</PrecompiledHeader>
     </ClCompile>

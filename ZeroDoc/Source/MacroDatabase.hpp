@@ -17,7 +17,7 @@ namespace Zero
   struct MacroData
   {
     /// constructs MacroData by parsing code in string form
-    MacroData(StringRef macroString);
+    MacroData(String& macroString);
 
     /// constructs MacroData by getting code from given codeline range
     MacroData(TiXmlNode* startCodeline, TiXmlNode* endCodeline, TypeTokens& startTokens);
@@ -44,7 +44,7 @@ namespace Zero
     bool LoadMacroWithName(StringParam name);
 
     /// Allows user to query for any MacroOptions by name. NOTE: will also check MacroArguments.
-    StringRef GetOption(StringParam optionName);
+    String GetOption(StringParam optionName);
 
     /// Allows user to add Macro options by name, will override exising option if name already exists
     void AddOption(StringParam optionName, StringParam optionValue);
@@ -85,7 +85,7 @@ namespace Zero
     void ProcessMacroCalls(void);
 
     /// returns option if it exists in one of the expanded macros on the stack. Otherwise returns empty string
-    StringRef SearchMacroExpandStackForOption(StringRef option);
+    String SearchMacroExpandStackForOption(StringParam option);
 
     String mDoxyPath;
 

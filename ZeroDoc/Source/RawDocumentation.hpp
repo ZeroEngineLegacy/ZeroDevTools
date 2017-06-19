@@ -283,6 +283,8 @@ namespace Zero
     /// constructs class by loading the variable info from the element
     RawVariableDoc(TiXmlElement* element);
 
+    void LoadFromDoxygen(TiXmlElement* element);
+
     /// serialize the variable
     void Serialize(Serializer& stream);
 

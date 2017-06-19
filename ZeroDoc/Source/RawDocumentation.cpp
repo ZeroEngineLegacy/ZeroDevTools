@@ -1554,7 +1554,37 @@ namespace Zero
     mTokens = new TypeTokens; 
     mProperty = false;
   }
-  RawVariableDoc::~RawVariableDoc(void) 
+
+  void RawVariableDoc::LoadFromDoxygen(TiXmlElement* element)
+  {
+    // Save the name if we are filling a blank Variable doc
+    if (mName.Empty())
+    {
+      mName = GetElementValue(element, gElementTags[eNAME]);
+
+      if (mName.StartsWith("m"))
+      {
+        mName = mName.SubStringFromByteIndices(1, mName.SizeInBytes());
+      }
+    }
+
+    // get the description and clean up spaces
+    mDescription = DoxyToString(element, gElementTags[eBRIEFDESCRIPTION]).Trim();
+    mDescription = CleanRedundantSpacesInDesc(mDescription);
+
+    // if we do not have type tokens yet, grab them from the xml
+    if (mTokens->Empty())
+    {
+      StringBuilder retTypeStr;
+      BuildFullTypeString(element, &retTypeStr);
+
+      String retTypeString = retTypeStr.ToString();
+
+      AppendTokensFromString(DocLangDfa::Get(), retTypeString, mTokens);
+    }
+  }
+
+  RawVariableDoc::~RawVariableDoc(void)
   {
     delete mTokens;
   }
@@ -1576,19 +1606,7 @@ namespace Zero
   RawVariableDoc::RawVariableDoc(TiXmlElement* element)
   {
     mTokens = new TypeTokens;
-
-    mName = GetElementValue(element, gElementTags[eNAME]);
-
-    mDescription = DoxyToString(element, gElementTags[eBRIEFDESCRIPTION]).Trim();
-
-    mDescription = CleanRedundantSpacesInDesc(mDescription);
-
-    StringBuilder retTypeStr;
-    BuildFullTypeString(element, &retTypeStr);
-
-    String retTypeString = retTypeStr.ToString();
-
-    AppendTokensFromString(DocLangDfa::Get(), retTypeString, mTokens);
+    LoadFromDoxygen(element);
   }
 
   ////////////////////////////////////////////////////////////////////////
@@ -1814,8 +1832,6 @@ namespace Zero
     Status status;
 
     TextSaver saver;
-
-    //AGAHNNGS why are core stuff just not saving?!?! SADFASDFASD
 
     saver.Open(status, absPath.c_str());
     if (status.Failed())
@@ -2535,7 +2551,7 @@ namespace Zero
   bool RawClassDoc::LoadFromXmlDoc(TiXmlDocument* doc)
   {
     // if we already have a list of variables before load it means we know exactly what to save
-    bool onlySaveValidProperteies = !mVariables.Empty();
+    bool onlySaveValidProperties = !mVariables.Empty();
 
     MacroDatabase *macroDb = MacroDatabase::GetInstance();
 
@@ -2594,12 +2610,21 @@ namespace Zero
         switch (kind->Value()[0])
         {
         case 'v': // if we are a variable
+        {
+          String name = GetElementValue(memberElement, gElementTags[eNAME]);
+          if (!name.Empty())
+            name = name.SubStringFromByteIndices(1, name.SizeInBytes());
+
           // only save the variable if we are saving all variables or if it is one of our known vals
-          if (!onlySaveValidProperteies
-            || mVariableMap.ContainsKey(GetElementValue(memberElement, gElementTags[eNAME])))
+          if (mVariableMap.ContainsKey(name))
+          {
+            mVariableMap[name]->LoadFromDoxygen(memberElement);
+          }
+          else if (!onlySaveValidProperties)
           {
             mVariables.PushBack(new RawVariableDoc(memberElement));
           }
+        }
           break;
         case 't': // else if we are a typedef
         {

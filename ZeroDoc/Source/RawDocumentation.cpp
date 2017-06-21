@@ -2460,6 +2460,12 @@ namespace Zero
 
   bool RawClassDoc::SetRelativePath(StringParam doxyPath, StringParam filePath)
   {
+    if (filePath.Empty())
+    {
+      WriteLog("Error: RawClassDoc: %s has empty filepath\n", mName.c_str());
+      return false;
+    }
+
     StringRange relPath = filePath.SubStringFromByteIndices(doxyPath.SizeInBytes(), filePath.SizeInBytes());
 
     relPath = relPath.SubString(relPath.Begin(), relPath.FindLastOf("\\xml\\").Begin());
@@ -2761,6 +2767,32 @@ namespace Zero
           , GetDoxygenName(mName).c_str(), ".xml"));
 
         loadOkay = doc.LoadFile(fileName.c_str());
+
+        // if we get here, our filename guessess are not workingskjlksdjls
+        if (!loadOkay)
+        {
+          IgnoreList dummyIgnoreList;
+          Array<String> matchingFilesList;
+          GetFilesWithPartialName(doxyPath, GetDoxygenName(mName), dummyIgnoreList, &matchingFilesList);
+
+          // we are going to load the first 'class_' or 'struct_' file we find
+          forRange(String& filePath, matchingFilesList.All())
+          {
+            // get just the filename
+            String endPath = filePath.SubString(filePath.FindLastOf("\\").Begin(), filePath.End());
+            if (endPath.Contains("class_") || endPath.Contains("struct"))
+            {
+              loadOkay = doc.LoadFile(filePath.c_str());
+
+              if (loadOkay)
+              {
+                fileName = filePath;
+
+                break;
+              }
+            }
+          }
+        }
       }
     }
     if (!loadOkay)

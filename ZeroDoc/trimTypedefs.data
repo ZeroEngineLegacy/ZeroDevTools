@@ -62,7 +62,7 @@ RawTypedefLibrary
       {
         Object
         {
-          var Text = "string"
+          var Text = "String"
           var Type = "Identifier"
         }
       }
@@ -80,7 +80,7 @@ RawTypedefLibrary
       {
         Object
         {
-          var Text = "string"
+          var Text = "String"
           var Type = "Identifier"
         }
       }
@@ -93,12 +93,12 @@ RawTypedefLibrary
     }
     Object
     {
-      var Type = "String"
+      var Type = "string"
       var Definition = Array
       {
         Object
         {
-          var Text = "string"
+          var Text = "String"
           var Type = "Identifier"
         }
       }
@@ -238,6 +238,24 @@ RawTypedefLibrary
     Object
     {
       var Type = "int"
+      var Definition = Array
+      {
+        Object
+        {
+          var Text = "Integer"
+          var Type = "Identifier"
+        }
+      }
+      var Namespace = Object
+      {
+        var Names = Array
+        {
+        }
+      }
+    }
+    Object
+    {
+      var Type = "size_t"
       var Definition = Array
       {
         Object
@@ -495,6 +513,78 @@ RawTypedefLibrary
         Object
         {
           var Text = "Real4x4"
+          var Type = "Identifier"
+        }
+      }
+      var Namespace = Object
+      {
+        var Names = Array
+        {
+        }
+      }
+    }
+    Object
+    {
+      var Type = "Quat"
+      var Definition = Array
+      {
+        Object
+        {
+          var Text = "Quaternion"
+          var Type = "Identifier"
+        }
+      }
+      var Namespace = Object
+      {
+        var Names = Array
+        {
+        }
+      }
+    }
+    Object
+    {
+      var Type = "QuatRef"
+      var Definition = Array
+      {
+        Object
+        {
+          var Text = "Quaternion"
+          var Type = "Identifier"
+        }
+      }
+      var Namespace = Object
+      {
+        var Names = Array
+        {
+        }
+      }
+    }
+    Object
+    {
+      var Type = "QuatPtr"
+      var Definition = Array
+      {
+        Object
+        {
+          var Text = "Quaternion"
+          var Type = "Identifier"
+        }
+      }
+      var Namespace = Object
+      {
+        var Names = Array
+        {
+        }
+      }
+    }
+    Object
+    {
+      var Type = "QuatParam"
+      var Definition = Array
+      {
+        Object
+        {
+          var Text = "Quaternion"
           var Type = "Identifier"
         }
       }

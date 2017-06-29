@@ -11,6 +11,10 @@ namespace Zero
 
 String GetDoxygenName(String name)
 {
+  if (name.Contains("["))
+  {
+    name = name.SubString(name.Begin(), name.FindFirstOf("[").Begin());
+  }
   char buffer[1000];
   const char* input = name.c_str();
 

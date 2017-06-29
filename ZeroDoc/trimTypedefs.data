@@ -116,7 +116,7 @@ RawTypedefLibrary
       {
         Object
         {
-          var Text = "Vec2"
+          var Text = "Real2"
           var Type = "Identifier"
         }
       }
@@ -134,7 +134,7 @@ RawTypedefLibrary
       {
         Object
         {
-          var Text = "Vec3"
+          var Text = "Real3"
           var Type = "Identifier"
         }
       }
@@ -153,24 +153,6 @@ RawTypedefLibrary
         Object
         {
           var Text = "Vec4"
-          var Type = "Identifier"
-        }
-      }
-      var Namespace = Object
-      {
-        var Names = Array
-        {
-        }
-      }
-    }
-    Object
-    {
-      var Type = "float"
-      var Definition = Array
-      {
-        Object
-        {
-          var Text = "real"
           var Type = "Identifier"
         }
       }
@@ -274,6 +256,24 @@ RawTypedefLibrary
     Object
     {
       var Type = "float"
+      var Definition = Array
+      {
+        Object
+        {
+          var Text = "Real"
+          var Type = "Identifier"
+        }
+      }
+      var Namespace = Object
+      {
+        var Names = Array
+        {
+        }
+      }
+    }
+    Object
+    {
+      var Type = "real"
       var Definition = Array
       {
         Object
@@ -585,6 +585,24 @@ RawTypedefLibrary
         Object
         {
           var Text = "Quaternion"
+          var Type = "Identifier"
+        }
+      }
+      var Namespace = Object
+      {
+        var Names = Array
+        {
+        }
+      }
+    }
+    Object
+    {
+      var Type = "IStreamClass"
+      var Definition = Array
+      {
+        Object
+        {
+          var Text = "IStream"
           var Type = "Identifier"
         }
       }

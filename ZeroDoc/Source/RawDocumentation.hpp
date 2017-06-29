@@ -321,28 +321,6 @@ namespace Zero
     String mType;
   };
 
-  /*
-  class RawEnumDoc
-  {
-  public:
-    ///// PUBLIC METHODS ///// 
-
-    RawEnumDoc() {}
-
-    /// load enum from the element and the enum Def tag
-    RawEnumDoc(TiXmlElement* element, TiXmlNode* enumDef);
-
-    /// serialize the list of enums
-    void Serialize(Serializer& stream);
-
-    ///// PUBLIC DATA ///// 
-
-    Array<String> mEnumValues;
-
-    String mName;
-    String mDescription;
-  };
-  */
   // Enum has no additional information so we are just going to have an xml helper and call it good
   void LoadEnumFromDoxy(EnumDoc& enumDoc, TiXmlElement* element, TiXmlNode* enumDef);
 
@@ -464,10 +442,14 @@ namespace Zero
     bool fnIsMacroCall(TiXmlElement* element, TiXmlNode* currMethod);
 
     /// loads the Doxy xml file into doc. Returns False on failure to load
-    bool loadDoxyfile(StringParam doxyPath, TiXmlDocument& doc);
+    bool loadDoxyfile(StringParam nameToSearchFor, StringParam doxyPath, TiXmlDocument& doc, bool isRecursiveCall);
 
     /// loads the Doxy xml file into doc and ignores anything in the ignoreList
     bool loadDoxyfile(StringParam doxyPath, TiXmlDocument& doc, IgnoreList &ignoreList);
+
+    bool loadDoxyFileReturnHelper(StringParam doxyPath, StringParam fileName);
+
+    bool loadClosestDoxyfileMatch(StringParam nameToSearchFor, StringParam doxyPath, TiXmlDocument& doc);
 
     ///// PRIVATE MEMBERS ///// 
     bool mHasBeenLoaded;

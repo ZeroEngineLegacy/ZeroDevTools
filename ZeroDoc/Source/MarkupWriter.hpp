@@ -89,7 +89,7 @@ namespace Zero
   class ReMarkupWriter : public BaseMarkupWriter
   {
   public:
-    ReMarkupWriter(StringParam name);
+    ReMarkupWriter(StringParam name, StringParam uri);
 
   protected:
     // Markup requires spaces not tabs so need to override
@@ -100,16 +100,18 @@ namespace Zero
 
     void InsertDivider();
 
+    void InsertHeaderAtCurrentHeaderLevel(void);
+    void InsertHeaderAtCurrentHeaderLevel(StringParam header);
+
     void InsertLabel(StringParam label);
 
     void InsertTypeLink(StringParam className);
 
-    void InsertHeaderLink(StringParam name, StringParam link);
-
-    void InsertHeaderLink(StringParam name);
+    void InsertHeaderLink(StringParam header);
 
     static const String mEndLine;
 
+    String mDocURI;
   };
 
   class ReMarkupClassMarkupWriter : public ReMarkupWriter
@@ -118,7 +120,7 @@ namespace Zero
     static void WriteClass( StringParam outputFile, ClassDoc* classDoc,
       DocumentationLibrary &lib, DocToTags& tagged);
 
-    ReMarkupClassMarkupWriter(StringParam name, ClassDoc* classDoc);
+    ReMarkupClassMarkupWriter(StringParam name, ClassDoc* classDoc, StringParam outputFile);
 
   protected:
     void InsertClassHeader(void);
@@ -142,7 +144,7 @@ namespace Zero
   class ReMarkupEnumListWriter : public ReMarkupWriter
   {
   public:
-    ReMarkupEnumListWriter(StringParam name);
+    ReMarkupEnumListWriter(StringParam name, StringParam uri);
 
     static void WriteEnumList(StringParam outputFile, DocumentationLibrary &lib);
 
@@ -154,7 +156,7 @@ namespace Zero
   class ReMarkupFlagsListWriter : public ReMarkupWriter
   {
   public:
-    ReMarkupFlagsListWriter(StringParam name);
+    ReMarkupFlagsListWriter(StringParam name, StringParam uri);
 
     static void WriteFlagsList(StringParam outputFile, DocumentationLibrary &lib);
 
@@ -166,9 +168,9 @@ namespace Zero
   class ReMarkupEventListWriter : public ReMarkupWriter
   {
   public:
-    static void WriteEventList(StringParam eventListFilepath, StringParam outputPath);
+    ReMarkupEventListWriter(StringParam name, StringParam uri);
 
-    ReMarkupEventListWriter(StringParam name);
+    static void WriteEventList(StringParam eventListFilepath, StringParam outputPath);
 
     void WriteEventEntry(EventDoc* eventDoc, StringParam type);
 
@@ -178,9 +180,9 @@ namespace Zero
   class ReMarkupCommandRefWriter : public ReMarkupWriter
   {
   public:
-    static void WriteCommandRef(StringParam commandListFilepath, StringParam outputPath);
+    ReMarkupCommandRefWriter(StringParam name, StringParam uri);
 
-    ReMarkupCommandRefWriter(StringParam name);
+    static void WriteCommandRef(StringParam commandListFilepath, StringParam outputPath);
 
     void WriteCommandEntry(const CommandDoc &cmdDoc);
   };

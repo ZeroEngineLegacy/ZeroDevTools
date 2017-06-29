@@ -488,8 +488,6 @@ namespace Zero
   {
     bool madeReplacements = false;
 
-    
-
     // loop over tokens
     for (uint i = 0; i < tokens.Size(); ++i)
     {
@@ -1301,7 +1299,9 @@ namespace Zero
     // for every namespace doxy file
     Array<String> namespaceFilepaths;
 
-    GetFilesWithPartialName(doxyPath, "namespace", mIgnoreList, &namespaceFilepaths);
+    String justSystems = FilePath::Combine(doxyPath, "Systems");
+
+    GetFilesWithPartialName(justSystems, "namespace", mIgnoreList, &namespaceFilepaths);
 
     forRange(String& filepath, namespaceFilepaths.All())
     {
@@ -1375,7 +1375,7 @@ namespace Zero
 
               if (!mEnumAndFlagMap.ContainsKey(enumName))
               {
-                break;
+                continue;
               }
 
               EnumDoc* enumDocToFill = mEnumAndFlagMap[enumName];
@@ -1385,45 +1385,51 @@ namespace Zero
 
               if (!descNode || !descNode->FirstChild())
               {
-                break;
+                continue;
               }
               // now we see if there is a brief description to load
-              String description = descNode->FirstChild()->Value();
+              //Note: para->text
+              String description = descNode->FirstChild()->FirstChild()->Value();
 
-              if (description.Empty())
+              if (description.Empty() || description == "para")
+                continue;
+
+              enumDocToFill->mDescription = description;
+
+              const String paramNameList = "paramnamelist";
+              const String parameterDescription = "parameterdescription";
+
+              //accessing: para->text->paramList
+              TiXmlNode* paramList = descNode->FirstChild()->FirstChild()->NextSibling();
+
+              if (!paramList || String("parameterlist") != paramList->Value())
+                continue;
+
+              //Node Structure:
+              //para
+              //  parameterlist
+              //    parameteritem
+              //      paramnamelist
+              //        paramname (child actually has name text)
+              //      parameterdescription
+              //       para (Child contains actual description)
+
+              // loop over every parameter item
+              for(TiXmlNode* node = paramList->FirstChild(); 
+                node != nullptr; node = node->NextSibling())
               {
-                break;
+                // paramnamelist->paramname->text
+                String value = node->FirstChild()->FirstChild()->FirstChild()->Value();
+
+                if (enumDocToFill->mEnumValues.Contains(value))
+                {
+                  //accessing paramnamelist->paramdescript->para->text
+                  String valDescription = node->FirstChild()->NextSibling()->FirstChild()->FirstChild()->Value();
+                  enumDocToFill->mEnumValues.InsertOrAssign(value, valDescription);
+                }
               }
-
-              // '<param name=' should mark the start of the xml. 
-              StringRange xmlStart = description.FindFirstOf("<param name=");
-
-              // even if no found match, this still works since xmlStart will just be end
-              enumDocToFill->mDescription 
-                = description.SubString(description.Begin(), xmlStart.Begin());
-
-              // if we found xml in the description
-              if (!xmlStart.Empty())
-              {
-                String xmlString = description.SubString(xmlStart.Begin(), description.End());
-                // pass the xml to tinyXml so it parses it for us
-                TiXmlDocument commentDoc;
-
-                commentDoc.Parse(xmlString.c_str());
-
-                // extract out names and descriptions
-                TiXmlNode* enumValDescNode = commentDoc.FirstChild();
-
-                // put the substring of start to beginning of found match into the enum descr
-              }
-
             }
-
-            // once we read the name we are done with this child
-            break;
           }
-          // if the name of the function has "DeclareEnum or DeclareBitfield"
-            // 
         }
       }
     }
@@ -1931,6 +1937,8 @@ namespace Zero
 
   void RawClassDoc::FillTrimmedClass(ClassDoc* trimClass)
   {
+    Rebuild();
+
     trimClass->mName = mName;
 
     trimClass->mBaseClass = mBaseClass;
@@ -1952,8 +1960,6 @@ namespace Zero
 
       if (!rawVar->mProperty)
         continue;
-
-      
 
       PropertyDoc* trimProp = new PropertyDoc;
 
@@ -1994,13 +2000,13 @@ namespace Zero
         {
           StringRange propName = trimMethod->mName.SubStringFromByteIndices(3, trimMethod->mName.SizeInBytes());
 
-          // check if a corresponding property already exists
+          // check if a corresponding property already exists (this should override prop doc if it exists)
           if (trimClass->mPropertiesMap.ContainsKey(propName))
           {
             // if prop exists, make sure we are returning the same type
             PropertyDoc *prop = trimClass->mPropertiesMap[propName];
 
-            if (prop->mDescription.Empty())
+            if (!trimMethod->mDescription.Empty())
             {
               prop->mDescription = trimMethod->mDescription;
             }
@@ -2024,7 +2030,8 @@ namespace Zero
             // NOTE: I am going to ignore differences in const or & since it is the same
             PropertyDoc *prop = trimClass->mPropertiesMap[propName];
 
-            if (prop->mDescription.Empty())
+            // override getter over existing property if getter description exists
+            if (!trimMethod->mDescription.Empty())
             {
               prop->mDescription = trimMethod->mDescription;
             }
@@ -2070,7 +2077,7 @@ namespace Zero
   {
     TiXmlDocument doc;
     // load the doxy xml file into a tinyxml document
-    if (!loadDoxyfile(doxyPath, doc))
+    if (!loadDoxyfile(mName, doxyPath, doc, false))
     {
       return false;
     }
@@ -2745,67 +2752,89 @@ namespace Zero
     return retTypeStr.ToString().Empty();
   }
 
-  bool RawClassDoc::loadDoxyfile(StringParam doxyPath, TiXmlDocument& doc)
+  bool RawClassDoc::loadDoxyFileReturnHelper(StringParam doxyPath, StringParam fileName)
   {
-    //try to open the class file
-    String fileName = FindFile(doxyPath, BuildString("class_zero_1_1"
-      , GetDoxygenName(mName), ".xml"));
-
-    bool loadOkay = doc.LoadFile(fileName.c_str());
-
-    //if loading the class file failed, search for a struct file
-    if (!loadOkay)
-    {
-      fileName = FindFile(doxyPath, BuildString("struct_zero_1_1"
-        , GetDoxygenName(mName).c_str(), ".xml"));
-
-      loadOkay = doc.LoadFile(fileName.c_str());
-
-      if (!loadOkay)
-      {
-        fileName = FindFile(doxyPath, BuildString("struct_zero_1_1_physics_1_1"
-          , GetDoxygenName(mName).c_str(), ".xml"));
-
-        loadOkay = doc.LoadFile(fileName.c_str());
-
-        // if we get here, our filename guessess are not workingskjlksdjls
-        if (!loadOkay)
-        {
-          IgnoreList dummyIgnoreList;
-          Array<String> matchingFilesList;
-          GetFilesWithPartialName(doxyPath, GetDoxygenName(mName), dummyIgnoreList, &matchingFilesList);
-
-          // we are going to load the first 'class_' or 'struct_' file we find
-          forRange(String& filePath, matchingFilesList.All())
-          {
-            // get just the filename
-            String endPath = filePath.SubString(filePath.FindLastOf("\\").Begin(), filePath.End());
-            if (endPath.Contains("class_") || endPath.Contains("struct"))
-            {
-              loadOkay = doc.LoadFile(filePath.c_str());
-
-              if (loadOkay)
-              {
-                fileName = filePath;
-
-                break;
-              }
-            }
-          }
-        }
-      }
-    }
-    if (!loadOkay)
-    {
-      WriteLog("Failed to load doc file for %s\n", mName.c_str());
-      return false;
-    }
-
     if (!SetRelativePath(doxyPath, fileName))
       return false;
 
     mHasBeenLoaded = true;
     return true;
+  }
+
+  bool RawClassDoc::loadClosestDoxyfileMatch(StringParam nameToSearchFor,StringParam doxyPath, TiXmlDocument& doc)
+  {
+    IgnoreList dummyIgnoreList;
+    Array<String> matchingFilesList;
+    GetFilesWithPartialName(doxyPath, GetDoxygenName(nameToSearchFor), dummyIgnoreList, &matchingFilesList);
+
+    // we are going to load the first 'class_' or 'struct_' file we find
+    forRange(String& filePath, matchingFilesList.All())
+    {
+      // get just the filename
+      String endPath = filePath.SubString(filePath.FindLastOf("\\").Begin(), filePath.End());
+      if (endPath.Contains("class_") || endPath.Contains("struct"))
+      {
+        if (doc.LoadFile(filePath.c_str()))
+        {
+
+          return loadDoxyFileReturnHelper(doxyPath, filePath);
+        }
+      }
+    }
+    return false;
+  }
+
+  bool RawClassDoc::loadDoxyfile(StringParam nameToSearchFor, StringParam doxyPath,
+    TiXmlDocument& doc, bool isRecursiveCall)
+  {
+    //try to open the class file
+    String fileName = FindFile(doxyPath, BuildString("class_zero_1_1"
+      , GetDoxygenName(nameToSearchFor), ".xml"));
+
+    bool loadOkay = doc.LoadFile(fileName.c_str());
+
+    if (loadOkay)
+      return loadDoxyFileReturnHelper(doxyPath, fileName);
+
+    //if loading the class file  failed, search for a struct file
+    fileName = FindFile(doxyPath, BuildString("struct_zero_1_1"
+      , GetDoxygenName(nameToSearchFor).c_str(), ".xml"));
+
+    loadOkay = doc.LoadFile(fileName.c_str());
+
+    if (loadOkay)
+      return loadDoxyFileReturnHelper(doxyPath, fileName);
+
+     fileName = FindFile(doxyPath, BuildString("struct_zero_1_1_physics_1_1"
+       , GetDoxygenName(nameToSearchFor).c_str(), ".xml"));
+
+     loadOkay = doc.LoadFile(fileName.c_str());
+
+     if (loadOkay)
+       return loadDoxyFileReturnHelper(doxyPath, fileName);
+
+
+     // check known name differences between zilch and c++ types for file names
+     if (!nameToSearchFor.Contains("Class"))
+     {
+       // Try again but with class appended
+       if (loadDoxyfile(BuildString(nameToSearchFor, "Class"), doxyPath, doc, true))
+       {
+         // we don't use the return helper since the recursive call will use it
+         return true;
+       }
+     }
+
+     // if we get here, our filename guesses are not working
+     if (loadClosestDoxyfileMatch(nameToSearchFor, doxyPath, doc))
+     {
+       return true;
+     }
+     else if (!isRecursiveCall)
+     {
+       WriteLog("Failed to load doc file for %s\n", mName.c_str());
+     }
+     return false;
   }
 
   bool RawClassDoc::loadDoxyfile(StringParam doxyPath, TiXmlDocument& doc, IgnoreList &ignoreList)
@@ -3298,6 +3327,23 @@ namespace Zero
     loader.SerializeField("Typedefs", mTypedefArray);
 
     loader.Close();
+
+    // for each typedef replacement, make sure the zilch type is valid and starting with uppercase
+    forRange(RawTypedefDoc& typedefDoc, mTypedefArray.All())
+    {
+      if (!typedefDoc.mDefinition.Empty())
+      {
+        DocToken& replacementToken = typedefDoc.mDefinition[0];
+
+        // if the replacement was not blank and it started with lowercase
+        if (!replacementToken.mText.Empty() 
+          && replacementToken.mText.c_str()[0] == replacementToken.mText.ToLower().c_str()[0])
+        {
+          Assert("Invalid replacement for type: %s, Invalid replacement was: %s"
+            , typedefDoc.mType.c_str(), replacementToken.mText.c_str());
+        }
+      }
+    }
 
     // just to be safe, sort the serialized array (even though it already should be)
     Zero::Sort(mTypedefArray.All(), TypedefDocCompareFn);

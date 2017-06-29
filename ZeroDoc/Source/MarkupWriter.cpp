@@ -481,6 +481,10 @@ void RstCommandRefWriter::WriteCommandEntry(const CommandDoc &cmdDoc)
 ////////////////////////////////////////////////////////////////////////
 void WriteOutAllReMarkupFiles(Zero::DocGeneratorConfig& config)
 {
+  String baseFromMarkupDirectory = "zero_engine_documentation\\zero_editor_documentation\\code_reference";
+  String baseClassDirectory = FilePath::Combine(baseFromMarkupDirectory, "class_reference");
+  String baseZilchTypesDirectory = FilePath::Combine(baseFromMarkupDirectory, "zilch_base_types");
+
   printf("Mark up: ReMarkup\n");
 
   // https://phab.digipen.edu/w/curriculum_development_and_documentation/rst_documentation/
@@ -532,20 +536,7 @@ void WriteOutAllReMarkupFiles(Zero::DocGeneratorConfig& config)
       // check for core library types assuming those are just zilch
       if (classDoc->mLibrary == "Core")
       {
-        // if we have brackets in the typename, get rid of them, they mess up documentation
-        if (classDoc->mName.Contains("["))
-        {
-          StringRange foundBracket = classDoc->mName.FindFirstOf("[");
-          String cleanedName = classDoc->mName.SubString(classDoc->mName.Begin(), foundBracket.Begin());
-
-          gLinkMap[cleanedName] = BuildString(gBaseZilchTypesLink, cleanedName);
-          gLinkMap[classDoc->mName] = BuildString(gBaseZilchTypesLink, cleanedName);
-        }
-        // otherwise, just output it regularly
-        else
-        {
-          gLinkMap[classDoc->mName] = BuildString(gBaseZilchTypesLink, classDoc->mName);
-        }
+        gLinkMap[classDoc->mName] = BuildString(gBaseZilchTypesLink, classDoc->mName);
       }
       else
       {
@@ -567,7 +558,7 @@ void WriteOutAllReMarkupFiles(Zero::DocGeneratorConfig& config)
       {
         String filename = BuildString(classDoc->mName, ".txt");
 
-        String fullPath = FilePath::Combine(directory, "BaseZilchReference");
+        String fullPath = FilePath::Combine(directory, baseZilchTypesDirectory);
 
         CreateDirectoryAndParents(fullPath);
 
@@ -578,41 +569,35 @@ void WriteOutAllReMarkupFiles(Zero::DocGeneratorConfig& config)
         ReMarkupClassMarkupWriter::WriteClass(fullPath, classDoc, doc, tagged);
 
         // [[wiki page | name]]
-        zilchCoreIndex << gBullet << "[[" << gLinkMap[classDoc->mName]
-          << " | " << classDoc->mName << "]] \n";
+        zilchCoreIndex << gBullet << "[[" << gLinkMap[classDoc->mName] << "]] \n";
       }
       else
       {
-        String filename = BuildString(classDoc->mName, ".txt");
-
-        String fullPath = FilePath::Combine(directory, "ClassReference");
+        String fullPath = FilePath::Combine(directory,baseClassDirectory);
 
         CreateDirectoryAndParents(fullPath);
 
-        fullPath = FilePath::Combine(fullPath, filename);
-
-        fullPath = FilePath::Normalize(fullPath);
+        fullPath = FilePath::CombineWithExtension(fullPath, classDoc->mName, ".txt");
 
         ReMarkupClassMarkupWriter::WriteClass(fullPath, classDoc, doc, tagged);
 
         // [[wiki page | name]]
-        codeRefIndex << gBullet << "[[" << gLinkMap[classDoc->mName]
-          << " | " << classDoc->mName << "]] \n";
+        codeRefIndex << gBullet << "[[" << gLinkMap[classDoc->mName] << "]] \n";
       }
     }
 
-    WriteStringRangeToFile(FilePath::Combine(directory, "ClassRef.txt"), codeRefIndex.ToString());
-    WriteStringRangeToFile(FilePath::Combine(directory, "ZilchBaseRef.txt"), zilchCoreIndex.ToString());
+    WriteStringRangeToFile(FilePath::Combine(directory, baseFromMarkupDirectory,"class_reference.txt"), codeRefIndex.ToString());
+    WriteStringRangeToFile(FilePath::Combine(directory, baseFromMarkupDirectory,"zilch_base_reference.txt"), zilchCoreIndex.ToString());
 
     WriteTagIndices(directory, tagged, doc);
 
-    // Output seperate enum list
-    String enumOutput = FilePath::Combine(config.mMarkupDirectory, "EnumList.txt");
+    // Output separate enum list
+    String enumOutput = FilePath::Combine(directory, baseFromMarkupDirectory, "enum_reference.txt");
     enumOutput = FilePath::Normalize(enumOutput);
     ReMarkupEnumListWriter::WriteEnumList(enumOutput, doc);
 
-    // output seperate flags list
-    String flagsOutput = FilePath::Combine(config.mMarkupDirectory, "FlagsList.txt");
+    // output separate flags list
+    String flagsOutput = FilePath::Combine(directory, baseFromMarkupDirectory, "flags_reference.txt");
     flagsOutput = FilePath::Normalize(flagsOutput);
     ReMarkupFlagsListWriter::WriteFlagsList(flagsOutput, doc);
   }
@@ -620,7 +605,7 @@ void WriteOutAllReMarkupFiles(Zero::DocGeneratorConfig& config)
   // check if we outputting commands
   if (!config.mCommandListFile.Empty())
   {
-    String output = FilePath::Combine(config.mMarkupDirectory, "CommandRef.txt");
+    String output = FilePath::Combine(config.mMarkupDirectory, baseFromMarkupDirectory, "command_reference.txt");
     output = FilePath::Normalize(output);
     ReMarkupCommandRefWriter::WriteCommandRef(config.mCommandListFile, output);
   }
@@ -628,20 +613,15 @@ void WriteOutAllReMarkupFiles(Zero::DocGeneratorConfig& config)
   // check if we are outputting events
   if (!config.mEventsOutputLocation.Empty())
   {
-    String output = FilePath::Combine(config.mMarkupDirectory, "EventList.txt");
+    String output = FilePath::Combine(config.mMarkupDirectory, baseFromMarkupDirectory, "event_reference.txt");
     output = FilePath::Normalize(output);
     ReMarkupEventListWriter::WriteEventList(config.mEventsOutputLocation, output);
   }
 }
 
-void ReMarkupWriter::InsertHeaderLink(StringParam name, StringParam link)
+void ReMarkupWriter::InsertHeaderLink(StringParam header)
 {
-  mOutput << "[[" << name << "#" << link << "]]";
-}
-
-void ReMarkupWriter::InsertHeaderLink(StringParam name)
-{
-  InsertHeaderLink(name, name);
+  mOutput << "[[" << mDocURI << "#" << header << " | " << header << "]]";
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -649,7 +629,8 @@ void ReMarkupWriter::InsertHeaderLink(StringParam name)
 ////////////////////////////////////////////////////////////////////////
 const String ReMarkupWriter::mEndLine("  \n\n");
 
-ReMarkupWriter::ReMarkupWriter(StringParam name) : BaseMarkupWriter(name)
+ReMarkupWriter::ReMarkupWriter(StringParam name, StringParam uri)
+  : BaseMarkupWriter(name), mDocURI(uri)
 {
 }
 
@@ -669,6 +650,19 @@ void ReMarkupWriter::InsertStartOfCodeBlock(StringParam name)
 void ReMarkupWriter::InsertDivider(void)
 {
   mOutput << "\n---  \n";
+}
+
+void ReMarkupWriter::InsertHeaderAtCurrentHeaderLevel(StringParam header)
+{
+  InsertHeaderAtCurrentHeaderLevel();
+
+  mOutput << header << mEndLine;
+}
+
+void ReMarkupWriter::InsertHeaderAtCurrentHeaderLevel(void)
+{
+  for (uint i = 0; i <= this->mCurrentSectionHeaderLevel; ++i)
+    mOutput << "=";
 }
 
 void ReMarkupWriter::InsertLabel(StringParam label)
@@ -694,12 +688,7 @@ void ReMarkupWriter::InsertTypeLink(StringParam className)
     // if token is recognized as a linkable type, link it
     if (gLinkMap.ContainsKey(token.mText))
     {
-      mOutput << "[[" << gLinkMap[token.mText] << " | " << token.mText << "]]";
-    }
-
-    else if (true)
-    {
-
+      mOutput << "[[" << gLinkMap[token.mText] << "]]";
     }
     else
     {
@@ -707,9 +696,6 @@ void ReMarkupWriter::InsertTypeLink(StringParam className)
       mOutput << token.mText;
     }
   }
-  //TODO: Have this capable to detect if something is a zilch base type or a class
-  //TODO: "className" might actually be a compound type
-  //mOutput << "[[" << gBaseClassLink << className << " | " << className << "]]";
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -718,8 +704,6 @@ void ReMarkupWriter::InsertTypeLink(StringParam className)
 void ReMarkupClassMarkupWriter::WriteClass(StringParam outputFile,
   ClassDoc* classDoc, DocumentationLibrary &lib, DocToTags& tagged)
 {
-
-
   // first things first, set up the tags for this class
   forRange(String& tag, classDoc->mTags.All())
   {
@@ -727,7 +711,7 @@ void ReMarkupClassMarkupWriter::WriteClass(StringParam outputFile,
   }
 
   // do the magic for getting directory and file
-  ReMarkupClassMarkupWriter writer(classDoc->mName, classDoc);
+  ReMarkupClassMarkupWriter writer(classDoc->mName, classDoc, gLinkMap[classDoc->mName]);
 
   // top of the file
   writer.InsertClassHeader();
@@ -739,7 +723,7 @@ void ReMarkupClassMarkupWriter::WriteClass(StringParam outputFile,
   // Properties
   //writer.mOutput << ".. _Reference" << writer.mName << "Properties:\n\n";
 
-  writer.InsertNewSectionHeader("Properties");
+  writer.InsertHeaderAtCurrentHeaderLevel("Properties");
   writer.InsertDivider();
 
   forRange(PropertyDoc *prop, classDoc->mProperties.All())
@@ -750,7 +734,7 @@ void ReMarkupClassMarkupWriter::WriteClass(StringParam outputFile,
   // Methods
   //writer.mOutput << ".. _Reference" << writer.mName << "Methods:\n\n";
 
-  writer.InsertNewSectionHeader("Methods");
+  writer.InsertHeaderAtCurrentHeaderLevel("Methods");
   writer.InsertDivider();
 
   forRange(MethodDoc *method, classDoc->mMethods.All())
@@ -764,8 +748,8 @@ void ReMarkupClassMarkupWriter::WriteClass(StringParam outputFile,
   writer.WriteOutputToFile(outputFile);
 }
 
-ReMarkupClassMarkupWriter::ReMarkupClassMarkupWriter(StringParam name, ClassDoc* classDoc)
-  : ReMarkupWriter(name), mClassDoc(classDoc)
+ReMarkupClassMarkupWriter::ReMarkupClassMarkupWriter(StringParam name, ClassDoc* classDoc, StringParam uri)
+  : ReMarkupWriter(name, uri), mClassDoc(classDoc)
 {
 
 }
@@ -781,8 +765,9 @@ void ReMarkupClassMarkupWriter::InsertClassHeader(void)
 void ReMarkupClassMarkupWriter::InsertMethod(MethodDoc &method)
 {
   StartIndentSection((*this));
+  StartHeaderSection((*this));
   // subheader for the method name
-  mOutput << "====" << method.mName << mEndLine;
+  InsertHeaderAtCurrentHeaderLevel(method.mName);
   // print the description directly under the header
   mOutput << method.mDescription << mEndLine;
 
@@ -834,11 +819,16 @@ void ReMarkupClassMarkupWriter::InsertMethod(MethodDoc &method)
   mOutput << mEndLine;
 
   // put link to return type 
-  mOutput << "=====ReturnType: ";
+  StartHeaderSection((*this));
+  InsertHeaderAtCurrentHeaderLevel();
+  mOutput << "ReturnType: ";
   InsertTypeLink(method.mReturnType);
   mOutput << mEndLine;
 
+  EndHeaderSection((*this));
+  EndHeaderSection((*this));
   EndIndentSection((*this));
+
   InsertDivider();
 }
 
@@ -847,9 +837,12 @@ void ReMarkupClassMarkupWriter::InsertProperty(PropertyDoc &propDoc)
   if (propDoc.mType.Empty())
     return;
 
+  StartHeaderSection((*this));
   StartIndentSection((*this));
+
   // subheader for the method name
-  mOutput << "====" << propDoc.mName << mEndLine;
+  //mOutput << "====" << propDoc.mName << mEndLine;
+  InsertHeaderAtCurrentHeaderLevel(propDoc.mName);
   // print the description directly under the header
   mOutput << propDoc.mDescription << mEndLine;
 
@@ -860,11 +853,15 @@ void ReMarkupClassMarkupWriter::InsertProperty(PropertyDoc &propDoc)
   IndentToCurrentLevel();
   mOutput << "var " << propDoc.mName << " : " << propDoc.mType << ";" << mEndLine;
 
-  mOutput << "======Type: ";
+  StartHeaderSection((*this));
+  InsertHeaderAtCurrentHeaderLevel();
+  mOutput << "Type: ";
   InsertTypeLink(propDoc.mType);
   mOutput << mEndLine;
+  EndHeaderSection((*this));
 
   EndIndentSection((*this));
+  EndHeaderSection((*this));
   InsertDivider();
 }
 
@@ -971,7 +968,8 @@ void ReMarkupClassMarkupWriter::InsertJumpTable(void)
 ////////////////////////////////////////////////////////////////////////
 // ReMarkupEnumListWriter
 ////////////////////////////////////////////////////////////////////////
-ReMarkupEnumListWriter::ReMarkupEnumListWriter(StringParam name) : ReMarkupWriter(name)
+ReMarkupEnumListWriter::ReMarkupEnumListWriter(StringParam name, StringParam uri) 
+  : ReMarkupWriter(name, uri)
 {
 
 }
@@ -980,7 +978,7 @@ ReMarkupEnumListWriter::ReMarkupEnumListWriter(StringParam name) : ReMarkupWrite
 void ReMarkupEnumListWriter::WriteEnumList(StringParam outputFile, DocumentationLibrary &lib)
 {
   // create the eventList
-  ReMarkupEnumListWriter writer("Enum List");
+  ReMarkupEnumListWriter writer("Enum List", BuildString(gBaseLink, "enum_reference/"));
 
   writer.InsertNewSectionHeader("Enum List");
 
@@ -1041,7 +1039,8 @@ void ReMarkupEnumListWriter::InsertEnumTable(const Array<EnumDoc*>& enumList)
 ////////////////////////////////////////////////////////////////////////
 // ReMarkupFlagsListWriter
 ////////////////////////////////////////////////////////////////////////
-ReMarkupFlagsListWriter::ReMarkupFlagsListWriter(StringParam name) : ReMarkupWriter(name)
+ReMarkupFlagsListWriter::ReMarkupFlagsListWriter(StringParam name, StringParam uri)
+  : ReMarkupWriter(name, uri)
 {
 }
 
@@ -1049,7 +1048,7 @@ ReMarkupFlagsListWriter::ReMarkupFlagsListWriter(StringParam name) : ReMarkupWri
 void ReMarkupFlagsListWriter::WriteFlagsList(StringParam outputFile, DocumentationLibrary &lib)
 {
   // create the eventList
-  ReMarkupFlagsListWriter writer("Flags List");
+  ReMarkupFlagsListWriter writer("Flags List", BuildString(gBaseLink, "flags_reference/"));
 
   writer.InsertNewSectionHeader("Flags List");
 
@@ -1128,7 +1127,7 @@ void ReMarkupEventListWriter::WriteEventList(StringParam eventListFilepath, Stri
   Array<EventDoc *> &eventArray = eventListDoc.mEvents;
 
   // create the eventList
-  ReMarkupEventListWriter writer("Event List");
+  ReMarkupEventListWriter writer("Event Reference", BuildString(gBaseLink, "event_reference/"));
 
   writer.InsertNewSectionHeader("Event List");
 
@@ -1152,9 +1151,9 @@ void ReMarkupEventListWriter::WriteEventList(StringParam eventListFilepath, Stri
   writer.WriteOutputToFile(outputPath);
 }
 
-ReMarkupEventListWriter::ReMarkupEventListWriter(StringParam name) : ReMarkupWriter(name)
+ReMarkupEventListWriter::ReMarkupEventListWriter(StringParam name, StringParam uri) 
+  : ReMarkupWriter(name, uri)
 {
-
 }
 
 void ReMarkupEventListWriter::WriteEventEntry(EventDoc* eventDoc, StringParam type)
@@ -1208,6 +1207,12 @@ void ReMarkupEventListWriter::WriteEventTable(const Array<EventDoc*>& eventList)
 ////////////////////////////////////////////////////////////////////////
 // ReMarkupCommandRefWriter
 ////////////////////////////////////////////////////////////////////////
+ReMarkupCommandRefWriter::ReMarkupCommandRefWriter(StringParam name, StringParam uri)
+  : ReMarkupWriter(name, uri)
+{
+
+}
+
 void ReMarkupCommandRefWriter::WriteCommandRef(StringParam commandListFilepath, StringParam outputPath)
 {
   // load the file
@@ -1226,7 +1231,7 @@ void ReMarkupCommandRefWriter::WriteCommandRef(StringParam commandListFilepath, 
   Array<CommandDoc *> &cmdArray = cmdListDoc.mCommands;
 
   // create the command writer
-  ReMarkupCommandRefWriter writer("Zero Commands");
+  ReMarkupCommandRefWriter writer("Zero Commands", BuildString(gBaseLink, "command_reference/"));
 
   // create top of file
   writer.InsertNewSectionHeader("Zero Commands");
@@ -1246,10 +1251,6 @@ void ReMarkupCommandRefWriter::WriteCommandRef(StringParam commandListFilepath, 
   writer.WriteOutputToFile(outputPath);
 }
 
-ReMarkupCommandRefWriter::ReMarkupCommandRefWriter(StringParam name) : ReMarkupWriter(name)
-{
-
-}
 
 void ReMarkupCommandRefWriter::WriteCommandEntry(const CommandDoc &cmdDoc)
 {

@@ -141,24 +141,24 @@ namespace Zero
     ClassDoc *mClassDoc;
   };
 
-  class ReMarkupEnumListWriter : public ReMarkupWriter
+  class ReMarkupEnumReferenceWriter : public ReMarkupWriter
   {
   public:
-    ReMarkupEnumListWriter(StringParam name, StringParam uri);
+    ReMarkupEnumReferenceWriter(StringParam name, StringParam uri);
 
-    static void WriteEnumList(StringParam outputFile, DocumentationLibrary &lib);
+    static void WriteEnumReference(StringParam outputFile, DocumentationLibrary &lib);
 
     void InsertEnumEntry(EnumDoc* enumDoc);
 
     void InsertEnumTable(const Array<EnumDoc*>& enumList);
   };
 
-  class ReMarkupFlagsListWriter : public ReMarkupWriter
+  class ReMarkupFlagsReferenceWriter : public ReMarkupWriter
   {
   public:
-    ReMarkupFlagsListWriter(StringParam name, StringParam uri);
+    ReMarkupFlagsReferenceWriter(StringParam name, StringParam uri);
 
-    static void WriteFlagsList(StringParam outputFile, DocumentationLibrary &lib);
+    static void WriteFlagsReference(StringParam outputFile, DocumentationLibrary &lib);
 
     void InsertFlagsEntry(EnumDoc *flags);
 

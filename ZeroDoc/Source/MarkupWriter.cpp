@@ -13,11 +13,11 @@
 namespace Zero
 {
 UnsortedMap<String, String> gLinkMap;
-String gBaseLink = "zero_engine_documentation/zero_editor_documentation/code_reference/";
-String gBaseClassLink = BuildString(gBaseLink, "class_reference/");
-String gBaseZilchTypesLink = BuildString(gBaseLink, "zilch_base_types/");
-String gBaseEnumTypesLink = BuildString(gBaseLink, "EnumList/#");
-String gBaseFlagsTypesLink = BuildString(gBaseLink, "FlagsList/#");
+String gBaseLink = "zero_engine_documentation/code_reference/";
+String gBaseClassLink = BuildString(gBaseLink, "ClassReference/");
+String gBaseZilchTypesLink = BuildString(gBaseLink, "ZilchBaseTypes/");
+String gBaseEnumTypesLink = BuildString(gBaseLink, "EnumReference/#");
+String gBaseFlagsTypesLink = BuildString(gBaseLink, "FlagsReference/#");
 
 void WriteTagIndices(String outputDir, DocToTags& tagged, DocumentationLibrary &docLib)
 {
@@ -479,11 +479,49 @@ void RstCommandRefWriter::WriteCommandEntry(const CommandDoc &cmdDoc)
 ////////////////////////////////////////////////////////////////////////
 // ReMarkup
 ////////////////////////////////////////////////////////////////////////
+
+// helper for converting camelCase names to lowercase with underscores
+String GetLinkName(StringParam name)
+{
+  const String openBracket = "[";
+  const String closeBracket = "]";
+  StringBuilder builder;
+  
+  StringRange nameRange = name.All();
+
+  builder << UTF8::ToLower(nameRange.Front());
+
+  nameRange.PopFront();
+
+  for(; !nameRange.Empty(); nameRange.PopFront())
+  {
+    if (nameRange.IsCurrentRuneUpper())
+    {
+      builder << "_" << UTF8::ToLower(nameRange.Front());
+    }
+    if (nameRange.Front() == openBracket.Front())
+    {
+      builder << "_";
+    }
+    else if (nameRange.Front() == closeBracket.Front())
+    {
+      continue;
+    }
+    else
+    {
+      builder << UTF8::ToLower(nameRange.Front());
+    }
+  }
+
+  return builder.ToString();
+}
+
+
 void WriteOutAllReMarkupFiles(Zero::DocGeneratorConfig& config)
 {
   String baseFromMarkupDirectory = "zero_engine_documentation\\zero_editor_documentation\\code_reference";
-  String baseClassDirectory = FilePath::Combine(baseFromMarkupDirectory, "class_reference");
-  String baseZilchTypesDirectory = FilePath::Combine(baseFromMarkupDirectory, "zilch_base_types");
+  String baseClassDirectory = FilePath::Combine(baseFromMarkupDirectory, "ClassReference");
+  String baseZilchTypesDirectory = FilePath::Combine(baseFromMarkupDirectory, "ZilchBaseTypes");
 
   printf("Mark up: ReMarkup\n");
 
@@ -536,18 +574,18 @@ void WriteOutAllReMarkupFiles(Zero::DocGeneratorConfig& config)
       // check for core library types assuming those are just zilch
       if (classDoc->mLibrary == "Core")
       {
-        gLinkMap[classDoc->mName] = BuildString(gBaseZilchTypesLink, classDoc->mName);
+        gLinkMap[classDoc->mName] = BuildString(gBaseZilchTypesLink, GetLinkName(classDoc->mName));
       }
       else
       {
-        gLinkMap[classDoc->mName] = BuildString(gBaseClassLink, classDoc->mName);
+        gLinkMap[classDoc->mName] = BuildString(gBaseClassLink, GetLinkName(classDoc->mName));
 
         // add a version that does not have the extra type information
         if (classDoc->mName.Contains("["))
         {
           auto foundBracket = classDoc->mName.FindFirstOf("[");
           gLinkMap[classDoc->mName.SubString(classDoc->mName.Begin(), foundBracket.Begin())]
-            = BuildString(gBaseClassLink, classDoc->mName);
+            = BuildString(gBaseClassLink, GetLinkName(classDoc->mName));
         }
       }
     }
@@ -586,26 +624,26 @@ void WriteOutAllReMarkupFiles(Zero::DocGeneratorConfig& config)
       }
     }
 
-    WriteStringRangeToFile(FilePath::Combine(directory, baseFromMarkupDirectory,"class_reference.txt"), codeRefIndex.ToString());
-    WriteStringRangeToFile(FilePath::Combine(directory, baseFromMarkupDirectory,"zilch_base_reference.txt"), zilchCoreIndex.ToString());
+    WriteStringRangeToFile(FilePath::Combine(directory, baseFromMarkupDirectory,"ClassReference.txt"), codeRefIndex.ToString());
+    WriteStringRangeToFile(FilePath::Combine(directory, baseFromMarkupDirectory,"ZilchBaseReference.txt"), zilchCoreIndex.ToString());
 
     WriteTagIndices(directory, tagged, doc);
 
     // Output separate enum list
-    String enumOutput = FilePath::Combine(directory, baseFromMarkupDirectory, "enum_reference.txt");
+    String enumOutput = FilePath::Combine(directory, baseFromMarkupDirectory, "EnumReference.txt");
     enumOutput = FilePath::Normalize(enumOutput);
-    ReMarkupEnumListWriter::WriteEnumList(enumOutput, doc);
+    ReMarkupEnumReferenceWriter::WriteEnumReference(enumOutput, doc);
 
     // output separate flags list
-    String flagsOutput = FilePath::Combine(directory, baseFromMarkupDirectory, "flags_reference.txt");
+    String flagsOutput = FilePath::Combine(directory, baseFromMarkupDirectory, "FlagsReference.txt");
     flagsOutput = FilePath::Normalize(flagsOutput);
-    ReMarkupFlagsListWriter::WriteFlagsList(flagsOutput, doc);
+    ReMarkupFlagsReferenceWriter::WriteFlagsReference(flagsOutput, doc);
   }
 
   // check if we outputting commands
   if (!config.mCommandListFile.Empty())
   {
-    String output = FilePath::Combine(config.mMarkupDirectory, baseFromMarkupDirectory, "command_reference.txt");
+    String output = FilePath::Combine(config.mMarkupDirectory, baseFromMarkupDirectory, "CommandReference.txt");
     output = FilePath::Normalize(output);
     ReMarkupCommandRefWriter::WriteCommandRef(config.mCommandListFile, output);
   }
@@ -613,7 +651,7 @@ void WriteOutAllReMarkupFiles(Zero::DocGeneratorConfig& config)
   // check if we are outputting events
   if (!config.mEventsOutputLocation.Empty())
   {
-    String output = FilePath::Combine(config.mMarkupDirectory, baseFromMarkupDirectory, "event_reference.txt");
+    String output = FilePath::Combine(config.mMarkupDirectory, baseFromMarkupDirectory, "EventReference.txt");
     output = FilePath::Normalize(output);
     ReMarkupEventListWriter::WriteEventList(config.mEventsOutputLocation, output);
   }
@@ -966,19 +1004,19 @@ void ReMarkupClassMarkupWriter::InsertJumpTable(void)
 }
 
 ////////////////////////////////////////////////////////////////////////
-// ReMarkupEnumListWriter
+// ReMarkupEnumReferenceWriter
 ////////////////////////////////////////////////////////////////////////
-ReMarkupEnumListWriter::ReMarkupEnumListWriter(StringParam name, StringParam uri) 
+ReMarkupEnumReferenceWriter::ReMarkupEnumReferenceWriter(StringParam name, StringParam uri) 
   : ReMarkupWriter(name, uri)
 {
 
 }
 
 
-void ReMarkupEnumListWriter::WriteEnumList(StringParam outputFile, DocumentationLibrary &lib)
+void ReMarkupEnumReferenceWriter::WriteEnumReference(StringParam outputFile, DocumentationLibrary &lib)
 {
   // create the eventList
-  ReMarkupEnumListWriter writer("Enum List", BuildString(gBaseLink, "enum_reference/"));
+  ReMarkupEnumReferenceWriter writer("Enum List", BuildString(gBaseLink, "enum_reference/"));
 
   writer.InsertNewSectionHeader("Enum List");
 
@@ -998,7 +1036,7 @@ void ReMarkupEnumListWriter::WriteEnumList(StringParam outputFile, Documentation
   writer.WriteOutputToFile(outputFile);
 }
 
-void ReMarkupEnumListWriter::InsertEnumEntry(EnumDoc* enumDoc)
+void ReMarkupEnumReferenceWriter::InsertEnumEntry(EnumDoc* enumDoc)
 {
   // name
   // description
@@ -1022,12 +1060,12 @@ void ReMarkupEnumListWriter::InsertEnumEntry(EnumDoc* enumDoc)
   mOutput << mEndLine;
 }
 
-void ReMarkupEnumListWriter::InsertEnumTable(const Array<EnumDoc*>& enumList)
+void ReMarkupEnumReferenceWriter::InsertEnumTable(const Array<EnumDoc*>& EnumReference)
 {
   // print the top of the table
   mOutput << "|Enum||\n|---|\n";
 
-  forRange(EnumDoc* doc, enumList.All( ))
+  forRange(EnumDoc* doc, EnumReference.All( ))
   {
     mOutput << "|";
     InsertHeaderLink(doc->mName);
@@ -1037,18 +1075,18 @@ void ReMarkupEnumListWriter::InsertEnumTable(const Array<EnumDoc*>& enumList)
 }
 
 ////////////////////////////////////////////////////////////////////////
-// ReMarkupFlagsListWriter
+// ReMarkupFlagsReferenceWriter
 ////////////////////////////////////////////////////////////////////////
-ReMarkupFlagsListWriter::ReMarkupFlagsListWriter(StringParam name, StringParam uri)
+ReMarkupFlagsReferenceWriter::ReMarkupFlagsReferenceWriter(StringParam name, StringParam uri)
   : ReMarkupWriter(name, uri)
 {
 }
 
 
-void ReMarkupFlagsListWriter::WriteFlagsList(StringParam outputFile, DocumentationLibrary &lib)
+void ReMarkupFlagsReferenceWriter::WriteFlagsReference(StringParam outputFile, DocumentationLibrary &lib)
 {
   // create the eventList
-  ReMarkupFlagsListWriter writer("Flags List", BuildString(gBaseLink, "flags_reference/"));
+  ReMarkupFlagsReferenceWriter writer("Flags List", BuildString(gBaseLink, "flags_reference/"));
 
   writer.InsertNewSectionHeader("Flags List");
 
@@ -1070,7 +1108,7 @@ void ReMarkupFlagsListWriter::WriteFlagsList(StringParam outputFile, Documentati
 
 
 
-void ReMarkupFlagsListWriter::InsertFlagsEntry(EnumDoc *flags)
+void ReMarkupFlagsReferenceWriter::InsertFlagsEntry(EnumDoc *flags)
 {
   // name
   // description
@@ -1094,12 +1132,12 @@ void ReMarkupFlagsListWriter::InsertFlagsEntry(EnumDoc *flags)
   mOutput << mEndLine;
 }
 
-void ReMarkupFlagsListWriter::InsertFlagTable(const Array<EnumDoc*>& flagsList)
+void ReMarkupFlagsReferenceWriter::InsertFlagTable(const Array<EnumDoc*>& FlagsReference)
 {
   // print the top of the table
   mOutput << "|Flags||\n|---|\n";
 
-  forRange(EnumDoc *doc, flagsList.All())
+  forRange(EnumDoc *doc, FlagsReference.All())
   {
     mOutput << "|";
     InsertHeaderLink(doc->mName);
@@ -1159,9 +1197,6 @@ ReMarkupEventListWriter::ReMarkupEventListWriter(StringParam name, StringParam u
 void ReMarkupEventListWriter::WriteEventEntry(EventDoc* eventDoc, StringParam type)
 {
   InsertNewSectionHeader(eventDoc->mName);
-
-  //mOutput << ".. include:: EventListDescriptions/" << eventEntry << ".rst\n\n"
-  //  << ":cpp:type:`" << type << "`\n\n";
 
   mOutput << gBold << "Type: " << gBold;
   InsertTypeLink(type);

@@ -358,7 +358,8 @@ namespace Zero
 
     if (fullFilename.Empty())
     {
-      Error("file '%s' either did not have a doxy file or was not found", name.c_str());
+      WriteLog("macro '%s' was not found. Given location: %s", name.c_str(), location.c_str());
+      Error("Macro '%s' was not found. Given location: %s", name.c_str(), location.c_str());
     }
 
     // load the file
@@ -366,6 +367,7 @@ namespace Zero
 
     if (!macroFile.LoadFile(fullFilename.c_str()))
     {
+      WriteLog("unable to load file '%s", fullFilename.c_str());
       Error("unable to load file '%s", fullFilename.c_str());
     }
 
@@ -437,23 +439,79 @@ namespace Zero
     TiXmlElement* element, TiXmlNode* currMethod)
   {
     // get the comment above, if we have no MacroDoc directive, we do not need to save this
+    //String description = DoxyToString(element, gElementTags[eBRIEFDESCRIPTION]).Trim();
+    //
+    //if (description.Empty())
+    //  return;
+
+    // get just the description node
+    TiXmlNode* descNode = GetFirstNodeOfChildType(element, gElementTags[eBRIEFDESCRIPTION]);
+
+    if (descNode->GetNumberOfChildren() <= 0)
+      return;
+
+
+    // para
+    TiXmlNode* paraNode = descNode->FirstChild();
+    if (String("DeclareAnchorAccessors") == GetElementValue(element, "name"))
+      printf("correctMAcroAtLeast");
+    else if (paraNode->GetNumberOfChildren() > 1)
+      printf("DisTheTing");
+    else
+      return;
+
     String description = DoxyToString(element, gElementTags[eBRIEFDESCRIPTION]).Trim();
 
-    if (description.Empty())
-      return;
+    StringRange macroStart = description.FindFirstOf("<macro");
 
-    TypeTokens descTokens;
-    AppendTokensFromString(DocLangDfa::Get(), description, &descTokens);
-
-    if (descTokens[0].mText != "MacroComment")
+    // if this does not contains the start of a macro tag skipit
+    if (!macroStart.SizeInBytes())
+    {
       return;
+    }
+
+    String macro = description.SubString(macroStart.Begin(), description.End());
+
+    // cut the macro out of the description
+    description = description.SubString(description.Begin(), macroStart.Begin());
+
+    TiXmlDocument macroXml;
+
+    macroXml.Parse(macro.c_str());
+
+    TiXmlElement* macroElement = macroXml.FirstChildElement();
 
     MacroCall &call = mMacroCalls.PushBack();
 
-    // parse any options in the comment really quick
-    if (descTokens.Size() > 1)
+    // unpack all attributes and save them as options
+    for (TiXmlAttribute* attrib = macroElement->FirstAttribute();
+      attrib != nullptr; attrib = attrib->Next())
     {
-      call.ParseOptions(descTokens);
+      call.AddOption(attrib->Name(), attrib->Value());
+    }
+
+    // unpack all child nodes and save them as options
+    for (TiXmlElement* childOption = macroElement->FirstChildElement(); 
+      childOption != nullptr; childOption = childOption->NextSiblingElement())
+    {
+      // save replacements separately
+      if (String(childOption->Value()) == MacroOptionStrings[MacroOptions::Replacement])
+      {
+        // there must be an attribute as that is what we are replacing
+        if (childOption->FirstAttribute() == nullptr)
+        {
+          WriteLog("Macro %s has comment with invalid replacement.\n", GetElementValue(element, "name"));
+          Error("Invalid replacement, missing attribute");
+        }
+        else
+        {
+          call.mReplacements[childOption->FirstAttribute()->Value()] = childOption->GetText();
+        }
+      }
+      else
+      {
+        call.AddOption(childOption->Value(), childOption->GetText());
+      }
     }
 
     // get the name of the macro from this call (do not save it to id in case we find better)

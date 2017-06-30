@@ -7,11 +7,12 @@
 namespace Zero
 {
 
-  DeclareEnum3(MacroOptions, Location, Comment, StartCustomOptions);
+  DeclareEnum4(MacroOptions, Location, Comment, Replacement, startCustomOptions);
 
   static const char *MacroOptionStrings[] = {
     "location",
-    "comment"
+    "comment",
+    "replacement"
   };
 
   struct MacroData
@@ -60,9 +61,10 @@ namespace Zero
 
     Array<String> mMacroArgs;
 
+    UnsortedMap<String, String> mReplacements;
+
   private:
     UnsortedMap<String, String> mOptions;
-
   };
 
   class MacroDatabase

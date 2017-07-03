@@ -121,6 +121,7 @@ namespace Zero
 
   bool MacroCall::LoadMacroWithName(StringParam name)
   {
+	  return false;
     // if we have the location, go ahead and load the macro now if we do not have it already
     if (mOptions.ContainsKey(MacroOptionStrings[MacroOptions::Location]))
     {

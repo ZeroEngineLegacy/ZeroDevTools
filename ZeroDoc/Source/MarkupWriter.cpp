@@ -14,10 +14,10 @@ namespace Zero
 {
 UnsortedMap<String, String> gLinkMap;
 String gBaseLink = "zero_engine_documentation/code_reference/";
-String gBaseClassLink = BuildString(gBaseLink, "ClassReference/");
-String gBaseZilchTypesLink = BuildString(gBaseLink, "ZilchBaseTypes/");
-String gBaseEnumTypesLink = BuildString(gBaseLink, "EnumReference/#");
-String gBaseFlagsTypesLink = BuildString(gBaseLink, "FlagsReference/#");
+String gBaseClassLink = BuildString(gBaseLink, "Class_Reference/");
+String gBaseZilchTypesLink = BuildString(gBaseLink, "Zilch_Base_Types/");
+String gBaseEnumTypesLink = BuildString(gBaseLink, "Enum_Reference/#");
+String gBaseFlagsTypesLink = BuildString(gBaseLink, "Flags_Reference/#");
 
 void WriteTagIndices(String outputDir, DocToTags& tagged, DocumentationLibrary &docLib)
 {
@@ -497,11 +497,11 @@ String GetLinkName(StringParam name)
   {
     if (nameRange.IsCurrentRuneUpper())
     {
-      builder << "_" << UTF8::ToLower(nameRange.Front());
+      builder << " " << UTF8::ToLower(nameRange.Front());
     }
-    if (nameRange.Front() == openBracket.Front())
+    else if (nameRange.Front() == openBracket.Front())
     {
-      builder << "_";
+      builder << " ";
     }
     else if (nameRange.Front() == closeBracket.Front())
     {
@@ -520,8 +520,8 @@ String GetLinkName(StringParam name)
 void WriteOutAllReMarkupFiles(Zero::DocGeneratorConfig& config)
 {
   String baseFromMarkupDirectory = "zero_engine_documentation\\zero_editor_documentation\\code_reference";
-  String baseClassDirectory = FilePath::Combine(baseFromMarkupDirectory, "ClassReference");
-  String baseZilchTypesDirectory = FilePath::Combine(baseFromMarkupDirectory, "ZilchBaseTypes");
+  String baseClassDirectory = FilePath::Combine(baseFromMarkupDirectory, "Class_Reference");
+  String baseZilchTypesDirectory = FilePath::Combine(baseFromMarkupDirectory, "Zilch_Base_Types");
 
   printf("Mark up: ReMarkup\n");
 
@@ -574,19 +574,30 @@ void WriteOutAllReMarkupFiles(Zero::DocGeneratorConfig& config)
       // check for core library types assuming those are just zilch
       if (classDoc->mLibrary == "Core")
       {
-        gLinkMap[classDoc->mName] = BuildString(gBaseZilchTypesLink, GetLinkName(classDoc->mName));
+        gLinkMap[classDoc->mName] = BuildString(gBaseZilchTypesLink, classDoc->mName);
+		//never seems to get called -AJ
+		if (classDoc->mName.Contains("["))
+		{
+			//auto foundBracket = classDoc->mName.FindFirstOf("[");
+
+			//Zero::String nonBracketName = classDoc->mName.SubString(classDoc->mName.Begin(), foundBracket.Begin());
+			String name = classDoc->mName.Replace(String('['), String('_'));
+			name = name.Replace(String(']'), String(' '));
+			gLinkMap[classDoc->mName] = BuildString(gBaseZilchTypesLink, name.ToLower());
+		}
       }
       else
       {
-        gLinkMap[classDoc->mName] = BuildString(gBaseClassLink, GetLinkName(classDoc->mName));
+        gLinkMap[classDoc->mName] = BuildString(gBaseClassLink, classDoc->mName);
 
         // add a version that does not have the extra type information
-        if (classDoc->mName.Contains("["))
-        {
-          auto foundBracket = classDoc->mName.FindFirstOf("[");
-          gLinkMap[classDoc->mName.SubString(classDoc->mName.Begin(), foundBracket.Begin())]
-            = BuildString(gBaseClassLink, GetLinkName(classDoc->mName));
-        }
+		//never seems to get called -AJ
+		if (classDoc->mName.Contains("["))
+		{
+		  auto foundBracket = classDoc->mName.FindFirstOf("[");
+		  Zero::String nonBracketName = classDoc->mName.SubString(classDoc->mName.Begin(), foundBracket.Begin());
+		  gLinkMap[classDoc->mName] = BuildString(gBaseClassLink, nonBracketName);
+	    }
       }
     }
     //Upload the class' page to the wiki, making sure to perform the link replacements
@@ -594,7 +605,8 @@ void WriteOutAllReMarkupFiles(Zero::DocGeneratorConfig& config)
     {
       if (classDoc->mLibrary == "Core")
       {
-        String filename = BuildString(classDoc->mName, ".txt");
+		String className = classDoc->mName;
+        String filename = BuildString(className, ".txt");
 
         String fullPath = FilePath::Combine(directory, baseZilchTypesDirectory);
 
@@ -624,18 +636,18 @@ void WriteOutAllReMarkupFiles(Zero::DocGeneratorConfig& config)
       }
     }
 
-    WriteStringRangeToFile(FilePath::Combine(directory, baseFromMarkupDirectory,"ClassReference.txt"), codeRefIndex.ToString());
-    WriteStringRangeToFile(FilePath::Combine(directory, baseFromMarkupDirectory,"ZilchBaseReference.txt"), zilchCoreIndex.ToString());
+    WriteStringRangeToFile(FilePath::Combine(directory, baseFromMarkupDirectory,"Class Reference.txt"), codeRefIndex.ToString());
+    WriteStringRangeToFile(FilePath::Combine(directory, baseFromMarkupDirectory,"Zilch Base Types.txt"), zilchCoreIndex.ToString());
 
     WriteTagIndices(directory, tagged, doc);
 
     // Output separate enum list
-    String enumOutput = FilePath::Combine(directory, baseFromMarkupDirectory, "EnumReference.txt");
+    String enumOutput = FilePath::Combine(directory, baseFromMarkupDirectory, "Enum Reference.txt");
     enumOutput = FilePath::Normalize(enumOutput);
     ReMarkupEnumReferenceWriter::WriteEnumReference(enumOutput, doc);
 
     // output separate flags list
-    String flagsOutput = FilePath::Combine(directory, baseFromMarkupDirectory, "FlagsReference.txt");
+    String flagsOutput = FilePath::Combine(directory, baseFromMarkupDirectory, "Flags Reference.txt");
     flagsOutput = FilePath::Normalize(flagsOutput);
     ReMarkupFlagsReferenceWriter::WriteFlagsReference(flagsOutput, doc);
   }
@@ -643,7 +655,7 @@ void WriteOutAllReMarkupFiles(Zero::DocGeneratorConfig& config)
   // check if we outputting commands
   if (!config.mCommandListFile.Empty())
   {
-    String output = FilePath::Combine(config.mMarkupDirectory, baseFromMarkupDirectory, "CommandReference.txt");
+    String output = FilePath::Combine(config.mMarkupDirectory, baseFromMarkupDirectory, "Command Reference.txt");
     output = FilePath::Normalize(output);
     ReMarkupCommandRefWriter::WriteCommandRef(config.mCommandListFile, output);
   }
@@ -651,7 +663,7 @@ void WriteOutAllReMarkupFiles(Zero::DocGeneratorConfig& config)
   // check if we are outputting events
   if (!config.mEventsOutputLocation.Empty())
   {
-    String output = FilePath::Combine(config.mMarkupDirectory, baseFromMarkupDirectory, "EventReference.txt");
+    String output = FilePath::Combine(config.mMarkupDirectory, baseFromMarkupDirectory, "Event Reference.txt");
     output = FilePath::Normalize(output);
     ReMarkupEventListWriter::WriteEventList(config.mEventsOutputLocation, output);
   }
@@ -659,7 +671,7 @@ void WriteOutAllReMarkupFiles(Zero::DocGeneratorConfig& config)
 
 void ReMarkupWriter::InsertHeaderLink(StringParam header)
 {
-  mOutput << "[[" << mDocURI << "#" << header << " | " << header << "]]";
+  mOutput << "[[" << mDocURI << "#" << header.ToLower() << " | " << header << "]]";
 }
 
 ////////////////////////////////////////////////////////////////////////

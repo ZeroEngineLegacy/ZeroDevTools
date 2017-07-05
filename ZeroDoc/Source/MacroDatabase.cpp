@@ -128,16 +128,20 @@ namespace Zero
       // if we do not find the macro after having a location, consider that an error
       if (mMacro == nullptr)
       {
-        Error("Macro '%s' at location: '%s' could not be found"
+        WriteLog("Macro '%s' at location: '%s' could not be found\n"
           , name.c_str(), mOptions[MacroOptionStrings[MacroOptions::Location]].c_str());
+        return false;
       }
     }
     else
     {
       mMacro = MacroDatabase::GetInstance()->FindMacro(name, mClass->mHeaderFile);
+
       // if we cannot load the macro, make sure this is not just already saved by name
       if (mMacro == nullptr)
       {
+        WriteLog("Macro '%s' at location: '%s' could not be found\n"
+          , name.c_str(), mClass->mHeaderFile.c_str());
         return false;
       }
     }
@@ -336,13 +340,21 @@ namespace Zero
 
     if (!folder.Empty())
     {
-      path << cDirectorySeparatorChar << folder;
+      path << "\\" << folder;
     }
 
-    path << cDirectorySeparatorChar;
+    path << "\\";
 
+    StringRange filename;
     // separate filename from the path
-    StringRange filename = location.FindLastOf("/");
+    if (!folder.Empty())
+    {
+      filename = location.FindLastOf("/");
+    }
+    else
+    {
+      filename = location;
+    }
     
     String uniqueId = generateUniqueMacroId(folder, filename, name);
     // if we have already loaded this macro just return that instead of parsing it again
@@ -354,21 +366,26 @@ namespace Zero
     // generate the doxyfile name from that filename
     String fullFilename = GetDoxyfileNameFromSourceFileName(filename);
 
-    fullFilename = GetFileWithExactName(path.ToString(), fullFilename);
+    String foundFilePath = GetFileWithExactName(path.ToString(), fullFilename);
 
-    if (fullFilename.Empty())
+    if (foundFilePath.Empty())
     {
-      WriteLog("macro '%s' was not found. Given location: %s", name.c_str(), location.c_str());
-      Error("Macro '%s' was not found. Given location: %s", name.c_str(), location.c_str());
+      Array<String> possibleFiles;
+
+      GetFilesWithPartialName(path.ToString(), fullFilename, &possibleFiles);
+
+
+      WriteLog("macro '%s' was not found. Given location: %s\n", name.c_str(), location.c_str());
+      return nullptr;
     }
 
     // load the file
     TiXmlDocument macroFile;
 
-    if (!macroFile.LoadFile(fullFilename.c_str()))
+    if (!macroFile.LoadFile(foundFilePath.c_str()))
     {
-      WriteLog("unable to load file '%s", fullFilename.c_str());
-      Error("unable to load file '%s", fullFilename.c_str());
+      WriteLog("unable to load file '%s\n", foundFilePath.c_str());
+      return nullptr;
     }
 
     // pass it to the parser so we can actually save the macro
@@ -453,12 +470,6 @@ namespace Zero
 
     // para
     TiXmlNode* paraNode = descNode->FirstChild();
-    if (String("DeclareAnchorAccessors") == GetElementValue(element, "name"))
-      printf("correctMAcroAtLeast");
-    else if (paraNode->GetNumberOfChildren() > 1)
-      printf("DisTheTing");
-    else
-      return;
 
     String description = DoxyToString(element, gElementTags[eBRIEFDESCRIPTION]).Trim();
 

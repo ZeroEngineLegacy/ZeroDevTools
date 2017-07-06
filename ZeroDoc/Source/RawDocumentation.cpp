@@ -1019,6 +1019,8 @@ namespace Zero
 
     newClass->mParentLibrary = this;
 
+    mClassMap[newClass->mName] = newClass;
+
     return newClass;
   }
 
@@ -1794,9 +1796,9 @@ namespace Zero
       mRelativePath = BuildString("\\BaseZilchTypes\\", skeleClass.mName, ".data");
     }
 
-    forRange(PropertyDoc *prop, skeleClass.mProperties.All())
+    forRange(PropertyDoc* prop, skeleClass.mProperties.All())
     {
-      RawVariableDoc *newVar = new RawVariableDoc();
+      RawVariableDoc* newVar = new RawVariableDoc();
 
       newVar->mName = prop->mName;
       newVar->mDescription = prop->mDescription;
@@ -1807,6 +1809,31 @@ namespace Zero
       newVar->mProperty = true;
       mVariables.PushBack(newVar);
     }
+
+    forRange(MethodDoc* meth, skeleClass.mMethods.All())
+    {
+      RawMethodDoc* newMethod = new RawMethodDoc();
+
+      newMethod->mName = meth->mName;
+      newMethod->mDescription = meth->mDescription;
+
+      newMethod->mReturnTokens = new TypeTokens();
+      AppendTokensFromString(DocLangDfa::Get(), meth->mReturnType, newMethod->mReturnTokens);
+
+      forRange(ParameterDoc* param, meth->mParameterList.All())
+      {
+        RawMethodDoc::Parameter* newParam = new RawMethodDoc::Parameter();
+
+        newParam->mTokens = new TypeTokens();
+
+        AppendTokensFromString(DocLangDfa::Get(), param->mType, newParam->mTokens);
+
+        newMethod->mParsedParameters.PushBack(newParam);
+      }
+
+      mMethods.PushBack(newMethod);
+    }
+
     Build();
   }
 
@@ -2563,8 +2590,8 @@ namespace Zero
 
   bool RawClassDoc::LoadFromXmlDoc(TiXmlDocument* doc)
   {
-    // if we already have a list of variables before load it means we know exactly what to save
-    bool onlySaveValidProperties = !mVariables.Empty();
+    // if we already exist in the library, that means we only want to load specific members
+    bool onlySaveValidProperties = mParentLibrary != nullptr && mParentLibrary->mClassMap.ContainsKey(mName);
 
     MacroDatabase *macroDb = MacroDatabase::GetInstance();
 
@@ -2709,6 +2736,8 @@ namespace Zero
                 }
               }
             }
+            String name = GetElementValue(memberElement, gElementTags[eNAME]);
+
             // if it has no return type and is not a constructor, pass it to macro paser
             if (fnIsMacroCall(memberElement, pMemberDef))
             {
@@ -2716,7 +2745,11 @@ namespace Zero
               //  DebugBreak();
               macroDb->SaveMacroCallFromClass(this, memberElement, pMemberDef);
             }
-            else
+            else if (mMethodMap.ContainsKey(name))
+            {
+              FillExistingMethodFromDoxygen(name, memberElement, pMemberDef);
+            }
+            else if (!onlySaveValidProperties)
             {
               mMethods.PushBack(new RawMethodDoc(memberElement, pMemberDef));
             }
@@ -2907,6 +2940,66 @@ namespace Zero
     }
   }
 
+  void RawClassDoc::FillExistingMethodFromDoxygen(StringParam name, TiXmlElement* memberElement, TiXmlNode* memberDef)
+  {
+    // get list of methods with the same name
+    Array<RawMethodDoc*>& sameNamedMethods = mMethodMap[name];
+
+    // we don't want to actually save this 
+    RawMethodDoc* tempLoadedMethodDoc = new RawMethodDoc(memberElement, memberDef);
+
+    tempLoadedMethodDoc->NormalizeAllTypes(RawTypedefLibrary::Get(), mNamespace);
+
+    forRange(RawMethodDoc *existingMethod, sameNamedMethods.All())
+    {
+      bool matchingMethods = true;
+
+      // try to find matching parameters
+      if (existingMethod->mParsedParameters.Size() != tempLoadedMethodDoc->mParsedParameters.Size())
+      {
+        matchingMethods = false;
+        continue;
+      }
+      // since we at least have the right number of parameters, compare types
+      for (uint i = 0; i < existingMethod->mParsedParameters.Size(); ++i)
+      {
+        TypeTokens* existingTokens = existingMethod->mParsedParameters[i]->mTokens;
+        TypeTokens* tempLoadedTokens = tempLoadedMethodDoc->mParsedParameters[i]->mTokens;
+
+        for (uint j = 0; j < existingTokens->Size(); ++j)
+        {
+          
+          if ((*existingTokens)[j].mText != (*tempLoadedTokens)[j].mText)
+          {
+            matchingMethods = false;
+            break;
+          }
+        }
+
+        if (matchingMethods == false)
+        {
+          break;
+        }
+      }
+
+      if (matchingMethods)
+      {
+        existingMethod->mDescription = tempLoadedMethodDoc->mDescription;
+
+        for (uint i = 0; i < existingMethod->mParsedParameters.Size(); ++i)
+        {
+          existingMethod->mParsedParameters[i]->mName 
+            = tempLoadedMethodDoc->mParsedParameters[i]->mName;
+
+          existingMethod->mParsedParameters[i]->mDescription 
+            = tempLoadedMethodDoc->mParsedParameters[i]->mDescription;
+        }
+
+      }
+    }
+    delete tempLoadedMethodDoc;
+  }
+
   String RawClassDoc::GenerateMapKey(void)
   {
     StringBuilder builder;
@@ -3032,6 +3125,54 @@ namespace Zero
     }
   }
 
+
+  void RawMethodDoc::LoadFromDoxygen(TiXmlElement* element, TiXmlNode* methodDef)
+  {
+    mDescription = DoxyToString(element, gElementTags[eBRIEFDESCRIPTION]).Trim();
+
+    mDescription = CleanRedundantSpacesInDesc(mDescription);
+
+    TiXmlNode* firstElement = GetFirstNodeOfChildType(element, gElementTags[ePARAM]);
+
+    TiXmlNode* endNode = GetEndNodeOfChildType(element, gElementTags[ePARAM]);
+
+    // now unpack each parameter separate
+    int i = 0;
+    for (TiXmlNode* param = firstElement; param != endNode; param = param->NextSibling(), ++i)
+    {
+      TiXmlElement* paramElement = param->ToElement();
+
+      // get the Parameter doc
+      RawMethodDoc::Parameter* parameterDoc = mParsedParameters[i];
+
+      // get the name of this argument
+      parameterDoc->mName = GetElementValue(paramElement, gElementTags[eDECLNAME]);
+
+      // get brief description
+      TiXmlNode* brief = GetFirstNodeOfChildType(paramElement, gElementTags[eBRIEFDESCRIPTION]);
+
+      if (brief)
+      {
+        StringBuilder builder;
+        getTextFromParaNodes(brief, &builder);
+        parameterDoc->mDescription = builder.ToString().Trim();
+      }
+      else
+      {
+        // check for inbody
+        brief = GetFirstNodeOfChildType(paramElement, "inbodydescription");
+
+        if (brief)
+        {
+          StringBuilder builder;
+          getTextFromParaNodes(brief, &builder);
+          parameterDoc->mDescription = builder.ToString().Trim();
+        }
+      }
+      parameterDoc->mDescription = CleanRedundantSpacesInDesc(parameterDoc->mDescription);
+    }
+  }
+
   void RawMethodDoc::Serialize(Serializer& stream)
   {
     SerializeName(mName);
@@ -3121,6 +3262,13 @@ namespace Zero
     enum { Type = StructureType::Object };
     static inline cstr TypeName() { return "RawTypedefLibrary"; }
   };
+
+  Zero::RawTypedefLibrary* RawTypedefLibrary::Get()
+  {
+    static RawTypedefLibrary singleton;
+
+    return &singleton;
+  }
 
   void RawTypedefLibrary::LoadTypedefsFromDocLibrary(RawDocumentationLibrary& docLib)
   {

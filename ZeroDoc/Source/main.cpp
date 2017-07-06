@@ -91,7 +91,10 @@ void RunDocumentationGenerator(DocGeneratorConfig &config)
 
   
   RawDocumentationLibrary *library = nullptr;
-  RawTypedefLibrary tdLibrary;
+  RawTypedefLibrary *tdLibrary = RawTypedefLibrary::Get();
+
+  if (config.mLoadTypedefs)
+    tdLibrary->LoadFromFile(config.mTrimmedTypedefFile);
 
   // if we are going to parse doxygen
   if (config.mDoxygenPath.SizeInBytes() != 0)
@@ -153,36 +156,32 @@ void RunDocumentationGenerator(DocGeneratorConfig &config)
     // load from documentation directory
     library->LoadFromDocumentationDirectory(config.mRawDocDirectory);
     library->Build();
-
-    if (config.mLoadTypedefs)
-      tdLibrary.LoadFromFile(config.mTypedefLibraryFile);
   }
 
   if (config.mLoadTypedefsFromDoxygen)
   {
-    tdLibrary.mIgnoreList.mDoxyPath = config.mDoxygenPath;
+    tdLibrary->mIgnoreList.mDoxyPath = config.mDoxygenPath;
 
     if (!config.mIgnoreFile.Empty())
     {
-      if (!Zero::LoadFromDataFile(tdLibrary.mIgnoreList, config.mIgnoreFile))
+      if (!Zero::LoadFromDataFile(tdLibrary->mIgnoreList, config.mIgnoreFile))
       {
         Error("Unable to load doc file at: %s", config.mIgnoreFile.c_str());
       }
-      //tdLibrary.mIgnoreList.SortList();
     }
 
-    tdLibrary.LoadTypedefsFromNamespaceDocumentation(config.mDoxygenPath);
+    tdLibrary->LoadTypedefsFromNamespaceDocumentation(config.mDoxygenPath);
   }
 
-  tdLibrary.BuildMap();
+  tdLibrary->BuildMap();
 
-  tdLibrary.ExpandAllTypedefs();
+  tdLibrary->ExpandAllTypedefs();
 
   if (library)
   {
     if (config.mReplaceTypes)
     {
-      library->NormalizeAllTypes(&tdLibrary);
+      library->NormalizeAllTypes(tdLibrary);
     }
 
     if (config.mTagAllAsUnbound)
@@ -197,7 +196,7 @@ void RunDocumentationGenerator(DocGeneratorConfig &config)
     {
       // output library and typedefs
       library->GenerateCustomDocumentationFiles(config.mOutputDirectory);
-      tdLibrary.GenerateTypedefDataFile(config.mOutputDirectory);
+      tdLibrary->GenerateTypedefDataFile(config.mOutputDirectory);
     }
 
     if (config.mEventsOutputLocation.SizeInBytes())

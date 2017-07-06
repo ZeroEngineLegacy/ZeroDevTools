@@ -575,37 +575,33 @@ void WriteOutAllReMarkupFiles(Zero::DocGeneratorConfig& config)
       if (classDoc->mLibrary == "Core")
       {
         gLinkMap[classDoc->mName] = BuildString(gBaseZilchTypesLink, classDoc->mName);
-		//never seems to get called -AJ
-		if (classDoc->mName.Contains("["))
-		{
-			//auto foundBracket = classDoc->mName.FindFirstOf("[");
 
-			//Zero::String nonBracketName = classDoc->mName.SubString(classDoc->mName.Begin(), foundBracket.Begin());
-			String name = classDoc->mName.Replace(String('['), String('_'));
-			name = name.Replace(String(']'), String(' '));
-			gLinkMap[classDoc->mName] = BuildString(gBaseZilchTypesLink, name.ToLower());
-		}
+        if (classDoc->mName.Contains("["))
+        {
+          String name = classDoc->mName.Replace(String('['), String('_'));
+          name = name.Replace(String(']'), String(' '));
+          gLinkMap[classDoc->mName] = BuildString(gBaseZilchTypesLink, name.ToLower());
+        }
       }
       else
       {
         gLinkMap[classDoc->mName] = BuildString(gBaseClassLink, classDoc->mName);
 
-        // add a version that does not have the extra type information
-		//never seems to get called -AJ
-		if (classDoc->mName.Contains("["))
-		{
-		  auto foundBracket = classDoc->mName.FindFirstOf("[");
-		  Zero::String nonBracketName = classDoc->mName.SubString(classDoc->mName.Begin(), foundBracket.Begin());
-		  gLinkMap[classDoc->mName] = BuildString(gBaseClassLink, nonBracketName);
-	    }
+        if (classDoc->mName.Contains("["))
+        {
+          String name = classDoc->mName.Replace(String('['), String('_'));
+          name = name.Replace(String(']'), String(' '));
+          gLinkMap[classDoc->mName] = BuildString(gBaseZilchTypesLink, name.ToLower());
+        }
       }
     }
+        // add a version that does not have the extra type information
     //Upload the class' page to the wiki, making sure to perform the link replacements
     forRange(ClassDoc* classDoc, doc.mClasses.All())
     {
       if (classDoc->mLibrary == "Core")
       {
-		String className = classDoc->mName;
+		    String className = classDoc->mName;
         String filename = BuildString(className, ".txt");
 
         String fullPath = FilePath::Combine(directory, baseZilchTypesDirectory);
@@ -677,7 +673,8 @@ void ReMarkupWriter::InsertHeaderLink(StringParam header)
 ////////////////////////////////////////////////////////////////////////
 // ReMarkupWriter
 ////////////////////////////////////////////////////////////////////////
-const String ReMarkupWriter::mEndLine("  \n\n");
+const String ReMarkupWriter::mEndLine("\n\n");
+const String ReMarkupWriter::mQuoteLine("> ");
 
 ReMarkupWriter::ReMarkupWriter(StringParam name, StringParam uri)
   : BaseMarkupWriter(name), mDocURI(uri)
@@ -694,8 +691,7 @@ void ReMarkupWriter::IndentToCurrentLevel(void)
 // just prints the language specifier for a code block
 void ReMarkupWriter::InsertStartOfCodeBlock(StringParam name)
 {
-  IndentToCurrentLevel();
-  mOutput << "lang=cpp, name=" << name << "\n";
+  mOutput << mQuoteLine << "``` lang=cpp, name=" << name << "\n";
 }
 void ReMarkupWriter::InsertDivider(void)
 {
@@ -713,11 +709,12 @@ void ReMarkupWriter::InsertHeaderAtCurrentHeaderLevel(void)
 {
   for (uint i = 0; i <= this->mCurrentSectionHeaderLevel; ++i)
     mOutput << "=";
+  mOutput << " ";
 }
 
 void ReMarkupWriter::InsertLabel(StringParam label)
 {
-  mOutput << "=====" << label << mEndLine;
+  mOutput << "===== " << label << mEndLine;
 }
 
 void ReMarkupWriter::InsertTypeLink(StringParam className)
@@ -763,10 +760,6 @@ void ReMarkupClassMarkupWriter::WriteClass(StringParam outputFile,
   // do the magic for getting directory and file
   ReMarkupClassMarkupWriter writer(classDoc->mName, classDoc, gLinkMap[classDoc->mName]);
 
-  // top of the file
-  writer.InsertClassHeader();
-  StartHeaderSection(writer);
-
 
   writer.InsertJumpTable();
 
@@ -792,8 +785,6 @@ void ReMarkupClassMarkupWriter::WriteClass(StringParam outputFile,
     writer.InsertMethod(*method);
   }
 
-  // bottom of the file
-  EndHeaderSection(writer);
 
   writer.WriteOutputToFile(outputFile);
 }
@@ -814,21 +805,45 @@ void ReMarkupClassMarkupWriter::InsertClassHeader(void)
 
 void ReMarkupClassMarkupWriter::InsertMethod(MethodDoc &method)
 {
-  StartIndentSection((*this));
-  StartHeaderSection((*this));
   // subheader for the method name
-  InsertHeaderAtCurrentHeaderLevel(method.mName);
+  InsertHeaderAtCurrentHeaderLevel();
+  // put link to return type 
+  mOutput <<"."<< method.mName <<  " : ";
+  InsertTypeLink(method.mReturnType);
+  mOutput << mEndLine;
+
+  //Note: every line is going to have a '>' prepended to it to make it in a quote box
+
   // print the description directly under the header
-  mOutput << method.mDescription << mEndLine;
+  mOutput << mQuoteLine << method.mDescription << "\n";
+
+  // print parameter table
+  mOutput << mQuoteLine << "|Name|Type|Description|\n" << mQuoteLine << "|---|---|---|\n";
+
+  forRange(ParameterDoc *param, method.mParameterList.All())
+  {
+    mOutput << mQuoteLine << "|" << param->mName << "|";
+    InsertTypeLink(param->mType);
+    mOutput << "|";
+    if (param->mDescription.Empty())
+    {
+      mOutput << " ";
+    }
+    else
+    {
+      mOutput << param->mDescription;
+    }
+    mOutput << "|\n";
+  }
 
   // TODO: print the cpp codeblock
 
   //print the zilch codeblock
   InsertStartOfCodeBlock("Zilch");
-  IndentToCurrentLevel();
-  mOutput << "function " << method.mName << "(";// Initialize(init : CogInitializer)
+  //IndentToCurrentLevel();
+  mOutput << mQuoteLine << "function " << method.mName << "(";// Initialize(init : CogInitializer)
 
-  for(uint i = 0; i < method.mParameterList.Size(); ++i)
+  for (uint i = 0; i < method.mParameterList.Size(); ++i)
   {
     ParameterDoc *param = method.mParameterList[i];
 
@@ -846,38 +861,7 @@ void ReMarkupClassMarkupWriter::InsertMethod(MethodDoc &method)
   if (!method.mReturnType.Empty() && method.mReturnType != "Void")
     mOutput << " : " << method.mReturnType;
 
-  mOutput << ";" << mEndLine;
-
-  // print parameter table
-  mOutput << "|Name|Type|Description|\n|---|---|---|\n";
-
-  forRange(ParameterDoc *param, method.mParameterList.All())
-  {
-    mOutput << "|" << param->mName << "|";
-    InsertTypeLink(param->mType);
-    mOutput << "|";
-    if (param->mDescription.Empty())
-    {
-      mOutput << " ";
-    }
-    else
-    {
-      mOutput << param->mDescription;
-    }
-    mOutput << "|\n";
-  }
-  mOutput << mEndLine;
-
-  // put link to return type 
-  StartHeaderSection((*this));
-  InsertHeaderAtCurrentHeaderLevel();
-  mOutput << "ReturnType: ";
-  InsertTypeLink(method.mReturnType);
-  mOutput << mEndLine;
-
-  EndHeaderSection((*this));
-  EndHeaderSection((*this));
-  EndIndentSection((*this));
+  mOutput << ";\n> ``` " << mEndLine;
 
   InsertDivider();
 }
@@ -887,31 +871,24 @@ void ReMarkupClassMarkupWriter::InsertProperty(PropertyDoc &propDoc)
   if (propDoc.mType.Empty())
     return;
 
-  StartHeaderSection((*this));
-  StartIndentSection((*this));
-
   // subheader for the method name
   //mOutput << "====" << propDoc.mName << mEndLine;
-  InsertHeaderAtCurrentHeaderLevel(propDoc.mName);
+  InsertHeaderAtCurrentHeaderLevel();
+
+  mOutput << "." << propDoc.mName << " : ";
+  InsertTypeLink(propDoc.mType);
+  mOutput << mEndLine;
+
   // print the description directly under the header
-  mOutput << propDoc.mDescription << mEndLine;
+  mOutput << mQuoteLine << propDoc.mDescription << "\n";
 
   // TODO: print the cpp codeblock
 
   //print the zilch codeblock
   InsertStartOfCodeBlock("Zilch");
-  IndentToCurrentLevel();
-  mOutput << "var " << propDoc.mName << " : " << propDoc.mType << ";" << mEndLine;
+  //IndentToCurrentLevel();
+  mOutput << mQuoteLine << "var " << propDoc.mName << " : " << propDoc.mType << ";" << mEndLine;
 
-  StartHeaderSection((*this));
-  InsertHeaderAtCurrentHeaderLevel();
-  mOutput << "Type: ";
-  InsertTypeLink(propDoc.mType);
-  mOutput << mEndLine;
-  EndHeaderSection((*this));
-
-  EndIndentSection((*this));
-  EndHeaderSection((*this));
   InsertDivider();
 }
 
@@ -988,9 +965,9 @@ void ReMarkupClassMarkupWriter::InsertJumpTable(void)
   for (; dualIterator < smallestListSize; ++dualIterator)
   {
     mOutput << "|";
-    InsertHeaderLink(mClassDoc->mMethods[dualIterator]->mName);
+    InsertMethodLink(mClassDoc->mMethods[dualIterator]);
     mOutput << "|";
-    InsertHeaderLink(mClassDoc->mProperties[dualIterator]->mName);
+    InsertPropertyLink(mClassDoc->mProperties[dualIterator]);
     mOutput<< "|\n";
   }
   // print the rest of the methods if we had more methods then properties
@@ -1013,6 +990,29 @@ void ReMarkupClassMarkupWriter::InsertJumpTable(void)
     }
   }
   mOutput << mEndLine;
+}
+
+void ReMarkupClassMarkupWriter::InsertMethodLink(MethodDoc* methodToLink)
+{
+  StringBuilder headerLinkBuilder;
+  headerLinkBuilder << methodToLink->mName;
+  if (methodToLink->mReturnType == "Void")
+  {
+    headerLinkBuilder << "-void";
+  }
+  else
+  {
+    headerLinkBuilder << "-zero";
+  }
+  String headerLink = headerLinkBuilder.ToString();
+  mOutput << "[[" << mDocURI << "#" << headerLink.ToLower() << " | " << methodToLink->mName << "]]";
+}
+
+void ReMarkupClassMarkupWriter::InsertPropertyLink(PropertyDoc* propToLink)
+{
+  String headerLink = BuildString(propToLink->mName, "-zero");
+
+  mOutput << "[[" << mDocURI << "#" << headerLink.ToLower() << " | " << propToLink->mName << "]]";
 }
 
 ////////////////////////////////////////////////////////////////////////

@@ -256,6 +256,8 @@ namespace Zero
     /// constructs class by loading the method info from both the def and the element
     RawMethodDoc(TiXmlElement* element, TiXmlNode* methodDef);
 
+    void LoadFromDoxygen(TiXmlElement* element, TiXmlNode* methodDef);
+
     void FillTrimmedMethod(MethodDoc* trimMethod);
 
     /// serializes the method
@@ -391,6 +393,8 @@ namespace Zero
 
     /// grabs meta database and loads tags and events from meta
     void LoadEventsAndTagsFromMeta(void);
+
+    void FillExistingMethodFromDoxygen(StringParam name, TiXmlElement* memberElement, TiXmlNode* memberDef);
 
     /// generates key for classmap that incorporates namespace into classname
     String GenerateMapKey(void);
@@ -534,6 +538,7 @@ namespace Zero
   {
   public:
     ///// PUBLIC METHODS ///// 
+    static RawTypedefLibrary* Get();
 
     ZilchDeclareType(TypeCopyMode::ReferenceType);
 

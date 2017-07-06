@@ -111,6 +111,8 @@ namespace Zero
 
     static const String mEndLine;
 
+    static const String mQuoteLine;
+
     String mDocURI;
   };
 
@@ -135,6 +137,10 @@ namespace Zero
     void WritePropertyTable(void); 
 
     void InsertJumpTable(void);
+
+    void InsertMethodLink(MethodDoc* methodToLink);
+
+    void InsertPropertyLink(PropertyDoc* propToLink);
 
     Array<String> mBases;
 

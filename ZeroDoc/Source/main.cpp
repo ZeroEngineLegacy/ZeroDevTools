@@ -122,17 +122,17 @@ void RunDocumentationGenerator(DocGeneratorConfig &config)
     // if zerodocfile then get list of classes from it
     if (config.mZeroDocFile.SizeInBytes() > 0)
     {
-      Zero::DocumentationLibrary doc;
+      Zero::DocumentationLibrary *doc = new Zero::DocumentationLibrary();
 
       //!Zero::LoadFromDataFile(doc, config.mZeroDocFile))
-      if (!Zero::LoadDocumentationSkeleton(doc, config.mZeroDocFile))
+      if (!Zero::LoadDocumentationSkeleton(*doc, config.mZeroDocFile))
       {
         Error("Unable to load doc file at: %s", config.mZeroDocFile.c_str());
       }
 
-      library->LoadFromSkeletonFile(config.mDoxygenPath, doc);
+      library->LoadFromSkeletonFile(config.mDoxygenPath, *doc);
 
-      doc.FinalizeDocumentation();
+      doc->FinalizeDocumentation();
 
       library->LoadAllEnumDocumentationFromDoxygen(config.mDoxygenPath);
     }

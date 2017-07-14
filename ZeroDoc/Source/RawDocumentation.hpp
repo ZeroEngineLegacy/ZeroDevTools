@@ -79,6 +79,8 @@ namespace Zero
   ///// HELPERS ///// 
   bool LoadCommandList(CommandDocList& commandList, StringParam absPath);
 
+  bool NameIsSwizzleOperation(StringParam name);
+
   bool LoadEventList(EventDocList& eventList, StringParam absPath);
 
   /// Helper for saving trim documentation since we cannot use "SaveToDataFile" in 'DevTools'
@@ -272,6 +274,8 @@ namespace Zero
 
     String mName;
     String mDescription;
+
+    bool mStatic;
    };
 
   
@@ -296,6 +300,8 @@ namespace Zero
     String mDescription;
 
     bool mProperty;
+    bool mReadOnly;
+    bool mStatic;
   };
 
 
@@ -440,6 +446,9 @@ namespace Zero
 
     RawDocumentationLibrary *mParentLibrary;
 
+    /// If this is false, don't bother importing doxygen documentation
+    bool mImportDocumentation;
+
   private:
     ///// PRIVATE METHODS ///// 
     /// tests if a function is actually a macro call (assumes you pass it valid funciton doc)
@@ -476,6 +485,8 @@ namespace Zero
     void Serialize(Serializer& stream);
 
     bool SaveToFile(StringParam absPath);
+
+    bool LoadLibraryFile(StringParam absPath);
 
     void FillTrimmedDocumentation(DocumentationLibrary &trimLib);
 

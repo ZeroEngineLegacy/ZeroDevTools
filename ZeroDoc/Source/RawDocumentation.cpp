@@ -42,6 +42,35 @@ namespace Zero
     return true;
   }
 
+  bool NameIsSwizzleOperation(StringParam methodName)
+  {
+
+    String name = methodName.ToUpper();
+    
+    if (name.Contains("GET"))
+      name = name.SubString(name.FindFirstOf("GET").End(), name.End());
+    else if (name.Contains("SET"))
+      name = name.SubString(name.FindFirstOf("SET").End(), name.End());
+
+    if (name.Empty())
+      return false;
+
+    // first do the trivial check if the fn is named too long to be swizzle
+    if (name.ComputeRuneCount() > 4)
+      return false;
+
+    const String validCharacters = "XYZW";
+
+    forRange(Rune rune, name.All())
+    {
+      if (!validCharacters.Contains(String(rune)))
+      {
+        return false;
+      }
+    }
+    return true;
+  }
+
   bool LoadEventList(EventDocList& eventList, StringParam absPath)
   {
     Status status;
@@ -924,7 +953,7 @@ namespace Zero
     {
       if (!mLog.IsOpen())
       {
-        ErrorIf(!mLog.Open(mPath, FileMode::Append, FileAccessPattern::Sequential),
+        ErrorIf(!mLog.Open(mPath, FileMode::Write, FileAccessPattern::Sequential),
           "failed to open log at: %s\n", mPath);
       }
 
@@ -1389,9 +1418,27 @@ namespace Zero
               {
                 continue;
               }
+
               // now we see if there is a brief description to load
-              //Note: para->text
-              String description = descNode->FirstChild()->FirstChild()->Value();
+              StringBuilder descriptionBuilder;
+
+              TiXmlNode* descIterNode;
+
+              for (descIterNode = descNode->FirstChild()->FirstChild();
+                descIterNode != nullptr && strcmp(descIterNode->Value(),"parameterlist") != 0;
+                descIterNode = descIterNode->NextSibling())
+              {
+                if (descIterNode->Value() == "ref")
+                {
+                  descriptionBuilder << descIterNode->FirstChild()->Value();
+                }
+                else
+                {
+                  descriptionBuilder << descIterNode->Value();
+                }
+              }
+
+              String description = descriptionBuilder.ToString();
 
               if (description.Empty() || description == "para")
                 continue;
@@ -1402,7 +1449,7 @@ namespace Zero
               const String parameterDescription = "parameterdescription";
 
               //accessing: para->text->paramList
-              TiXmlNode* paramList = descNode->FirstChild()->FirstChild()->NextSibling();
+              TiXmlNode* paramList = descIterNode;
 
               if (!paramList || String("parameterlist") != paramList->Value())
                 continue;
@@ -1467,7 +1514,8 @@ namespace Zero
 
       newClassDoc->LoadFromSkeleton(*classDoc);
 
-      newClassDoc->LoadFromDoxygen(doxyPath);
+      if (newClassDoc->mImportDocumentation)
+        newClassDoc->LoadFromDoxygen(doxyPath);
     }
 
 
@@ -1561,6 +1609,8 @@ namespace Zero
   {
     mTokens = new TypeTokens; 
     mProperty = false;
+    mReadOnly = false;
+    mStatic = false;
   }
 
   void RawVariableDoc::LoadFromDoxygen(TiXmlElement* element)
@@ -1577,8 +1627,11 @@ namespace Zero
     }
 
     // get the description and clean up spaces
-    mDescription = DoxyToString(element, gElementTags[eBRIEFDESCRIPTION]).Trim();
-    mDescription = CleanRedundantSpacesInDesc(mDescription);
+    String description = DoxyToString(element, gElementTags[eBRIEFDESCRIPTION]).Trim();
+    description = CleanRedundantSpacesInDesc(mDescription);
+
+    if (!description.Empty())
+      mDescription = description;
 
     // if we do not have type tokens yet, grab them from the xml
     if (mTokens->Empty())
@@ -1615,6 +1668,8 @@ namespace Zero
   {
     mTokens = new TypeTokens;
     LoadFromDoxygen(element);
+    mReadOnly = false;
+    mStatic = false;
   }
 
   ////////////////////////////////////////////////////////////////////////
@@ -1757,13 +1812,14 @@ namespace Zero
   }
 
   RawClassDoc::RawClassDoc(void)
-    : mHasBeenLoaded(false)
+    : mHasBeenLoaded(false), mImportDocumentation(true)
   {
   }
 
   RawClassDoc::RawClassDoc(StringParam name) 
     : mName(name)
     , mHasBeenLoaded(false)
+    , mImportDocumentation(true)
   {
   }
 
@@ -1791,6 +1847,8 @@ namespace Zero
 
     mLibrary = skeleClass.mLibrary;
 
+    mImportDocumentation = skeleClass.mImportDocumentation;
+
     if (mLibrary == "Core")
     {
       mRelativePath = BuildString("\\BaseZilchTypes\\", skeleClass.mName, ".data");
@@ -1798,10 +1856,17 @@ namespace Zero
 
     forRange(PropertyDoc* prop, skeleClass.mProperties.All())
     {
+      // TODO: add a thing stating we have swizzle operators
+      if (NameIsSwizzleOperation(prop->mName))
+        continue;
+
       RawVariableDoc* newVar = new RawVariableDoc();
 
       newVar->mName = prop->mName;
       newVar->mDescription = prop->mDescription;
+
+      newVar->mReadOnly = prop->mReadOnly;
+      newVar->mStatic = prop->mStatic;
 
       newVar->mTokens = new TypeTokens;
       newVar->mTokens->PushBack(DocToken(prop->mType));
@@ -1812,10 +1877,16 @@ namespace Zero
 
     forRange(MethodDoc* meth, skeleClass.mMethods.All())
     {
+      // TODO: add a thing stating we have swizzle operators
+      if (NameIsSwizzleOperation(meth->mName))
+        continue;
+
       RawMethodDoc* newMethod = new RawMethodDoc();
 
       newMethod->mName = meth->mName;
       newMethod->mDescription = meth->mDescription;
+
+      newMethod->mStatic = meth->mStatic;
 
       newMethod->mReturnTokens = new TypeTokens();
       AppendTokensFromString(DocLangDfa::Get(), meth->mReturnType, newMethod->mReturnTokens);
@@ -1988,7 +2059,10 @@ namespace Zero
       if (!rawVar->mProperty)
         continue;
 
-      PropertyDoc* trimProp = new PropertyDoc;
+      PropertyDoc* trimProp = new PropertyDoc();
+
+      trimProp->mReadOnly = rawVar->mReadOnly;
+      trimProp->mStatic = rawVar->mStatic;
 
       // trim off the leading 'm' if it has one
       if (rawVar->mName.c_str()[0] == 'm')
@@ -2617,7 +2691,9 @@ namespace Zero
     }
 
     // get the mDescription of the class
-    mDescription = DoxyToString(classDef, gElementTags[eBRIEFDESCRIPTION]).Trim();
+    String description = DoxyToString(classDef, gElementTags[eBRIEFDESCRIPTION]).Trim();
+    if (!description.Empty())
+      mDescription = description;
 
     // we are going to traverse over every section that the class contains
     for (TiXmlNode* pSection = classDef->FirstChild()
@@ -2984,15 +3060,19 @@ namespace Zero
 
       if (matchingMethods)
       {
-        existingMethod->mDescription = tempLoadedMethodDoc->mDescription;
+        if (mDescription.Empty())
+          existingMethod->mDescription = tempLoadedMethodDoc->mDescription;
 
         for (uint i = 0; i < existingMethod->mParsedParameters.Size(); ++i)
         {
           existingMethod->mParsedParameters[i]->mName 
             = tempLoadedMethodDoc->mParsedParameters[i]->mName;
 
-          existingMethod->mParsedParameters[i]->mDescription 
-            = tempLoadedMethodDoc->mParsedParameters[i]->mDescription;
+          if (existingMethod->mParsedParameters[i]->mDescription.Empty())
+          {
+            existingMethod->mParsedParameters[i]->mDescription
+              = tempLoadedMethodDoc->mParsedParameters[i]->mDescription;
+          }
         }
 
       }
@@ -3043,7 +3123,8 @@ namespace Zero
 
   RawMethodDoc::RawMethodDoc(void)
   { 
-    mReturnTokens = new TypeTokens; 
+    mReturnTokens = new TypeTokens;
+    mStatic = false;
   }
 
   RawMethodDoc::~RawMethodDoc(void)
@@ -3065,6 +3146,8 @@ namespace Zero
     mDescription = DoxyToString(element, gElementTags[eBRIEFDESCRIPTION]).Trim();
 
     mDescription = CleanRedundantSpacesInDesc(mDescription);
+
+    mStatic = false;
 
     StringBuilder retTypeStr;
 
@@ -3192,6 +3275,8 @@ namespace Zero
     trimMethod->mDescription = mDescription;
 
     trimMethod->mPossibleExceptionThrows = mPossibleExceptionThrows;
+
+    trimMethod->mStatic = mStatic;
 
     StringBuilder paramBuilder;
     paramBuilder.Append('(');

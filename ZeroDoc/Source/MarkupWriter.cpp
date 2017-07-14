@@ -760,6 +760,13 @@ void ReMarkupClassMarkupWriter::WriteClass(StringParam outputFile,
   // do the magic for getting directory and file
   ReMarkupClassMarkupWriter writer(classDoc->mName, classDoc, gLinkMap[classDoc->mName]);
 
+  if (!classDoc->mBaseClass.Empty())
+  {
+    writer.mOutput << "== BaseClass: ";
+    writer.InsertTypeLink(classDoc->mBaseClass);
+    writer.mOutput << "\n";
+    writer.InsertDivider();
+  }
 
   writer.InsertJumpTable();
 
@@ -810,6 +817,11 @@ void ReMarkupClassMarkupWriter::InsertMethod(MethodDoc &method)
   // put link to return type 
   mOutput <<"."<< method.mName <<  " : ";
   InsertTypeLink(method.mReturnType);
+
+  if (method.mStatic)
+  {
+    mOutput << " {key static}";
+  }
   mOutput << mEndLine;
 
   //Note: every line is going to have a '>' prepended to it to make it in a quote box
@@ -877,6 +889,16 @@ void ReMarkupClassMarkupWriter::InsertProperty(PropertyDoc &propDoc)
 
   mOutput << "." << propDoc.mName << " : ";
   InsertTypeLink(propDoc.mType);
+
+  if (propDoc.mReadOnly)
+  {
+    mOutput << " {key read-only}";
+  }
+  if (propDoc.mStatic)
+  {
+    mOutput << " {key static}";
+  }
+
   mOutput << mEndLine;
 
   // print the description directly under the header
@@ -944,6 +966,7 @@ void ReMarkupClassMarkupWriter::InsertJumpTable(void)
   if (mClassDoc->mMethods.Empty() && mClassDoc->mProperties.Empty())
     return;
 
+  InsertNewSectionHeader("Member Table");
 
   uint dualIterator = 0;
   bool methodListLonger = false;

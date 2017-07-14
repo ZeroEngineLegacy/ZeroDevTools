@@ -131,15 +131,14 @@ namespace Zero
     Status status;
     DataTreeLoader loader;
 
-     if (!loader.OpenFile(status, file))
+    if (!loader.OpenFile(status, file))
     {
       Error("Unable to load documentation skeleton file: %s\n", file);
       return false;
     }
      
-     PolymorphicNode docLibraryNode;
-     loader.GetPolymorphic(docLibraryNode);
-
+    PolymorphicNode docLibraryNode;
+    loader.GetPolymorphic(docLibraryNode);
 
     loader.SerializeField("Classes", skeleton.mClasses);
     loader.SerializeField("Enums", skeleton.mEnums);
@@ -1628,7 +1627,7 @@ namespace Zero
 
     // get the description and clean up spaces
     String description = DoxyToString(element, gElementTags[eBRIEFDESCRIPTION]).Trim();
-    description = CleanRedundantSpacesInDesc(mDescription);
+    description = CleanRedundantSpacesInDesc(description);
 
     if (!description.Empty())
       mDescription = description;
@@ -2685,7 +2684,7 @@ namespace Zero
 
     // grab the base class if we have one
     TiXmlElement* baseClassElement = classDef->FirstChildElement(gElementTags[eBASECOMPOUNDREF]);
-    if (baseClassElement != nullptr)
+    if (baseClassElement != nullptr )//&& mBaseClass.Empty())
     {
       mBaseClass = baseClassElement->GetText();
     }
@@ -3060,8 +3059,7 @@ namespace Zero
 
       if (matchingMethods)
       {
-        if (mDescription.Empty())
-          existingMethod->mDescription = tempLoadedMethodDoc->mDescription;
+        existingMethod->mDescription = tempLoadedMethodDoc->mDescription;
 
         for (uint i = 0; i < existingMethod->mParsedParameters.Size(); ++i)
         {

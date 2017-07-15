@@ -722,7 +722,7 @@ namespace Zero
           String& methodName = currMethod->mName;
 
           // if on the ignore list
-          if (ignoreList && ignoreList->NameIsOnIgnoreList(methodName))
+          if (NameIsSwizzleOperation(methodName) || (ignoreList && ignoreList->NameIsOnIgnoreList(methodName)))
           {
             continue;
           }
@@ -740,7 +740,7 @@ namespace Zero
           String& propName = currProp->mName;
 
           // if on the ignore list
-          if (ignoreList && ignoreList->NameIsOnIgnoreList(propName))
+          if (NameIsSwizzleOperation(propName) || (ignoreList && ignoreList->NameIsOnIgnoreList(propName)))
           {
             continue;
           }
@@ -1842,6 +1842,8 @@ namespace Zero
 
   void RawClassDoc::LoadFromSkeleton(const ClassDoc &skeleClass)
   {
+    mBaseClass = skeleClass.mBaseClass;
+
     mTags = skeleClass.mTags;
 
     mLibrary = skeleClass.mLibrary;
@@ -2684,7 +2686,7 @@ namespace Zero
 
     // grab the base class if we have one
     TiXmlElement* baseClassElement = classDef->FirstChildElement(gElementTags[eBASECOMPOUNDREF]);
-    if (baseClassElement != nullptr )//&& mBaseClass.Empty())
+    if (baseClassElement != nullptr && mBaseClass.Empty())
     {
       mBaseClass = baseClassElement->GetText();
     }

@@ -760,6 +760,15 @@ void ReMarkupClassMarkupWriter::WriteClass(StringParam outputFile,
   // do the magic for getting directory and file
   ReMarkupClassMarkupWriter writer(classDoc->mName, classDoc, gLinkMap[classDoc->mName]);
 
+  if (!classDoc->mDescription.Empty())
+  {
+    writer.InsertHeaderAtCurrentHeaderLevel("Description");
+    writer.InsertDivider();
+    writer.mOutput << mQuoteLine << classDoc->mDescription << mEndLine;
+  }
+
+
+
   if (!classDoc->mBaseClass.Empty())
   {
     writer.mOutput << "== BaseClass: ";
@@ -767,11 +776,6 @@ void ReMarkupClassMarkupWriter::WriteClass(StringParam outputFile,
     writer.mOutput << "\n";
     writer.InsertDivider();
   }
-
-  writer.InsertJumpTable();
-
-  // Properties
-  //writer.mOutput << ".. _Reference" << writer.mName << "Properties:\n\n";
 
   writer.InsertHeaderAtCurrentHeaderLevel("Properties");
   writer.InsertDivider();
@@ -815,7 +819,7 @@ void ReMarkupClassMarkupWriter::InsertMethod(MethodDoc &method)
   // subheader for the method name
   InsertHeaderAtCurrentHeaderLevel();
   // put link to return type 
-  mOutput <<"."<< method.mName <<  " : ";
+  mOutput << method.mName <<  " : ";
   InsertTypeLink(method.mReturnType);
 
   if (method.mStatic)
@@ -887,7 +891,7 @@ void ReMarkupClassMarkupWriter::InsertProperty(PropertyDoc &propDoc)
   //mOutput << "====" << propDoc.mName << mEndLine;
   InsertHeaderAtCurrentHeaderLevel();
 
-  mOutput << "." << propDoc.mName << " : ";
+  mOutput << propDoc.mName << " : ";
   InsertTypeLink(propDoc.mType);
 
   if (propDoc.mReadOnly)
@@ -967,6 +971,8 @@ void ReMarkupClassMarkupWriter::InsertJumpTable(void)
     return;
 
   InsertNewSectionHeader("Member Table");
+
+  InsertDivider();
 
   uint dualIterator = 0;
   bool methodListLonger = false;
@@ -1329,32 +1335,36 @@ void ReMarkupCommandRefWriter::WriteCommandEntry(const CommandDoc &cmdDoc)
   if (!cmdDoc.mDescription.Empty())
     mOutput << cmdDoc.mDescription << mEndLine << mEndLine;
 
-  InsertLabel("Tags: ");
+  mOutput << "|Tags|Shortcut|\n" << "|---|---|\n";
+
+  mOutput << "|";
 
   if (cmdDoc.mTags.Empty())
   {
-    mOutput << "No Tags" << mEndLine;
+    mOutput << "No Tags | ";
   }
   else
   {
-    // actually list tags
-    forRange(String& tag, cmdDoc.mTags.All())
-    {
-      mOutput << gBullet << tag << mEndLine;
-    }
+    // list the first tag
+    mOutput << cmdDoc.mTags[0] << " | ";
   }
-
-  InsertLabel("Shortcut: ");
 
   if (cmdDoc.mShortcut.Empty())
   {
-    mOutput << "No Keyboard Shortcut" << mEndLine;
+    mOutput << "No Keyboard Shortcut |\n";
   }
   else
   {
     String shortcut = cmdDoc.mShortcut.Replace("+", " ");
-    mOutput << "{key " << shortcut << "}" << mEndLine;
+    mOutput << "{key " << shortcut << "}" << " |\n";
   }
+
+  for (uint i = 1; i < cmdDoc.mTags.Size(); ++i)
+  {
+    mOutput << cmdDoc.mTags[i] << " | |\n";
+  }
+
+  mOutput << mEndLine;
 
   //mOutput << ".. include:: CommandPageExtensions/" << cmdDoc.mName << ".rst\n\n";
   InsertDivider();

@@ -545,19 +545,9 @@ void WriteOutAllReMarkupFiles(Zero::DocGeneratorConfig& config)
     // create the base wikipage for the codeRef
     StringBuilder codeRefIndex;
 
-    codeRefIndex << "\n---  \n" 
-      << "Zero Engine Code Reference \n" 
-      << "========================== \n"
-      << "\n---  \n";
-
     // create the base wikipage for zilch core types
     StringBuilder zilchCoreIndex;
-   
-    codeRefIndex << "\n---  \n"
-      << "Zilch Base Types Reference \n"
-      << "========================== \n"
-      << "\n---  \n";
-
+  
     // Add all flags to the linkMap
     forRange(auto& flagDoc, doc.mFlags.All())
     {

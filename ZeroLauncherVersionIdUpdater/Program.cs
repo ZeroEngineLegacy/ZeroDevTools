@@ -109,7 +109,7 @@ namespace ZeroLauncherVersionIdUpdater
       CopyDirectory(Path.Combine(sourceDir, "Data"), Path.Combine(packageOutDir, "Data"));
       CopyDirectory(Path.Combine(sourceDir, "Resources", "ZeroLauncherResources"), Path.Combine(packageOutDir, "Resources", "ZeroLauncherResources"));
       CopyDirectory(Path.Combine(sourceDir, "Resources", "Loading"), Path.Combine(packageOutDir, "Resources", "Loading"));
-      CopyDirectory(Path.Combine(sourceDir, "Resources", "Core"), Path.Combine(packageOutDir, "Resources", "Core"));
+      CopyDirectory(Path.Combine(sourceDir, "Resources", "ZeroCore"), Path.Combine(packageOutDir, "Resources", "ZeroCore"));
       CopyDirectory(Path.Combine(sourceDir, "Resources", "FragmentCore"), Path.Combine(packageOutDir, "Resources", "FragmentCore"));
       File.Copy(Path.Combine(sourceDir, "Data", "ZeroLauncherEula.txt"), Path.Combine(packageOutDir, "ZeroLauncherEula.txt"));
 

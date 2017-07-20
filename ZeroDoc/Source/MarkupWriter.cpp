@@ -1294,6 +1294,8 @@ void ReMarkupCommandRefWriter::WriteCommandRef(StringParam commandListFilepath, 
   
   LoadCommandList(cmdListDoc, commandListFilepath);
 
+  cmdListDoc.Sort();
+
   Array<CommandDoc *> &cmdArray = cmdListDoc.mCommands;
 
   // create the command writer

@@ -121,7 +121,6 @@ namespace Zero
 
   bool MacroCall::LoadMacroWithName(StringParam name)
   {
-	  return false;
     // if we have the location, go ahead and load the macro now if we do not have it already
     if (mOptions.ContainsKey(MacroOptionStrings[MacroOptions::Location]))
     {
@@ -264,9 +263,22 @@ namespace Zero
         newTok.mText = replaceIdentifier(macroBody[i], argMap);
         newTok.mEnumTokenType = DocTokenType::Identifier;
       }
-        break;
+      break;
 
-        // just copy the token into the expanded macro list
+      case DocTokenType::Comment:
+      if (!mExpandedMacro.Empty())
+      {
+        DocToken& prevToken = mExpandedMacro.Back();
+        // combine comment tokens
+        if (prevToken.mEnumTokenType == DocTokenType::Comment)
+        {
+          prevToken.mText = BuildString(prevToken.mText, currToken.mText);
+          break;
+        }
+      }
+      mExpandedMacro.PushBack(currToken);
+      break;
+      // just copy the token into the expanded macro list
       default:
         mExpandedMacro.PushBack(currToken);
         break;
@@ -294,108 +306,52 @@ namespace Zero
 
   MacroData *MacroDatabase::FindMacro(StringParam name, StringParam location)
   {
+    // there are some macro loading scenarios where we store macros by non-unique names, check for that
     if (mMacrosByName.ContainsKey(name))
     {
       return mMacrosByName[name];
     }
 
-    // if location is empty that is an error
-    if (location.Empty())
-    {
-      // caller will need to handle the case where there is no macro data (delete the call)
-      return nullptr;
-    }
-    
-    // I hate to do this but we are going to break the directory down into tokens to get
-    // each folder as we are going to see if it contains the ones we are about at all
-    TypeTokens folders;
-    AppendTokensFromString(DocLangDfa::Get(), location, &folders);
+    Array<String> fileList;
+    String doxyName = GetDoxyfileNameFromSourceFileName(location);
+    // first get the list of all possible files that could contain the macro
+    GetFilesWithPartialName(mDoxyPath, doxyName, &fileList);
 
-    String folder = "";
-    forRange(DocToken &token, folders.All())
+    // if we didn't find any matching files, we have failed in our mission, return nothing
+    if (fileList.Empty())
+      return nullptr;
+
+    // if we get here, we have not already loaded the macro, go ahead and try to load it
+    forRange(String& path, fileList.All())
     {
-      if (token.mEnumTokenType != DocTokenType::Identifier)
+      String macroId = BuildString(path, name);
+
+      // attempt to load macro from file
+
+      // load the file
+      TiXmlDocument macroFile;
+
+      if (!macroFile.LoadFile(path.c_str()))
+      {
         continue;
-
-      if (token.mText == "Systems")
-      {
-        folder = "Systems";
-        break;
       }
-      if (token.mText == "Extensions")
-      {
-        folder = "Extensions";
-        break;
-      }
-      if (token.mText == "ExtensionLibraries")
-      {
-        folder = "ExtensionLibraries";
-        break;
-      }
+
+      // pass it to the parser so we can actually save the macro
+      MacroData* macro = SaveMacroFromDoxyfile(&macroFile, name);
+
+      mMacrosByName[name] = macro;
+
+      if (macro != nullptr)
+        return macro;
     }
 
-    // check path to pick xml folder
-    StringBuilder path;
-
-    path << mDoxyPath;
-
-    if (!folder.Empty())
-    {
-      path << "\\" << folder;
-    }
-
-    path << "\\";
-
-    StringRange filename;
-    // separate filename from the path
-    if (!folder.Empty())
-    {
-      filename = location.FindLastOf("/");
-    }
-    else
-    {
-      filename = location;
-    }
-    
-    String uniqueId = generateUniqueMacroId(folder, filename, name);
-    // if we have already loaded this macro just return that instead of parsing it again
-    if (mUniqueMacros.ContainsKey(uniqueId))
-    {
-      return mUniqueMacros[uniqueId];
-    }
-
-    // generate the doxyfile name from that filename
-    String fullFilename = GetDoxyfileNameFromSourceFileName(filename);
-
-    String foundFilePath = GetFileWithExactName(path.ToString(), fullFilename);
-
-    if (foundFilePath.Empty())
-    {
-      Array<String> possibleFiles;
-
-      GetFilesWithPartialName(path.ToString(), fullFilename, &possibleFiles);
-
-
-      WriteLog("macro '%s' was not found. Given location: %s\n", name.c_str(), location.c_str());
-      return nullptr;
-    }
-
-    // load the file
-    TiXmlDocument macroFile;
-
-    if (!macroFile.LoadFile(foundFilePath.c_str()))
-    {
-      WriteLog("unable to load file '%s\n", foundFilePath.c_str());
-      return nullptr;
-    }
-
-    // pass it to the parser so we can actually save the macro
-    return SaveMacroFromDoxyfile(&macroFile, name, uniqueId);
+    WriteLog("Error: Unable to load macro '%s' from file: '%s'\n", name, location);
+    // if we make it out of the loop, we didn't find the macro definition
+    return nullptr;
   }
 
   /// searches codelines for the definition of the macro we are looking for, then saves it
-  MacroData* MacroDatabase::SaveMacroFromDoxyfile(TiXmlDocument* macroFile,
-    StringParam name, StringParam id)
+  MacroData* MacroDatabase::SaveMacroFromDoxyfile(TiXmlDocument* macroFile, StringParam name)
   {
     // start looping over codelines
     TiXmlElement* cppDef = macroFile->FirstChildElement(gElementTags[eDOXYGEN])
@@ -444,7 +400,6 @@ namespace Zero
         // if it is, pass it to our other parsing function
         macro->mName = name;
 
-        mUniqueMacros[id] = macro;
         mMacrosByName[name] = macro;
 
         return macro;
@@ -558,6 +513,7 @@ namespace Zero
 
       call.mMacroArgs.PushBack(argStr);
     }
+    // this seems to actually circumvent loading macro calls
     // LoadMacro refernenced by call, remove this call if it is not found
     if (!call.LoadMacroWithName(name))
       mMacroCalls.PopBack();

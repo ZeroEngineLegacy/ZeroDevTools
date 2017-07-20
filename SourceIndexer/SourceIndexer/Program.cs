@@ -238,6 +238,8 @@ namespace SourceIndexer
       String pdbData = "";
       if (mode == "hg")
         pdbData = MercurialIndexer.BuildSourceIndex(depos, pdbLocation, pdbStrLocation, isSilent);
+      else if (mode == "git")
+        pdbData = GitIndexer.BuildSourceIndex(depos, pdbLocation, pdbStrLocation, isSilent);
 
       File.WriteAllText(outLocation, pdbData);
 

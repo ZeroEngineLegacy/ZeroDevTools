@@ -1,28 +1,22 @@
 ﻿#define NO_SMTP_FOR_VIRUS_SCANNERS
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using System.IO;
-using UBR.Products.TimeTrakker.Client.Lib.FogBugz;
-using System.Configuration;
-using System.Xml;
 using System.Security.Permissions;
 using Microsoft.Win32;
-using System.Net.Mail;
 using System.Net;
 using System.DirectoryServices.AccountManagement;
-using ICSharpCode.SharpZipLib.Zip;
 using System.Collections.Specialized;
 using System.Threading;
 using CommandLine;
 using CommandLine.Text;
 using Newtonsoft.Json;
 using System.Diagnostics;
+using System.IO.Compression;
 
 namespace ZeroCrashHandler
 {
@@ -444,12 +438,7 @@ namespace ZeroCrashHandler
 			Application.UserAppDataRegistry.SetValue("Email", email);
 
 			// Depending on the mode...
-			if (Mode == BugReportMode.FogBugz)
-			{
-				// Create the bug report
-				CreateFogBugzReport(whatHappened, Email.Text);
-			}
-			else if (Mode == BugReportMode.Email)
+			if (Mode == BugReportMode.Email)
 			{
 				// Create the bug report
 				CreateEmailReport(whatHappened, Email.Text);
@@ -598,82 +587,6 @@ namespace ZeroCrashHandler
 			}
 		}
 
-		private void CreateFogBugzReport(String whatHappened, String email)
-		{
-			// Set the URL that we'll connect to (why is this a static and not on the FB object?)
-			FBApi.Url = URL;
-
-			// Create a fog bugz api object
-			FBApi fogBugz = null;
-
-			try
-			{
-				// Create the object and give it the username and password that we'll login with
-				fogBugz = new FBApi(FBUsername, FBPassword);
-			}
-			catch
-			{
-				// If it failed, do the email report then exit out
-				CreateEmailReport(whatHappened, email);
-				return;
-			}
-
-			// Create a dictionary 
-			Dictionary<String, String> args = new Dictionary<String, String>();
-
-			// Add arguments to the fog bugz data
-			args.Add("sTitle", Title);
-			args.Add("sProject", Project);
-			args.Add("sPriority", Priority);
-			args.Add("sVersion", Options.Revision);
-			args.Add("sComputer", Environment.MachineName + " - " + Environment.UserName);
-			args.Add("sEvent", whatHappened);
-
-			// Select the columns we would like to be uploading
-			args.Add("cols", "fOpen,sTitle,sProject,sPriority,sVersion,sComputer,sCustomerEmail,dtOpened");
-
-			// Encoding for binary files
-			ASCIIEncoding encoding = new ASCIIEncoding();
-
-			// Create a map of strings to loaded files
-			Dictionary<String, Byte[]>[] files = null;
-
-			// If any files were specified to be uploaded (hopefully the dump and other project files)
-			if (Files.Count != 0)
-			{
-				// Create the files dictionary (othrewise it would be left null if we had no files)
-				files = new Dictionary<String, Byte[]>[Files.Count];
-
-				// Loop through all the files
-				for (int i = 0; i < Files.Count; i++)
-				{
-					// Create the settings for each file
-					files[i] = new Dictionary<String, Byte[]>();
-
-					// Set the name, file name, and the content type of each file
-					files[i]["name"] = encoding.GetBytes("File" + (i + 1).ToString());
-					files[i]["filename"] = encoding.GetBytes(Files[i].Substring(Files[i].LastIndexOf("\\") + 1));
-					files[i]["contenttype"] = encoding.GetBytes(GetMIMEType(Files[i]));
-
-					// Create a stream and binary reader to read the file
-					FileStream fs = new FileStream(Files[i], FileMode.Open);
-					BinaryReader br = new BinaryReader(fs);
-
-					// Read in all the data and add it to our dictionary under "data"
-					files[i]["data"] = br.ReadBytes((int)fs.Length);
-
-					// Close the file stream
-					fs.Close();
-				}
-
-				// Add the file count to the list
-				args.Add("nFileCount", Files.Count.ToString());
-			}
-
-			// We're making a new bug, use that command
-			fogBugz.Cmd("new", args, files);
-		}
-
 		// Get the MIME type of a given file
 		// From http://www.codeproject.com/dotnet/ContentType.asp
 		private string GetMIMEType(string filepath)
@@ -709,12 +622,8 @@ namespace ZeroCrashHandler
 			var zipFile = File.Create(zipFilePath);
 			// 'using' statements guarantee the stream is closed properly which is a big source
 			// of problems otherwise.  Its exception safe as well which is great.
-			using (ZipOutputStream s = new ZipOutputStream(zipFile))
+			using (ZipArchive s = new ZipArchive(zipFile, ZipArchiveMode.Create))
 			{
-				s.SetLevel(9); // 0 - store only to 9 - means best compression
-
-				byte[] buffer = new byte[4096];
-
 				foreach (string file in filenames)
 				{
 					int tries = 0;
@@ -738,28 +647,8 @@ namespace ZeroCrashHandler
 
 					try
 					{
-						// Using GetFileName makes the result compatible with XP
-						// as the resulting path is not absolute.
-						ZipEntry entry = new ZipEntry(Path.GetFileName(file));
-
-						// Setup the entry data as required.
-
-						// Crc and size are handled by the library for seakable streams
-						// so no need to do them here.
-
-						// Could also use the last write time or similar for the file.
-						entry.DateTime = DateTime.Now;
-						s.PutNextEntry(entry);
-
-						// Using a fixed size buffer here makes no noticeable difference for output
-						// but keeps a lid on memory usage.
-						int sourceBytes;
-						do
-						{
-							sourceBytes = fs.Read(buffer, 0, buffer.Length);
-							s.Write(buffer, 0, sourceBytes);
-						}
-						while (sourceBytes > 0);
+            string entryName = Path.GetFileNameWithoutExtension(file);
+            s.CreateEntryFromFile(file, entryName, CompressionLevel.Optimal);
 					}
 					catch
 					{
@@ -769,15 +658,6 @@ namespace ZeroCrashHandler
 						fs.Close();
 					}
 				}
-
-				// Finish/Close aren't needed strictly as the using statement does this automatically
-
-				// Finish is important to ensure trailing information for a Zip file is appended.  Without this
-				// the created file would be invalid.
-				s.Finish();
-
-				// Close is important to wrap things up and unlock the file.
-				s.Close();
 			}
 
 			return zipFilePath;

@@ -24,7 +24,7 @@ namespace Zero
     if (str->mText.SizeInBytes() < 2 || str->mText.c_str()[0] != '"')
       return;
 
-    str->mText = str->mText.SubStringFromByteIndices(1, str->mText.SizeInBytes() - 2);
+    str->mText = str->mText.SubStringFromByteIndices(1, str->mText.SizeInBytes() - 1);
   }
   void CleanupCommentToken(DocToken *comment)
   {
@@ -43,8 +43,8 @@ namespace Zero
     {
       if (text.SizeInBytes() < 4 || text.c_str()[1] != '*')
         return;
-      
-      text = text.SubStringFromByteIndices(2, text.SizeInBytes() - 4);
+      // trim off the start and the end of a comment (The '/*' and '*/')
+      text = text.SubStringFromByteIndices(2, text.SizeInBytes() - 2);
     }
   }
 

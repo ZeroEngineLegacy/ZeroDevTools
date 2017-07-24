@@ -77,7 +77,7 @@ namespace Zero
     MacroData* FindMacro(StringParam name, StringParam location);
 
     /// saves macro into a macrodata object witha unique id so we are guarenteed not over override macros
-    MacroData* SaveMacroFromDoxyfile(TiXmlDocument *macroFile, StringParam name, StringParam id);
+    MacroData* MacroDatabase::SaveMacroFromDoxyfile(TiXmlDocument* macroFile, StringParam name);
 
     /// Saves MacroCall and comment from code IF it has the 'MacroComment' keyword in comment
     void SaveMacroCallFromClass(RawClassDoc *classDoc, TiXmlElement* element, 
@@ -94,8 +94,6 @@ namespace Zero
     Array<MacroCall *> mMacroExpandStack;
 
     Array<MacroCall> mMacroCalls;
-
-    UnsortedMap<String, MacroData *> mUniqueMacros;
 
     UnsortedMap<String, MacroData *> mMacrosByName;
   };

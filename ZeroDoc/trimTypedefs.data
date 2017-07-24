@@ -613,5 +613,95 @@ RawTypedefLibrary
         }
       }
     }
+    Object
+    {
+      var Type = "NetPeerId"
+      var Definition = Array
+      {
+        Object
+        {
+          var Text = "Integer"
+          var Type = "Identifier"
+        }
+      }
+      var Namespace = Object
+      {
+        var Names = Array
+        {
+        }
+      }
+    }
+    Object
+    {
+      var Type = "NetUserId"
+      var Definition = Array
+      {
+        Object
+        {
+          var Text = "Integer"
+          var Type = "Identifier"
+        }
+      }
+      var Namespace = Object
+      {
+        var Names = Array
+        {
+        }
+      }
+    }
+    Object
+    {
+      var Type = "NetObjectId"
+      var Definition = Array
+      {
+        Object
+        {
+          var Text = "Integer"
+          var Type = "Identifier"
+        }
+      }
+      var Namespace = Object
+      {
+        var Names = Array
+        {
+        }
+      }
+    }
+    Object
+    {
+      var Type = "Role"
+      var Definition = Array
+      {
+        Object
+        {
+          var Text = "NetRole"
+          var Type = "Identifier"
+        }
+      }
+      var Namespace = Object
+      {
+        var Names = Array
+        {
+        }
+      }
+    }
+    Object
+    {
+      var Type = "FamilyTreeId"
+      var Definition = Array
+      {
+        Object
+        {
+          var Text = "Integer"
+          var Type = "Identifier"
+        }
+      }
+      var Namespace = Object
+      {
+        var Names = Array
+        {
+        }
+      }
+    }
   }
 }

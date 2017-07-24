@@ -259,6 +259,7 @@ namespace Zero
 
     StringRange extensionLocation = filename.FindLastOf('.');
 
+    // get spot after dot
     extensionLocation.IncrementByRune();
 
     String extension(extensionLocation.Begin(), filename.End());
@@ -268,7 +269,8 @@ namespace Zero
 
     bool prevLowercase = false;
 
-    for(uint i = 0; i < extensionLocation.SizeInBytes(); ++i)
+    // the minus four should give us every character before extension
+    for(uint i = 0; i < filename.SizeInBytes() - 4; ++i)
     {
       char c = filename.c_str()[i];
 
@@ -2873,9 +2875,8 @@ namespace Zero
 
   bool RawClassDoc::loadClosestDoxyfileMatch(StringParam nameToSearchFor,StringParam doxyPath, TiXmlDocument& doc)
   {
-    IgnoreList dummyIgnoreList;
     Array<String> matchingFilesList;
-    GetFilesWithPartialName(doxyPath, GetDoxygenName(nameToSearchFor), dummyIgnoreList, &matchingFilesList);
+    GetFilesWithPartialName(doxyPath, GetDoxygenName(nameToSearchFor), &matchingFilesList);
 
     // we are going to load the first 'class_' or 'struct_' file we find
     forRange(String& filePath, matchingFilesList.All())

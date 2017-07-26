@@ -516,7 +516,6 @@ String GetLinkName(StringParam name)
   return builder.ToString();
 }
 
-
 void WriteOutAllReMarkupFiles(Zero::DocGeneratorConfig& config)
 {
   String baseFromMarkupDirectory = "zero_engine_documentation\\zero_editor_documentation\\code_reference";
@@ -757,7 +756,7 @@ void ReMarkupClassMarkupWriter::WriteClass(StringParam outputFile,
     writer.mOutput << mQuoteLine << classDoc->mDescription << mEndLine;
   }
 
-
+  writer.InsertJumpTable();
 
   if (!classDoc->mBaseClass.Empty())
   {
@@ -964,35 +963,35 @@ void ReMarkupClassMarkupWriter::InsertJumpTable(void)
 
   InsertDivider();
 
-  uint dualIterator = 0;
-  bool methodListLonger = false;
-  uint smallestListSize;
-  
-  if (mClassDoc->mMethods.Size() > mClassDoc->mProperties.Size())
-  {
-    methodListLonger = true;
-    smallestListSize = mClassDoc->mProperties.Size();
-  }
-  else
-  {
-    smallestListSize = mClassDoc->mMethods.Size();
-  }
-
   // print the top of the table
   mOutput << "|Methods|Properties|\n|---|---|\n";
+  uint methodsSize = mClassDoc->mMethods.Size();
+  uint propsSize = mClassDoc->mProperties.Size();
+  uint methodIter= 0;
+  uint propsIter = 0;
+  String prevMethod = "";
 
-  for (; dualIterator < smallestListSize; ++dualIterator)
+  for (; methodIter < methodsSize && propsIter < propsSize; ++methodIter, ++propsIter)
   {
+    // skip overloads (when we see duplicates, don't link to them by iterating method but not prop)
+    if (mClassDoc->mMethods[methodIter]->mName == prevMethod)
+    {
+      --propsIter;
+      continue;
+    }
+
     mOutput << "|";
-    InsertMethodLink(mClassDoc->mMethods[dualIterator]);
+    InsertMethodLink(mClassDoc->mMethods[methodIter]);
     mOutput << "|";
-    InsertPropertyLink(mClassDoc->mProperties[dualIterator]);
+    InsertPropertyLink(mClassDoc->mProperties[propsIter]);
     mOutput<< "|\n";
+
+    prevMethod = mClassDoc->mMethods[methodIter]->mName;
   }
   // print the rest of the methods if we had more methods then properties
-  if (methodListLonger)
+  if (methodIter < methodsSize)
   {
-    for (uint i = dualIterator; i < mClassDoc->mMethods.Size(); ++i)
+    for (uint i = methodIter; i < mClassDoc->mMethods.Size(); ++i)
     {
       mOutput << "|";
       InsertHeaderLink(mClassDoc->mMethods[i]->mName);
@@ -1001,7 +1000,7 @@ void ReMarkupClassMarkupWriter::InsertJumpTable(void)
   }
   else
   {
-    for (uint i = dualIterator; i < mClassDoc->mProperties.Size(); ++i)
+    for (uint i = propsIter; i < mClassDoc->mProperties.Size(); ++i)
     {
       mOutput << "| |";
       InsertHeaderLink(mClassDoc->mProperties[i]->mName);
@@ -1021,15 +1020,28 @@ void ReMarkupClassMarkupWriter::InsertMethodLink(MethodDoc* methodToLink)
   }
   else
   {
-    headerLinkBuilder << "-zero";
+    headerLinkBuilder << "-zero-engine-documentation";
   }
   String headerLink = headerLinkBuilder.ToString();
+
+  if (headerLink.SizeInBytes() > 24)
+  {
+    headerLink = headerLink.SubStringFromByteIndices(0, 24);
+
+    if (headerLink.EndsWith("-"))
+    {
+      headerLink = headerLink.SubString(headerLink.Begin(), headerLink.End() - 1);
+    }
+  }
+  
+
   mOutput << "[[" << mDocURI << "#" << headerLink.ToLower() << " | " << methodToLink->mName << "]]";
 }
 
 void ReMarkupClassMarkupWriter::InsertPropertyLink(PropertyDoc* propToLink)
 {
-  String headerLink = BuildString(propToLink->mName, "-zero");
+  String headerLink = BuildString(propToLink->mName, "-zero-engine-documentation");
+  headerLink = headerLink.SubStringFromByteIndices(0, 24);
 
   mOutput << "[[" << mDocURI << "#" << headerLink.ToLower() << " | " << propToLink->mName << "]]";
 }
@@ -1048,10 +1060,6 @@ void ReMarkupEnumReferenceWriter::WriteEnumReference(StringParam outputFile, Doc
 {
   // create the eventList
   ReMarkupEnumReferenceWriter writer("Enum List", BuildString(gBaseLink, "enum_reference/"));
-
-  writer.InsertNewSectionHeader("Enum List");
-
-  writer.InsertDivider();
 
   // insert table of enums
   writer.InsertEnumTable(lib.mEnums);
@@ -1118,10 +1126,6 @@ void ReMarkupFlagsReferenceWriter::WriteFlagsReference(StringParam outputFile, D
 {
   // create the eventList
   ReMarkupFlagsReferenceWriter writer("Flags List", BuildString(gBaseLink, "flags_reference/"));
-
-  writer.InsertNewSectionHeader("Flags List");
-
-  writer.InsertDivider();
 
   // insert table of enums
   writer.InsertFlagTable(lib.mFlags);
@@ -1300,11 +1304,6 @@ void ReMarkupCommandRefWriter::WriteCommandRef(StringParam commandListFilepath, 
 
   // create the command writer
   ReMarkupCommandRefWriter writer("Zero Commands", BuildString(gBaseLink, "command_reference/"));
-
-  // create top of file
-  writer.InsertNewSectionHeader("Zero Commands");
-
-  writer.InsertDivider();
 
   StartHeaderSection(writer);
 

@@ -411,12 +411,6 @@ namespace Zero
   void MacroDatabase::SaveMacroCallFromClass(RawClassDoc *classDoc,
     TiXmlElement* element, TiXmlNode* currMethod)
   {
-    // get the comment above, if we have no MacroDoc directive, we do not need to save this
-    //String description = DoxyToString(element, gElementTags[eBRIEFDESCRIPTION]).Trim();
-    //
-    //if (description.Empty())
-    //  return;
-
     // get just the description node
     TiXmlNode* descNode = GetFirstNodeOfChildType(element, gElementTags[eBRIEFDESCRIPTION]);
 

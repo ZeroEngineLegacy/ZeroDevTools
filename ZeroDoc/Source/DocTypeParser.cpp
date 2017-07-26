@@ -445,9 +445,12 @@ void FunctionNode::AddToClassDoc(RawClassDoc *doc)
     newMethod->mParsedParameters.PushBack(newParam);
   }
 
-  doc->mMethods.PushBack(newMethod);
+  newMethod->NormalizeAllTypes(RawTypedefLibrary::Get(), doc->mNamespace);
 
-  doc->mMethodMap[newMethod->mName].Append(newMethod);
+  // if we find a match, fill that instead of adding a duplicate function
+  doc->FillMatchingMethod(newMethod);
+
+  delete newMethod;
 }
 
 //--------------------------------------------------------------------------------Parameter

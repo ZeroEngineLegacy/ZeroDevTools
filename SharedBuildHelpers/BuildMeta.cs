@@ -95,9 +95,17 @@ namespace SharedBuildHelpers
         // If the file doesn't exist then parse information for the revision from mercurial
         // into the a string that has the same format as what zero should output, this way
         // we can run the same update logic as normal.
-        metaData = Mercurial.GetRevisionInfo(sourcePath);
-
-        Console.WriteLine("BuildInfo file did not exist. Falling back to build information from mercurial.");
+        if (Mercurial.Exists(sourcePath))
+        {
+          metaData = Mercurial.GetRevisionInfo(sourcePath);
+          Console.WriteLine("BuildInfo file did not exist. Falling back to build information from mercurial.");
+        }
+        else if (Git.Exists(sourcePath))
+        {
+          metaData = Git.GetRevisionInfo(sourcePath);
+          Console.WriteLine("BuildInfo file did not exist. Falling back to build information from git.");
+        }
+        
         result = false;
       }
 

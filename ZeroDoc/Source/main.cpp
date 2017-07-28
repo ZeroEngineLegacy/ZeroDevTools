@@ -101,6 +101,11 @@ void RunDocumentationGenerator(DocGeneratorConfig &config)
   {
     library = new RawDocumentationLibrary;
 
+    if (!config.mZilchTypesToCppFileList.Empty())
+    {
+      library->LoadZilchTypeCppClassList(config.mZilchTypesToCppFileList);
+    }
+
     library->mIgnoreList.mDoxyPath = config.mDoxygenPath;
 
     if (!config.mIgnoreFile.Empty())
@@ -130,9 +135,9 @@ void RunDocumentationGenerator(DocGeneratorConfig &config)
         Error("Unable to load doc file at: %s", config.mZeroDocFile.c_str());
       }
 
-      library->LoadFromSkeletonFile(config.mDoxygenPath, *doc);
-
       doc->FinalizeDocumentation();
+
+      library->LoadFromSkeletonFile(config.mDoxygenPath, *doc);
 
       library->LoadAllEnumDocumentationFromDoxygen(config.mDoxygenPath);
     }

@@ -38,7 +38,7 @@ namespace Zero
 
     loader.Close();
 
-    printf("...successfully loaded doc skeleton from file...\n");
+    printf("...successfully loaded command list from file...\n");
     return true;
   }
 
@@ -1174,6 +1174,28 @@ namespace Zero
     }
   }
 
+  void RawDocumentationLibrary::LoadZilchTypeCppClassList(StringParam absPath)
+  {
+    Status status;
+    DataTreeLoader loader;
+
+    if (!loader.OpenFile(status, absPath))
+    {
+      Error("Unable to load ZilchTypeToCppClassList at: '%s'\n", absPath);
+    }
+
+    // get the base object
+    PolymorphicNode dummyNode;
+    loader.GetPolymorphic(dummyNode);
+    
+    // get the actual map
+    loader.SerializeField("Map", mZilchTypeToCppClassList);
+
+    loader.Close();
+
+    printf("...successfully loaded ZilchTypeCppClassList from file...\n");
+  }
+
   void RawDocumentationLibrary::Build(void)
   {
     forRange(RawClassDoc* classDoc, mClasses.All())
@@ -1894,15 +1916,31 @@ namespace Zero
       newMethod->mReturnTokens = new TypeTokens();
       AppendTokensFromString(DocLangDfa::Get(), meth->mReturnType, newMethod->mReturnTokens);
 
+      uint paramIndex = 0;
       forRange(ParameterDoc* param, meth->mParameterList.All())
       {
         RawMethodDoc::Parameter* newParam = new RawMethodDoc::Parameter();
 
         newParam->mTokens = new TypeTokens();
 
+        if (this->mImportDocumentation == false)
+        {
+          if (param->mName == "")
+          {
+            newParam->mName = BuildString("p", String('0' + paramIndex));
+          }
+          else
+          {
+            newParam->mName = param->mName;
+          }
+          newParam->mDescription = param->mDescription;
+        }
+
         AppendTokensFromString(DocLangDfa::Get(), param->mType, newParam->mTokens);
 
         newMethod->mParsedParameters.PushBack(newParam);
+
+        ++paramIndex;
       }
 
       mMethods.PushBack(newMethod);
@@ -1973,9 +2011,22 @@ namespace Zero
       bool sameSigExists = false;
       forRange(RawMethodDoc* sameNamedMeth, sameNames.All())
       {
-        if (sameNamedMeth->mReturnTokens == methodDoc->mReturnTokens)
+        if (sameNamedMeth->mReturnTokens == methodDoc->mReturnTokens 
+          && sameNamedMeth->mParsedParameters.Size() == methodDoc->mParsedParameters.Size())
         {
-          if (sameNamedMeth->mParsedParameters == methodDoc->mParsedParameters)
+          for (uint i = 0; i < sameNamedMeth->mParsedParameters.Size(); ++i)
+          {
+            // check if this is the same parameter type by comparing token lists
+            bool sameParam = *(sameNamedMeth->mParsedParameters[i]->mTokens) == *(methodDoc->mParsedParameters[i]->mTokens);
+
+            if (!sameParam)
+            {
+              sameSigExists = false;
+              break;
+            }
+          }
+
+          if (sameSigExists)
           {
             // same function already documented, check if it needs a description before breaking
             if (sameNamedMeth->mDescription.Empty())
@@ -1984,7 +2035,6 @@ namespace Zero
             }
 
             // just break, once we find one, the rest of the methods don't matter
-            sameSigExists = true;
             break;
           }
         }
@@ -2009,6 +2059,8 @@ namespace Zero
 
   void RawClassDoc::Build(void)
   {
+    mMethodMap.Clear();
+    mVariableMap.Clear();
     // sort the method and property Arrays
     Zero::Sort(mMethods.All(), DocComparePtrFn<RawMethodDoc* >);
     Zero::Sort(mVariables.All(), DocComparePtrFn<RawVariableDoc* >);
@@ -2180,17 +2232,33 @@ namespace Zero
   bool RawClassDoc::LoadFromDoxygen(StringParam doxyPath)
   {
     TiXmlDocument doc;
+
+    bool loaded = loadDoxyfile(mName, doxyPath, doc, false);
     // load the doxy xml file into a tinyxml document
-    if (!loadDoxyfile(mName, doxyPath, doc, false))
+    if (!loaded && !mParentLibrary->mZilchTypeToCppClassList.ContainsKey(mName))
     {
       return false;
     }
 
-    if (!LoadFromXmlDoc(&doc))
-      return false;
+    if (loaded)
+    {
+      if (!LoadFromXmlDoc(&doc))
+        return false;
+    }
+    // check our map for zilch types to cpp types to try to find a doxy file with this type
+    forRange(String& cppName, mParentLibrary->mZilchTypeToCppClassList[mName].All())
+    {
+      if (loadDoxyfile(cppName, doxyPath, doc, false))
+      {
+        if (LoadFromXmlDoc(&doc))
+        {
+          loaded = true;
+        }
+      }
+    }
 
     LoadEvents(GetDoxygenName(mName), doxyPath);
-
+    
     return true;
   }
 
@@ -2695,7 +2763,9 @@ namespace Zero
 
     // get the mDescription of the class
     String description = DoxyToString(classDef, gElementTags[eBRIEFDESCRIPTION]).Trim();
-    if (!description.Empty())
+
+    // if the new description is not empty and the old one is, copy it over
+    if (!description.Empty() && mDescription.Empty())
       mDescription = description;
 
     // we are going to traverse over every section that the class contains
@@ -2708,7 +2778,9 @@ namespace Zero
       // sometimes the first section is the mDescription, so test for that
       if (strcmp(pSection->Value(), gElementTags[eBRIEFDESCRIPTION]) == 0)
       {
-        mDescription = DoxyToString(pSection->ToElement(), gElementTags[ePARA]).Trim();
+        description = DoxyToString(pSection->ToElement(), gElementTags[ePARA]).Trim();
+        if (!description.Empty() && mDescription.Empty())
+          mDescription = description;
       }
 
       // loop over all members of this section
@@ -2820,13 +2892,27 @@ namespace Zero
             // if it has no return type and is not a constructor, pass it to macro paser
             if (fnIsMacroCall(memberElement, pMemberDef))
             {
-              //if (this->mName == "NetPropertyConfig")
-              //  DebugBreak();
               macroDb->SaveMacroCallFromClass(this, memberElement, pMemberDef);
             }
             else if (mMethodMap.ContainsKey(name))
             {
               FillExistingMethodFromDoxygen(name, memberElement, pMemberDef);
+            }
+            // check if this is actually a property and we were tricked
+            else if (mVariableMap.ContainsKey(name) && name.ToLower().StartsWith("is"))
+            {
+              // load a temp RawMethodDoc
+              RawMethodDoc* tempMethod = new RawMethodDoc(memberElement, pMemberDef);
+              RawVariableDoc* newVariable = mVariableMap[name];
+
+              // manually fill it (return type == prop type)
+              // extract the name and description
+              newVariable->mName = tempMethod->mName;
+              newVariable->mDescription = tempMethod->mDescription;
+              *(newVariable->mTokens) = *(tempMethod->mReturnTokens);
+
+              // delete the RawMethodDoc (lol)
+              delete tempMethod;
             }
             else if (!onlySaveValidProperties)
             {
@@ -3020,20 +3106,80 @@ namespace Zero
 
   void RawClassDoc::FillExistingMethodFromDoxygen(StringParam name, TiXmlElement* memberElement, TiXmlNode* memberDef)
   {
-    // get list of methods with the same name
-    Array<RawMethodDoc*>& sameNamedMethods = mMethodMap[name];
-
-    // we don't want to actually save this 
+    // we don't want to actually save this, just use it to copy data from doxygen
     RawMethodDoc* tempLoadedMethodDoc = new RawMethodDoc(memberElement, memberDef);
 
     tempLoadedMethodDoc->NormalizeAllTypes(RawTypedefLibrary::Get(), mNamespace);
+
+    // we don't care if we actually found a match, because that just means we don't fill it
+    FillMatchingMethod(tempLoadedMethodDoc);
+
+    delete tempLoadedMethodDoc;
+  }
+
+  RawMethodDoc* RawClassDoc::FillMatchingMethod(RawMethodDoc* tempDoc)
+  {
+    // tries to find matching method in this class
+    RawMethodDoc* existingMethod = FindMatchingMethod(tempDoc);
+
+    if (!existingMethod)
+    {
+      String baseClassString = mBaseClass;
+
+      while (!baseClassString.Empty() && mParentLibrary->mClassMap.ContainsKey(mBaseClass))
+      {
+        RawClassDoc* baseClassDoc = mParentLibrary->mClassMap[baseClassString];
+
+        if (!baseClassDoc)
+          break;
+
+        existingMethod = baseClassDoc->FindMatchingMethod(tempDoc);
+
+        if (existingMethod)
+          break;
+
+        baseClassString = baseClassDoc->mBaseClass;
+      }
+
+      // if a base class had the existing method, make a copy of the method locally
+      if (existingMethod)
+      {
+        existingMethod = new RawMethodDoc(existingMethod);
+      }
+      else
+      {
+        return nullptr;
+      }
+    }
+
+    existingMethod->mDescription = tempDoc->mDescription;
+    
+    for (uint i = 0; i < existingMethod->mParsedParameters.Size(); ++i)
+    {
+      existingMethod->mParsedParameters[i]->mName
+        = tempDoc->mParsedParameters[i]->mName;
+    
+      if (existingMethod->mParsedParameters[i]->mDescription.Empty())
+      {
+        existingMethod->mParsedParameters[i]->mDescription
+          = tempDoc->mParsedParameters[i]->mDescription;
+      }
+    }
+    
+    return existingMethod;
+  }
+
+  Zero::RawMethodDoc* RawClassDoc::FindMatchingMethod(RawMethodDoc* tempDoc)
+  {
+    // get list of methods with the same name
+    Array<RawMethodDoc*>& sameNamedMethods = mMethodMap[tempDoc->mName];
 
     forRange(RawMethodDoc *existingMethod, sameNamedMethods.All())
     {
       bool matchingMethods = true;
 
       // try to find matching parameters
-      if (existingMethod->mParsedParameters.Size() != tempLoadedMethodDoc->mParsedParameters.Size())
+      if (existingMethod->mParsedParameters.Size() != tempDoc->mParsedParameters.Size())
       {
         matchingMethods = false;
         continue;
@@ -3042,11 +3188,11 @@ namespace Zero
       for (uint i = 0; i < existingMethod->mParsedParameters.Size(); ++i)
       {
         TypeTokens* existingTokens = existingMethod->mParsedParameters[i]->mTokens;
-        TypeTokens* tempLoadedTokens = tempLoadedMethodDoc->mParsedParameters[i]->mTokens;
+        TypeTokens* tempLoadedTokens = tempDoc->mParsedParameters[i]->mTokens;
 
         for (uint j = 0; j < existingTokens->Size(); ++j)
         {
-          
+
           if ((*existingTokens)[j].mText != (*tempLoadedTokens)[j].mText)
           {
             matchingMethods = false;
@@ -3062,23 +3208,11 @@ namespace Zero
 
       if (matchingMethods)
       {
-        existingMethod->mDescription = tempLoadedMethodDoc->mDescription;
-
-        for (uint i = 0; i < existingMethod->mParsedParameters.Size(); ++i)
-        {
-          existingMethod->mParsedParameters[i]->mName 
-            = tempLoadedMethodDoc->mParsedParameters[i]->mName;
-
-          if (existingMethod->mParsedParameters[i]->mDescription.Empty())
-          {
-            existingMethod->mParsedParameters[i]->mDescription
-              = tempLoadedMethodDoc->mParsedParameters[i]->mDescription;
-          }
-        }
-
+        return existingMethod;
       }
     }
-    delete tempLoadedMethodDoc;
+
+    return nullptr;
   }
 
   String RawClassDoc::GenerateMapKey(void)
@@ -3126,6 +3260,29 @@ namespace Zero
   { 
     mReturnTokens = new TypeTokens;
     mStatic = false;
+  }
+
+  RawMethodDoc::RawMethodDoc(RawMethodDoc *copy)
+  {
+    mReturnTokens = new TypeTokens;
+
+    *mReturnTokens = *(copy->mReturnTokens);
+
+    forRange(Parameter* param, mParsedParameters.All())
+    {
+      Parameter* paramCopy = new Parameter;
+
+      paramCopy->mTokens = new TypeTokens;
+
+      *(paramCopy->mTokens) = *(param->mTokens);
+
+      paramCopy->mName = param->mName;
+      paramCopy->mDescription = param->mDescription;
+    }
+
+    mName = copy->mName;
+    mDescription = copy->mDescription;
+    mStatic = copy->mStatic;
   }
 
   RawMethodDoc::~RawMethodDoc(void)
@@ -3230,7 +3387,9 @@ namespace Zero
       RawMethodDoc::Parameter* parameterDoc = mParsedParameters[i];
 
       // get the name of this argument
-      parameterDoc->mName = GetElementValue(paramElement, gElementTags[eDECLNAME]);
+      String parName = GetElementValue(paramElement, gElementTags[eDECLNAME]);
+
+      parameterDoc->mName = parName;
 
       // get brief description
       TiXmlNode* brief = GetFirstNodeOfChildType(paramElement, gElementTags[eBRIEFDESCRIPTION]);

@@ -255,6 +255,8 @@ namespace Zero
     RawMethodDoc(void);
     ~RawMethodDoc(void);
 
+    RawMethodDoc(RawMethodDoc *copy);
+
     /// constructs class by loading the method info from both the def and the element
     RawMethodDoc(TiXmlElement* element, TiXmlNode* methodDef);
 
@@ -402,6 +404,12 @@ namespace Zero
 
     void FillExistingMethodFromDoxygen(StringParam name, TiXmlElement* memberElement, TiXmlNode* memberDef);
 
+    /// returns the now filled matching method. Returns null on no match
+    RawMethodDoc* FillMatchingMethod(RawMethodDoc* tempDoc);
+
+    /// find first matching method in this class or in base class
+    RawMethodDoc* FindMatchingMethod(RawMethodDoc* tempDoc);
+
     /// generates key for classmap that incorporates namespace into classname
     String GenerateMapKey(void);
 
@@ -502,6 +510,9 @@ namespace Zero
     /// replaces typedef'd types with underlying types
     void NormalizeAllTypes(RawTypedefLibrary* defLib);
 
+    /// load map of zilch names to possible cpp class names (since some get combined)
+    void LoadZilchTypeCppClassList(StringParam absPath);
+
     /// load the doc library from the documentation directory (abs path)
     bool LoadFromDocumentationDirectory(StringParam directory);
 
@@ -530,6 +541,8 @@ namespace Zero
     HashMap<String, RawClassDoc*> mClassMap;
 
     HashMap<String, EnumDoc *> mEnumAndFlagMap;
+
+    HashMap<String, Array<String>> mZilchTypeToCppClassList;
 
     Array<RawClassDoc*> mClasses;
 

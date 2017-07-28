@@ -30,6 +30,8 @@ struct DocGeneratorConfig
   String mEventsOutputLocation;
   /// this is the exceptions file that we generate
   String mExceptionsFile;
+  /// this file contains a mapping of zilch types to cpp types 
+  String mZilchTypesToCppFileList;
 
   ///// Trimmed Strings /////
   /// defaults to trimdoc.data in the output directory
@@ -120,6 +122,10 @@ inline DocGeneratorConfig LoadConfigurations(StringMap& params)
 
   config.mExceptionsFile = GetStringValue<String>(params, "exceptionsFile", "");
   config.mExceptionsFile = FilePath::Normalize(config.mExceptionsFile);
+
+  ///mZilchTypesToCppFileList
+  config.mZilchTypesToCppFileList = GetStringValue<String>(params, "zilchTypesToCppFileList", "");
+  config.mZilchTypesToCppFileList = FilePath::Normalize(config.mZilchTypesToCppFileList);
 
   ///// Load Trim Options /////
   config.mCreateTrimmed = GetStringValue<bool>(params, "createTrimmed", false);

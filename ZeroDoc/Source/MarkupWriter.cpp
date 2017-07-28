@@ -550,12 +550,12 @@ void WriteOutAllReMarkupFiles(Zero::DocGeneratorConfig& config)
     // Add all flags to the linkMap
     forRange(auto& flagDoc, doc.mFlags.All())
     {
-      gLinkMap[flagDoc->mName] = BuildString(gBaseFlagsTypesLink, flagDoc->mName);
+      gLinkMap[flagDoc->mName] = BuildString(gBaseFlagsTypesLink, flagDoc->mName, "|", flagDoc->mName);
     }
     // Add all enums to the linkMap
     forRange(auto& enumDoc, doc.mEnums.All())
     {
-      gLinkMap[enumDoc->mName] = BuildString(gBaseEnumTypesLink, enumDoc->mName);
+      gLinkMap[enumDoc->mName] = BuildString(gBaseEnumTypesLink, enumDoc->mName, "|", enumDoc->mName);
     }
     // Add all classes to the linkMap
     forRange(ClassDoc* classDoc, doc.mClasses.All())
@@ -563,24 +563,24 @@ void WriteOutAllReMarkupFiles(Zero::DocGeneratorConfig& config)
       // check for core library types assuming those are just zilch
       if (classDoc->mLibrary == "Core")
       {
-        gLinkMap[classDoc->mName] = BuildString(gBaseZilchTypesLink, classDoc->mName);
+        gLinkMap[classDoc->mName] = BuildString(gBaseZilchTypesLink, classDoc->mName, "/");
 
         if (classDoc->mName.Contains("["))
         {
           String name = classDoc->mName.Replace(String('['), String('_'));
           name = name.Replace(String(']'), String(' '));
-          gLinkMap[classDoc->mName] = BuildString(gBaseZilchTypesLink, name.ToLower());
+          gLinkMap[classDoc->mName] = BuildString(gBaseZilchTypesLink, name.ToLower(), "/");
         }
       }
       else
       {
-        gLinkMap[classDoc->mName] = BuildString(gBaseClassLink, classDoc->mName);
+        gLinkMap[classDoc->mName] = BuildString(gBaseClassLink, classDoc->mName, "/");
 
         if (classDoc->mName.Contains("["))
         {
           String name = classDoc->mName.Replace(String('['), String('_'));
           name = name.Replace(String(']'), String(' '));
-          gLinkMap[classDoc->mName] = BuildString(gBaseZilchTypesLink, name.ToLower());
+          gLinkMap[classDoc->mName] = BuildString(gBaseZilchTypesLink, name.ToLower(), "/");
         }
       }
     }
@@ -993,9 +993,14 @@ void ReMarkupClassMarkupWriter::InsertJumpTable(void)
   {
     for (uint i = methodIter; i < mClassDoc->mMethods.Size(); ++i)
     {
+      if (mClassDoc->mMethods[i]->mName == prevMethod)
+        continue;
+
       mOutput << "|";
       InsertHeaderLink(mClassDoc->mMethods[i]->mName);
       mOutput << "| |\n";
+
+      prevMethod = mClassDoc->mMethods[i]->mName;
     }
   }
   else
@@ -1022,6 +1027,13 @@ void ReMarkupClassMarkupWriter::InsertMethodLink(MethodDoc* methodToLink)
   {
     headerLinkBuilder << "-zero-engine-documentation";
   }
+  if (methodToLink->mStatic)
+  {
+    // we use a key in markup to display tags, so in links they become '-k'
+    headerLinkBuilder << "-k";
+  }
+
+
   String headerLink = headerLinkBuilder.ToString();
 
   if (headerLink.SizeInBytes() > 24)
@@ -1041,7 +1053,13 @@ void ReMarkupClassMarkupWriter::InsertMethodLink(MethodDoc* methodToLink)
 void ReMarkupClassMarkupWriter::InsertPropertyLink(PropertyDoc* propToLink)
 {
   String headerLink = BuildString(propToLink->mName, "-zero-engine-documentation");
+
   headerLink = headerLink.SubStringFromByteIndices(0, 24);
+
+  if (headerLink.EndsWith("-"))
+  {
+    headerLink = headerLink.SubString(headerLink.Begin(), headerLink.End() - 1);
+  }
 
   mOutput << "[[" << mDocURI << "#" << headerLink.ToLower() << " | " << propToLink->mName << "]]";
 }

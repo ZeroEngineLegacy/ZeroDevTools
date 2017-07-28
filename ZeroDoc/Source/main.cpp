@@ -101,6 +101,11 @@ void RunDocumentationGenerator(DocGeneratorConfig &config)
   {
     library = new RawDocumentationLibrary;
 
+    if (!config.mZilchTypesToCppFileList.Empty())
+    {
+      library->LoadZilchTypeCppClassList(config.mZilchTypesToCppFileList);
+    }
+
     library->mIgnoreList.mDoxyPath = config.mDoxygenPath;
 
     if (!config.mIgnoreFile.Empty())

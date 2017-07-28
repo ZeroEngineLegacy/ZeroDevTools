@@ -38,7 +38,7 @@ namespace Zero
 
     loader.Close();
 
-    printf("...successfully loaded doc skeleton from file...\n");
+    printf("...successfully loaded command list from file...\n");
     return true;
   }
 
@@ -1174,6 +1174,28 @@ namespace Zero
     }
   }
 
+  void RawDocumentationLibrary::LoadZilchTypeCppClassList(StringParam absPath)
+  {
+    Status status;
+    DataTreeLoader loader;
+
+    if (!loader.OpenFile(status, absPath))
+    {
+      Error("Unable to load ZilchTypeToCppClassList at: '%s'\n", absPath);
+    }
+
+    // get the base object
+    PolymorphicNode dummyNode;
+    loader.GetPolymorphic(dummyNode);
+    
+    // get the actual map
+    loader.SerializeField("Map", mZilchTypeToCppClassList);
+
+    loader.Close();
+
+    printf("...successfully loaded ZilchTypeCppClassList from file...\n");
+  }
+
   void RawDocumentationLibrary::Build(void)
   {
     forRange(RawClassDoc* classDoc, mClasses.All())
@@ -2210,17 +2232,33 @@ namespace Zero
   bool RawClassDoc::LoadFromDoxygen(StringParam doxyPath)
   {
     TiXmlDocument doc;
+
+    bool loaded = loadDoxyfile(mName, doxyPath, doc, false);
     // load the doxy xml file into a tinyxml document
-    if (!loadDoxyfile(mName, doxyPath, doc, false))
+    if (!loaded && !mParentLibrary->mZilchTypeToCppClassList.ContainsKey(mName))
     {
       return false;
     }
 
-    if (!LoadFromXmlDoc(&doc))
-      return false;
+    if (loaded)
+    {
+      if (!LoadFromXmlDoc(&doc))
+        return false;
+    }
+    // check our map for zilch types to cpp types to try to find a doxy file with this type
+    forRange(String& cppName, mParentLibrary->mZilchTypeToCppClassList[mName].All())
+    {
+      if (loadDoxyfile(cppName, doxyPath, doc, false))
+      {
+        if (LoadFromXmlDoc(&doc))
+        {
+          loaded = true;
+        }
+      }
+    }
 
     LoadEvents(GetDoxygenName(mName), doxyPath);
-
+    
     return true;
   }
 
@@ -2725,7 +2763,9 @@ namespace Zero
 
     // get the mDescription of the class
     String description = DoxyToString(classDef, gElementTags[eBRIEFDESCRIPTION]).Trim();
-    if (!description.Empty())
+
+    // if the new description is not empty and the old one is, copy it over
+    if (!description.Empty() && mDescription.Empty())
       mDescription = description;
 
     // we are going to traverse over every section that the class contains
@@ -2738,7 +2778,9 @@ namespace Zero
       // sometimes the first section is the mDescription, so test for that
       if (strcmp(pSection->Value(), gElementTags[eBRIEFDESCRIPTION]) == 0)
       {
-        mDescription = DoxyToString(pSection->ToElement(), gElementTags[ePARA]).Trim();
+        description = DoxyToString(pSection->ToElement(), gElementTags[ePARA]).Trim();
+        if (!description.Empty() && mDescription.Empty())
+          mDescription = description;
       }
 
       // loop over all members of this section
@@ -2855,6 +2897,22 @@ namespace Zero
             else if (mMethodMap.ContainsKey(name))
             {
               FillExistingMethodFromDoxygen(name, memberElement, pMemberDef);
+            }
+            // check if this is actually a property and we were tricked
+            else if (mVariableMap.ContainsKey(name) && name.ToLower().StartsWith("is"))
+            {
+              // load a temp RawMethodDoc
+              RawMethodDoc* tempMethod = new RawMethodDoc(memberElement, pMemberDef);
+              RawVariableDoc* newVariable = mVariableMap[name];
+
+              // manually fill it (return type == prop type)
+              // extract the name and description
+              newVariable->mName = tempMethod->mName;
+              newVariable->mDescription = tempMethod->mDescription;
+              *(newVariable->mTokens) = *(tempMethod->mReturnTokens);
+
+              // delete the RawMethodDoc (lol)
+              delete tempMethod;
             }
             else if (!onlySaveValidProperties)
             {

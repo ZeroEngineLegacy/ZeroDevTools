@@ -510,6 +510,9 @@ namespace Zero
     /// replaces typedef'd types with underlying types
     void NormalizeAllTypes(RawTypedefLibrary* defLib);
 
+    /// load map of zilch names to possible cpp class names (since some get combined)
+    void LoadZilchTypeCppClassList(StringParam absPath);
+
     /// load the doc library from the documentation directory (abs path)
     bool LoadFromDocumentationDirectory(StringParam directory);
 
@@ -538,6 +541,8 @@ namespace Zero
     HashMap<String, RawClassDoc*> mClassMap;
 
     HashMap<String, EnumDoc *> mEnumAndFlagMap;
+
+    HashMap<String, Array<String>> mZilchTypeToCppClassList;
 
     Array<RawClassDoc*> mClasses;
 

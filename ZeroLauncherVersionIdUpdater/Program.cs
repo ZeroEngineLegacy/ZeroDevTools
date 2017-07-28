@@ -90,7 +90,7 @@ namespace ZeroLauncherVersionIdUpdater
 
       //curently we only need these files from the tools directory, don't copy more as it bloats the package size
       string[] files = {"ImageProcessor.exe", "nvtt.dll", 
-                         "ZeroCrashHandler.exe", "CommandLine.dll", "ICSharpCode.SharpZipLib.dll", "Newtonsoft.Json.dll", "GeometryProcessor.exe"};
+                         "ZeroCrashHandler.exe", "CommandLine.dll", "Newtonsoft.Json.dll", "GeometryProcessor.exe"};
 
       foreach (var file in files)
         File.Copy(Path.Combine(toolsDir, file), Path.Combine(outDir, file));

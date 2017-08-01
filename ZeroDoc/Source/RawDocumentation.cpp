@@ -1332,19 +1332,6 @@ namespace Zero
     }
     return false;
   }
-
-  void LoadDocumentationForEnumFromDoxygen(TiXmlNode* fnNode)
-  {
-    // this is probably 
-    // we are starting at the "name node"
-
-
-    // get the brief description.
-
-    // check for xml in the brief description and hand it to TiXml
-
-    // save descriptions for enum values
-  }
   
   void RawDocumentationLibrary::LoadAllEnumDocumentationFromDoxygen(StringParam doxyPath)
   {
@@ -2989,6 +2976,15 @@ namespace Zero
       , GetDoxygenName(nameToSearchFor), ".xml"));
 
     bool loadOkay = doc.LoadFile(fileName.c_str());
+
+    if (loadOkay)
+      return loadDoxyFileReturnHelper(doxyPath, fileName);
+
+      //try to open a zilch version of the class file name
+    fileName = FindFile(doxyPath, BuildString("class_zilch_1_1"
+        , GetDoxygenName(nameToSearchFor), ".xml"));
+
+    loadOkay = doc.LoadFile(fileName.c_str());
 
     if (loadOkay)
       return loadDoxyFileReturnHelper(doxyPath, fileName);

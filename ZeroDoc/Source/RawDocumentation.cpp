@@ -2971,7 +2971,7 @@ namespace Zero
   bool RawClassDoc::loadDoxyfile(StringParam nameToSearchFor, StringParam doxyPath,
     TiXmlDocument& doc, bool isRecursiveCall)
   {
-    //try to open the class file
+    // try to open the class file
     String fileName = FindFile(doxyPath, BuildString("class_zero_1_1"
       , GetDoxygenName(nameToSearchFor), ".xml"));
 
@@ -2980,7 +2980,7 @@ namespace Zero
     if (loadOkay)
       return loadDoxyFileReturnHelper(doxyPath, fileName);
 
-      //try to open a zilch version of the class file name
+    // try to open a zilch version of the class file name
     fileName = FindFile(doxyPath, BuildString("class_zilch_1_1"
         , GetDoxygenName(nameToSearchFor), ".xml"));
 
@@ -2989,7 +2989,7 @@ namespace Zero
     if (loadOkay)
       return loadDoxyFileReturnHelper(doxyPath, fileName);
 
-    //if loading the class file  failed, search for a struct file
+    // if loading the class file  failed, search for a struct file
     fileName = FindFile(doxyPath, BuildString("struct_zero_1_1"
       , GetDoxygenName(nameToSearchFor).c_str(), ".xml"));
 

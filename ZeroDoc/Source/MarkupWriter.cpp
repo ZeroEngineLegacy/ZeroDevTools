@@ -196,8 +196,7 @@ void BaseMarkupWriter::InsertNewUnderline(uint length, uint headerLevel)
 
 void BaseMarkupWriter::InsertNewSectionHeader(StringParam sectionName)
 {
-  mOutput << sectionName << "\n";
-  InsertNewUnderline(sectionName.SizeInBytes());
+  mOutput << "= " << sectionName << "\n";
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -760,7 +759,7 @@ void ReMarkupClassMarkupWriter::WriteClass(StringParam outputFile,
 
   if (!classDoc->mBaseClass.Empty())
   {
-    writer.mOutput << "== BaseClass: ";
+    writer.mOutput << "= BaseClass: ";
     writer.InsertTypeLink(classDoc->mBaseClass);
     writer.mOutput << "\n";
     writer.InsertDivider();

@@ -647,7 +647,7 @@ namespace ZeroCrashHandler
 
 					try
 					{
-            string entryName = Path.GetFileNameWithoutExtension(file);
+            string entryName = Path.GetFileName(file);
             s.CreateEntryFromFile(file, entryName, CompressionLevel.Optimal);
 					}
 					catch

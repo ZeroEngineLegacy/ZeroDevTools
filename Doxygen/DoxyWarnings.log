@@ -1,0 +1,21 @@
+C:/Users/Shlemmer/Projects/Repositories/ZeroCore/Projects/Win32Editor/Exporter.cpp:3: warning: the name `Export.cpp' supplied as the second argument in the \file statement is not an input file
+C:/Users/Shlemmer/Projects/Repositories/ZeroCore/Projects/Win32Editor/WinMain.cpp:3: warning: the name `WinMain.cpp' supplied as the second argument in the \file statement matches the following input files:
+   C:/Users/Shlemmer/Projects/Repositories/ZeroCore/Projects/Win32Editor/WinMain.cpp
+   C:/Users/Shlemmer/Projects/Repositories/ZeroCore/Projects/Win32Launcher/Win32Launcher/WinMain.cpp
+Please use a more specific name by including a (larger) part of the path!
+C:/Users/Shlemmer/Projects/Repositories/ZeroCore/Projects/Win32Launcher/Win32Launcher/WinMain.cpp:3: warning: the name `WinMain.cpp' supplied as the second argument in the \file statement matches the following input files:
+   C:/Users/Shlemmer/Projects/Repositories/ZeroCore/Projects/Win32Editor/WinMain.cpp
+   C:/Users/Shlemmer/Projects/Repositories/ZeroCore/Projects/Win32Launcher/Win32Launcher/WinMain.cpp
+Please use a more specific name by including a (larger) part of the path!
+C:/Users/Shlemmer/Projects/Repositories/ZeroCore/Projects/Win32Editor/Exporter.cpp:186: warning: documented function `Exporter' was not declared or defined.
+C:/Users/Shlemmer/Projects/Repositories/ZeroCore/Projects/Win32Editor/Exporter.cpp:191: warning: documented function `void ExportAndPlay' was not declared or defined.
+C:/Users/Shlemmer/Projects/Repositories/ZeroCore/Projects/Win32Editor/Exporter.cpp:199: warning: documented function `void ExportGameProject' was not declared or defined.
+C:/Users/Shlemmer/Projects/Repositories/ZeroCore/Projects/Win32Editor/Exporter.cpp:214: warning: documented function `void BeginExport' was not declared or defined.
+C:/Users/Shlemmer/Projects/Repositories/ZeroCore/Projects/Win32Editor/Exporter.cpp:226: warning: documented function `void OnFilesSelected' was not declared or defined.
+C:/Users/Shlemmer/Projects/Repositories/ZeroCore/Projects/Win32Editor/Exporter.cpp:397: warning: documented function `void DoExport' was not declared or defined.
+C:/Users/Shlemmer/Projects/Repositories/ZeroCore/Projects/Win32Launcher/Win32LauncherDll/Exporter.cpp:22: warning: documented function `Exporter' was not declared or defined.
+C:/Users/Shlemmer/Projects/Repositories/ZeroCore/Projects/Win32Launcher/Win32LauncherDll/Exporter.cpp:26: warning: documented function `void ExportAndPlay' was not declared or defined.
+C:/Users/Shlemmer/Projects/Repositories/ZeroCore/Projects/Win32Launcher/Win32LauncherDll/Exporter.cpp:30: warning: documented function `void ExportGameProject' was not declared or defined.
+C:/Users/Shlemmer/Projects/Repositories/ZeroCore/Projects/Win32Launcher/Win32LauncherDll/LauncherComponents.cpp:92: warning: no uniquely matching class member found for 
+  void Serialize(Serializer &stream)
+

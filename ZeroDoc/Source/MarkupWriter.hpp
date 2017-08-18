@@ -131,11 +131,6 @@ namespace Zero
 
     void InsertProperty(PropertyDoc &propDoc);
 
-    // Will probably be removed since we are going to use jump table
-    void WriteMethodTable(void);
-    // Will probably be removed since we are going to use jump table
-    void WritePropertyTable(void); 
-
     void InsertJumpTable(void);
 
     void InsertMethodLink(MethodDoc* methodToLink);

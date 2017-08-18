@@ -27,7 +27,7 @@ namespace Zero
 
     if (!loader.OpenFile(status, absPath))
     {
-      Error("Unable to load command list file: %s\n", absPath);
+      Error("Unable to load command list file: %s\n", absPath.c_str());
       return false;
     }
 
@@ -78,7 +78,7 @@ namespace Zero
 
     if (!loader.OpenFile(status, absPath))
     {
-      Error("Unable to load command list file: %s\n", absPath);
+      Error("Unable to load command list file: %s\n", absPath.c_str());
       return false;
     }
 
@@ -133,7 +133,7 @@ namespace Zero
 
     if (!loader.OpenFile(status, file))
     {
-      Error("Unable to load documentation skeleton file: %s\n", file);
+      Error("Unable to load documentation skeleton file: %s\n", file.c_str());
       return false;
     }
      
@@ -926,7 +926,7 @@ namespace Zero
 
     mVerbose = verbose;
 
-    StringRange folderPath = mPath.SubStringFromByteIndices(0, mPath.FindLastOf('\\').SizeInBytes());
+    StringRange folderPath = mPath.SubString(path.Begin(), mPath.FindLastOf('\\').Begin());
 
     if (!DirectoryExists(folderPath))
     {
@@ -1181,7 +1181,7 @@ namespace Zero
 
     if (!loader.OpenFile(status, absPath))
     {
-      Error("Unable to load ZilchTypeToCppClassList at: '%s'\n", absPath);
+      Error("Unable to load ZilchTypeToCppClassList at: '%s'\n", absPath.c_str());
     }
 
     // get the base object
@@ -1544,7 +1544,7 @@ namespace Zero
   void RawDocumentationLibrary::LoadIgnoreList(StringParam absPath)
   {
     if (!LoadFromDataFile(mIgnoreList, absPath, DataFileFormat::Text, true))
-      Error("Unable to load ignore list: %s\n", absPath);
+      Error("Unable to load ignore list: %s\n", absPath.c_str());
   }
 
   void RawDocumentationLibrary::LoadEventsList(StringParam absPath)
@@ -1554,7 +1554,7 @@ namespace Zero
 
     if (!loader.OpenFile(status, absPath))
     {
-        Error("Unable to load events list: %s\n", absPath);
+        Error("Unable to load events list: %s\n", absPath.c_str());
     }
     
     // this gets the unnamed object containing events array
@@ -1585,8 +1585,8 @@ namespace Zero
 
     if (status.Failed())
     {
-      Error("Failed to open file to save raw events list at location : %s\n", absPath);
-      WriteLog("Failed to open file to save raw events list at location : %s\n", absPath);
+      Error("Failed to open file to save raw events list at location : %s\n", absPath.c_str());
+      WriteLog("Failed to open file to save raw events list at location : %s\n", absPath.c_str());
       return;
     }
 
@@ -1914,12 +1914,12 @@ namespace Zero
         {
           if (param->mName == "")
           {
-            newParam->mName = BuildString("p", String('0' + paramIndex));
+            newParam->mName = String::Format("p%d",paramIndex);
           }
           else
           {
             newParam->mName = param->mName;
-          }
+          } 
           newParam->mDescription = param->mDescription;
         }
 

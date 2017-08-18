@@ -1,0 +1,23 @@
+[Version:1]
+ZilchTypeToCppClassList 
+{
+	var Map = Map
+	{
+		Object
+		{
+			var key = "Audio"
+			var value = Array
+			{
+				"AudioStatics"
+			}
+		}
+		Object
+		{
+			var key = "Graphics"
+			var value = Array
+			{
+				"GraphicsStatics"
+			}
+		}
+	}
+}

@@ -19,6 +19,7 @@ String gBaseZilchTypesLink = BuildString(gBaseLink, "Zilch_Base_Types/");
 String gBaseEnumTypesLink = BuildString(gBaseLink, "Enum_Reference/#");
 String gBaseFlagsTypesLink = BuildString(gBaseLink, "Flags_Reference/#");
 
+
 void WriteTagIndices(String outputDir, DocToTags& tagged, DocumentationLibrary &docLib)
 {
   String fileName = FilePath::Combine(outputDir, "CodeIndex.rst");
@@ -152,7 +153,7 @@ static const char *gMonoSpaced("##");
 static const char *gDeleted("~~");
 static const char *gUnderlined("__");
 static const char *gHighlighted("!!");
-static const char *gBullet("* ");
+static const char *gBullet("- ");
 static const char *gNumbered("# ");
 
 
@@ -906,52 +907,6 @@ void ReMarkupClassMarkupWriter::InsertProperty(PropertyDoc &propDoc)
   InsertDivider();
 }
 
-void ReMarkupClassMarkupWriter::WriteMethodTable(void)
-{
-  mOutput << "|Name|Description|\n|---|---|\n";
-
-  forRange(MethodDoc *method, mClassDoc->mMethods.All())
-  {
-    mOutput << "|";
-    InsertHeaderLink(method->mName);
-    mOutput<< "|";
-
-    if (method->mDescription.Empty())
-    {
-      mOutput << " ";
-    }
-    else
-    {
-      mOutput << method->mDescription;
-    }
-
-    mOutput << "|\n";
-  }
-  mOutput << mEndLine;
-}
-
-void ReMarkupClassMarkupWriter::WritePropertyTable(void)
-{
-  mOutput << "|Name|Description|" << mEndLine << "|---|---|" << mEndLine;
-
-  forRange(PropertyDoc *prop, mClassDoc->mProperties.All())
-  {
-    mOutput << "|";
-    InsertHeaderLink(prop->mName);
-    mOutput<< "|";
-
-    if (prop->mDescription.Empty())
-    {
-      mOutput << " ";
-    }
-    else
-    {
-      mOutput << prop->mDescription;
-    }
-    mOutput << "|" << mEndLine;
-  }
-}
-
 void ReMarkupClassMarkupWriter::InsertJumpTable(void)
 {
   // if we don't have stuff to jump to, don't make a jump table
@@ -996,7 +951,7 @@ void ReMarkupClassMarkupWriter::InsertJumpTable(void)
         continue;
 
       mOutput << "|";
-      InsertHeaderLink(mClassDoc->mMethods[i]->mName);
+      InsertMethodLink(mClassDoc->mMethods[i]);
       mOutput << "| |\n";
 
       prevMethod = mClassDoc->mMethods[i]->mName;
@@ -1007,7 +962,7 @@ void ReMarkupClassMarkupWriter::InsertJumpTable(void)
     for (uint i = propsIter; i < mClassDoc->mProperties.Size(); ++i)
     {
       mOutput << "| |";
-      InsertHeaderLink(mClassDoc->mProperties[i]->mName);
+      InsertPropertyLink(mClassDoc->mProperties[i]);
       mOutput << "|\n";
     }
   }
@@ -1300,6 +1255,7 @@ ReMarkupCommandRefWriter::ReMarkupCommandRefWriter(StringParam name, StringParam
 
 }
 
+
 void ReMarkupCommandRefWriter::WriteCommandRef(StringParam commandListFilepath, StringParam outputPath)
 {
   // load the file
@@ -1339,6 +1295,13 @@ void ReMarkupCommandRefWriter::WriteCommandRef(StringParam commandListFilepath, 
 void ReMarkupCommandRefWriter::WriteCommandEntry(const CommandDoc &cmdDoc)
 {
   InsertNewSectionHeader(cmdDoc.mName);
+
+  if (!cmdDoc.mTags.Empty())
+  {
+    // the first tag is always the menu the option lives in
+    mOutput << "{nav name=" << cmdDoc.mTags[0] << ", icon=university > " 
+      << cmdDoc.mName << "}" << mEndLine;
+  }
 
   if (!cmdDoc.mDescription.Empty())
     mOutput << cmdDoc.mDescription << mEndLine << mEndLine;

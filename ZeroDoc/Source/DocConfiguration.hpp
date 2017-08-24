@@ -32,6 +32,8 @@ struct DocGeneratorConfig
   String mExceptionsFile;
   /// this file contains a mapping of zilch types to cpp types 
   String mZilchTypesToCppFileList;
+  /// what file to output the list of all shortcuts
+  String mShortcutsOutputFile;
 
   ///// Trimmed Strings /////
   /// defaults to trimdoc.data in the output directory
@@ -126,6 +128,10 @@ inline DocGeneratorConfig LoadConfigurations(StringMap& params)
   ///mZilchTypesToCppFileList
   config.mZilchTypesToCppFileList = GetStringValue<String>(params, "zilchTypesToCppFileList", "");
   config.mZilchTypesToCppFileList = FilePath::Normalize(config.mZilchTypesToCppFileList);
+
+  ///mShortcutsOutputFile
+  config.mShortcutsOutputFile = GetStringValue<String>(params, "shortcutsOutputFile", "");
+  config.mShortcutsOutputFile = FilePath::Normalize(config.mShortcutsOutputFile);
 
   ///// Load Trim Options /////
   config.mCreateTrimmed = GetStringValue<bool>(params, "createTrimmed", false);

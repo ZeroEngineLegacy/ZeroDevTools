@@ -1526,6 +1526,9 @@ namespace Zero
 
       if (newClassDoc->mImportDocumentation)
         newClassDoc->LoadFromDoxygen(doxyPath);
+
+      // if we are a tool, load our xml description for commands
+      newClassDoc->LoadToolXmlInClassDescIfItExists();
     }
 
 
@@ -1680,6 +1683,55 @@ namespace Zero
     LoadFromDoxygen(element);
     mReadOnly = false;
     mStatic = false;
+  }
+
+
+  ////////////////////////////////////////////////////////////////////////
+  // RawShortcutLibrary
+  ////////////////////////////////////////////////////////////////////////
+
+  bool RawShortcutLibrary::SaveToFile(StringParam absPath)
+  {
+    Status status;
+
+    TextSaver saver;
+
+    saver.Open(status, absPath.c_str());
+    if (status.Failed())
+    {
+      Error(status.Message.c_str());
+      return false;
+    }
+
+    saver.StartPolymorphic("Shortcuts");
+
+    forRange(auto classShortcutPair, mShortcutSets.All())
+    {
+      saver.StartPolymorphic("ShortcutSetEntry");
+      saver.SerializeField("Name", classShortcutPair.first);
+
+      ClassShortcuts* ShortcutSet = classShortcutPair.second;
+
+      saver.SerializeField("ShortcutSet", *ShortcutSet);
+
+      saver.EndPolymorphic();
+    }
+
+    saver.EndPolymorphic();
+
+    saver.Close();
+
+    return true;
+  }
+  
+  void RawShortcutLibrary::InsertClassShortcuts(StringParam className, ClassShortcuts* shortcuts)
+  {
+    mShortcutSets.InsertOrAssign(className, shortcuts);
+  }
+
+  Zero::ClassShortcuts* RawShortcutLibrary::GetShortcutsForClass(StringParam className)
+  {
+    return mShortcutSets.FindOrInsert(className);
   }
 
   ////////////////////////////////////////////////////////////////////////
@@ -2329,6 +2381,93 @@ namespace Zero
     }
 
     mMethodMap[fnName][0]->mPossibleExceptionThrows.PushBack(errorDoc);
+  }
+
+  void RawClassDoc::LoadToolXmlInClassDescIfItExists(void)
+  {
+    StringRange xmlStart = mDescription.FindFirstOf("<Commands");
+
+    // if this does not contains the start of a macro tag skip it
+    if (!xmlStart.SizeInBytes())
+    {
+      return;
+    }
+
+    StringRange xmlEnd = mDescription.FindFirstOf("</Commands>");
+
+    String toolCommandsXmlString = mDescription.SubString(xmlStart.Begin(), xmlEnd.End());
+
+    // if this is true we either have no description or the description is after the xml
+    if (xmlEnd.End() == mDescription.End())
+    {
+      // cut the macro out of the description or just remove description if no comment existed
+      mDescription = mDescription.SubString(mDescription.Begin(), xmlStart.Begin());
+    }
+    else
+    {
+      // cut macro out of description
+      mDescription = mDescription.SubString(xmlEnd.End(), mDescription.End());
+    }
+
+    TiXmlDocument toolCommandsXml;
+
+    toolCommandsXml.Parse(toolCommandsXmlString.c_str());
+
+    TiXmlElement* macroElement = toolCommandsXml.FirstChildElement();
+
+    ClassShortcuts *classShortcuts = new ClassShortcuts();
+
+    uint commandIndex = 0;
+    // unpack all child nodes and save them as options
+    for (TiXmlElement* command = macroElement->FirstChildElement();
+      command != nullptr; command = command->NextSiblingElement())
+    {
+      ShortcutEntry& newShortcutDoc = classShortcuts->PushBack();
+
+      newShortcutDoc.mIndex = commandIndex;
+
+      ++commandIndex;
+
+      const char *name = command->Attribute("name");
+
+      newShortcutDoc.mName = name;
+
+      // if the name was empty, log that
+      if (!name)
+      {
+        WriteLog("Warning: Class '%s' is mssing a command name in command xml documentation.\n", mName.c_str());
+      }
+
+      // get shortcut
+      TiXmlElement* shortcut = command->FirstChildElement();
+
+      if (!shortcut)
+      {
+        WriteLog("Error: Class '%s missing shortcut element in command '%s'.\n", mName.c_str(), name);
+        break;
+      }
+
+      newShortcutDoc.mShortcut = GetTextFromAllChildrenNodesRecursively(shortcut);
+
+      // get description
+      TiXmlNode* description = shortcut->NextSibling();
+
+      if (!description)
+      {
+        WriteLog("Error: Class '%s missing description element in command '%s'.\n", mName.c_str(), name);
+        break;
+      }
+
+      newShortcutDoc.mDescription = description->Value();
+
+      if (newShortcutDoc.mDescription.Empty())
+      {
+        WriteLog("Class '%s' is missing description for command '%s'", mName.c_str(), name);
+      }
+    }
+
+    // Add the command doc to the library
+    mParentLibrary->mShortcutsLibrary.InsertClassShortcuts(mName.c_str(), classShortcuts);
   }
 
   // param number technically starts at 1 since 0 means no param for this fn

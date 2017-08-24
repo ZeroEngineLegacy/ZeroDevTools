@@ -425,7 +425,7 @@ namespace Zero
 
     StringRange macroStart = description.FindFirstOf("<macro");
 
-    // if this does not contains the start of a macro tag skipit
+    // if this does not contains the start of a macro tag skip it
     if (!macroStart.SizeInBytes())
     {
       return;

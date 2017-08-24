@@ -156,7 +156,6 @@ static const char *gHighlighted("!!");
 static const char *gBullet("- ");
 static const char *gNumbered("# ");
 
-
 ////////////////////////////////////////////////////////////////////////
 // BaseMarkupWriter
 ////////////////////////////////////////////////////////////////////////
@@ -1294,13 +1293,31 @@ void ReMarkupCommandRefWriter::WriteCommandRef(StringParam commandListFilepath, 
 
 void ReMarkupCommandRefWriter::WriteCommandEntry(const CommandDoc &cmdDoc)
 {
+  static const char *validMenuLocations[] =
+  { "Project", "Edit", "Create", "Select", "Resources", "Windows", "Help" };
+  static const unsigned int validMenuItemCount = 7;
+
   InsertNewSectionHeader(cmdDoc.mName);
 
   if (!cmdDoc.mTags.Empty())
   {
-    // the first tag is always the menu the option lives in
-    mOutput << "{nav name=" << cmdDoc.mTags[0] << ", icon=university > " 
-      << cmdDoc.mName << "}" << mEndLine;
+    // check if this is a valid menu item
+    bool isValidMenuItem = false;
+    for (uint i = 0; i < validMenuItemCount; ++i)
+    {
+      if (cmdDoc.mTags[0] == validMenuLocations[i])
+      {
+        isValidMenuItem = true;
+        break;
+      }
+    }
+
+    if (isValidMenuItem)
+    {
+      // the first tag is always the menu the option lives in
+      mOutput << "{nav name=" << cmdDoc.mTags[0] << ", icon=university > "
+        << cmdDoc.mName << "}" << mEndLine;
+    }
   }
 
   if (!cmdDoc.mDescription.Empty())

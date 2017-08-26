@@ -1708,12 +1708,23 @@ namespace Zero
     forRange(auto classShortcutPair, mShortcutSets.All())
     {
       saver.StartPolymorphic("ShortcutSetEntry");
+
       saver.SerializeField("Name", classShortcutPair.first);
 
       ClassShortcuts* ShortcutSet = classShortcutPair.second;
 
-      saver.SerializeField("ShortcutSet", *ShortcutSet);
+      saver.StartPolymorphic("var ShortcutSet = Array");
 
+      forRange(RawShortcutEntry& entry, *ShortcutSet)
+      {
+        saver.StartPolymorphic("ShortcutEntry");
+        saver.SerializeField("Index", entry.mIndex);
+        saver.SerializeField("Name", entry.mName);
+        saver.SerializeField("Shortcut", entry.mShortcut);
+        saver.SerializeField("Description", entry.mDescription);
+        saver.EndPolymorphic();
+      }
+      saver.EndPolymorphic();
       saver.EndPolymorphic();
     }
 
@@ -2422,7 +2433,7 @@ namespace Zero
     for (TiXmlElement* command = macroElement->FirstChildElement();
       command != nullptr; command = command->NextSiblingElement())
     {
-      ShortcutEntry& newShortcutDoc = classShortcuts->PushBack();
+      RawShortcutEntry& newShortcutDoc = classShortcuts->PushBack();
 
       newShortcutDoc.mIndex = commandIndex;
 

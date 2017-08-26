@@ -30,6 +30,7 @@ namespace Zero
     eMEMBERDEF,
     eMEMBER,
     eBRIEFDESCRIPTION,
+    eDETAILEDDESCRIPTION,
     ePARA,
     ePARAM,
     eKIND,
@@ -52,6 +53,7 @@ namespace Zero
     "memberdef",
     "member",
     "briefdescription",
+    "detaileddescription",
     "para",
     "param",
     "kind",
@@ -331,7 +333,15 @@ namespace Zero
     String mType;
   };
 
-  typedef Array<ShortcutEntry> ClassShortcuts;
+  struct RawShortcutEntry
+  {
+    uint mIndex;
+    String mName;
+    String mShortcut;
+    String mDescription;
+  };
+
+  typedef Array<RawShortcutEntry> ClassShortcuts;
 
   class RawShortcutLibrary
   {

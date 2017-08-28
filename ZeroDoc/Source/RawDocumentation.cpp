@@ -27,7 +27,7 @@ namespace Zero
 
     if (!loader.OpenFile(status, absPath))
     {
-      Error("Unable to load command list file: %s\n", absPath);
+      Error("Unable to load command list file: %s\n", absPath.c_str());
       return false;
     }
 
@@ -78,7 +78,7 @@ namespace Zero
 
     if (!loader.OpenFile(status, absPath))
     {
-      Error("Unable to load command list file: %s\n", absPath);
+      Error("Unable to load command list file: %s\n", absPath.c_str());
       return false;
     }
 
@@ -133,7 +133,7 @@ namespace Zero
 
     if (!loader.OpenFile(status, file))
     {
-      Error("Unable to load documentation skeleton file: %s\n", file);
+      Error("Unable to load documentation skeleton file: %s\n", file.c_str());
       return false;
     }
      
@@ -926,7 +926,7 @@ namespace Zero
 
     mVerbose = verbose;
 
-    StringRange folderPath = mPath.SubStringFromByteIndices(0, mPath.FindLastOf('\\').SizeInBytes());
+    StringRange folderPath = mPath.SubString(path.Begin(), mPath.FindLastOf('\\').Begin());
 
     if (!DirectoryExists(folderPath))
     {
@@ -1181,7 +1181,7 @@ namespace Zero
 
     if (!loader.OpenFile(status, absPath))
     {
-      Error("Unable to load ZilchTypeToCppClassList at: '%s'\n", absPath);
+      Error("Unable to load ZilchTypeToCppClassList at: '%s'\n", absPath.c_str());
     }
 
     // get the base object
@@ -1331,19 +1331,6 @@ namespace Zero
       return true;
     }
     return false;
-  }
-
-  void LoadDocumentationForEnumFromDoxygen(TiXmlNode* fnNode)
-  {
-    // this is probably 
-    // we are starting at the "name node"
-
-
-    // get the brief description.
-
-    // check for xml in the brief description and hand it to TiXml
-
-    // save descriptions for enum values
   }
   
   void RawDocumentationLibrary::LoadAllEnumDocumentationFromDoxygen(StringParam doxyPath)
@@ -1539,6 +1526,9 @@ namespace Zero
 
       if (newClassDoc->mImportDocumentation)
         newClassDoc->LoadFromDoxygen(doxyPath);
+
+      // if we are a tool, load our xml description for commands
+      newClassDoc->LoadToolXmlInClassDescIfItExists();
     }
 
 
@@ -1557,7 +1547,7 @@ namespace Zero
   void RawDocumentationLibrary::LoadIgnoreList(StringParam absPath)
   {
     if (!LoadFromDataFile(mIgnoreList, absPath, DataFileFormat::Text, true))
-      Error("Unable to load ignore list: %s\n", absPath);
+      Error("Unable to load ignore list: %s\n", absPath.c_str());
   }
 
   void RawDocumentationLibrary::LoadEventsList(StringParam absPath)
@@ -1567,7 +1557,7 @@ namespace Zero
 
     if (!loader.OpenFile(status, absPath))
     {
-        Error("Unable to load events list: %s\n", absPath);
+        Error("Unable to load events list: %s\n", absPath.c_str());
     }
     
     // this gets the unnamed object containing events array
@@ -1598,8 +1588,8 @@ namespace Zero
 
     if (status.Failed())
     {
-      Error("Failed to open file to save raw events list at location : %s\n", absPath);
-      WriteLog("Failed to open file to save raw events list at location : %s\n", absPath);
+      Error("Failed to open file to save raw events list at location : %s\n", absPath.c_str());
+      WriteLog("Failed to open file to save raw events list at location : %s\n", absPath.c_str());
       return;
     }
 
@@ -1693,6 +1683,55 @@ namespace Zero
     LoadFromDoxygen(element);
     mReadOnly = false;
     mStatic = false;
+  }
+
+
+  ////////////////////////////////////////////////////////////////////////
+  // RawShortcutLibrary
+  ////////////////////////////////////////////////////////////////////////
+
+  bool RawShortcutLibrary::SaveToFile(StringParam absPath)
+  {
+    Status status;
+
+    TextSaver saver;
+
+    saver.Open(status, absPath.c_str());
+    if (status.Failed())
+    {
+      Error(status.Message.c_str());
+      return false;
+    }
+
+    saver.StartPolymorphic("Shortcuts");
+
+    forRange(auto classShortcutPair, mShortcutSets.All())
+    {
+      saver.StartPolymorphic("ShortcutSetEntry");
+      saver.SerializeField("Name", classShortcutPair.first);
+
+      ClassShortcuts* ShortcutSet = classShortcutPair.second;
+
+      saver.SerializeField("ShortcutSet", *ShortcutSet);
+
+      saver.EndPolymorphic();
+    }
+
+    saver.EndPolymorphic();
+
+    saver.Close();
+
+    return true;
+  }
+  
+  void RawShortcutLibrary::InsertClassShortcuts(StringParam className, ClassShortcuts* shortcuts)
+  {
+    mShortcutSets.InsertOrAssign(className, shortcuts);
+  }
+
+  Zero::ClassShortcuts* RawShortcutLibrary::GetShortcutsForClass(StringParam className)
+  {
+    return mShortcutSets.FindOrInsert(className);
   }
 
   ////////////////////////////////////////////////////////////////////////
@@ -1927,12 +1966,12 @@ namespace Zero
         {
           if (param->mName == "")
           {
-            newParam->mName = BuildString("p", String('0' + paramIndex));
+            newParam->mName = String::Format("p%d",paramIndex);
           }
           else
           {
             newParam->mName = param->mName;
-          }
+          } 
           newParam->mDescription = param->mDescription;
         }
 
@@ -2342,6 +2381,93 @@ namespace Zero
     }
 
     mMethodMap[fnName][0]->mPossibleExceptionThrows.PushBack(errorDoc);
+  }
+
+  void RawClassDoc::LoadToolXmlInClassDescIfItExists(void)
+  {
+    StringRange xmlStart = mDescription.FindFirstOf("<Commands");
+
+    // if this does not contains the start of a macro tag skip it
+    if (!xmlStart.SizeInBytes())
+    {
+      return;
+    }
+
+    StringRange xmlEnd = mDescription.FindFirstOf("</Commands>");
+
+    String toolCommandsXmlString = mDescription.SubString(xmlStart.Begin(), xmlEnd.End());
+
+    // if this is true we either have no description or the description is after the xml
+    if (xmlEnd.End() == mDescription.End())
+    {
+      // cut the macro out of the description or just remove description if no comment existed
+      mDescription = mDescription.SubString(mDescription.Begin(), xmlStart.Begin());
+    }
+    else
+    {
+      // cut macro out of description
+      mDescription = mDescription.SubString(xmlEnd.End(), mDescription.End());
+    }
+
+    TiXmlDocument toolCommandsXml;
+
+    toolCommandsXml.Parse(toolCommandsXmlString.c_str());
+
+    TiXmlElement* macroElement = toolCommandsXml.FirstChildElement();
+
+    ClassShortcuts *classShortcuts = new ClassShortcuts();
+
+    uint commandIndex = 0;
+    // unpack all child nodes and save them as options
+    for (TiXmlElement* command = macroElement->FirstChildElement();
+      command != nullptr; command = command->NextSiblingElement())
+    {
+      ShortcutEntry& newShortcutDoc = classShortcuts->PushBack();
+
+      newShortcutDoc.mIndex = commandIndex;
+
+      ++commandIndex;
+
+      const char *name = command->Attribute("name");
+
+      newShortcutDoc.mName = name;
+
+      // if the name was empty, log that
+      if (!name)
+      {
+        WriteLog("Warning: Class '%s' is mssing a command name in command xml documentation.\n", mName.c_str());
+      }
+
+      // get shortcut
+      TiXmlElement* shortcut = command->FirstChildElement();
+
+      if (!shortcut)
+      {
+        WriteLog("Error: Class '%s missing shortcut element in command '%s'.\n", mName.c_str(), name);
+        break;
+      }
+
+      newShortcutDoc.mShortcut = GetTextFromAllChildrenNodesRecursively(shortcut);
+
+      // get description
+      TiXmlNode* description = shortcut->NextSibling();
+
+      if (!description)
+      {
+        WriteLog("Error: Class '%s missing description element in command '%s'.\n", mName.c_str(), name);
+        break;
+      }
+
+      newShortcutDoc.mDescription = description->Value();
+
+      if (newShortcutDoc.mDescription.Empty())
+      {
+        WriteLog("Class '%s' is missing description for command '%s'", mName.c_str(), name);
+      }
+    }
+
+    // Add the command doc to the library
+    mParentLibrary->mShortcutsLibrary.InsertClassShortcuts(mName.c_str(), classShortcuts);
   }
 
   // param number technically starts at 1 since 0 means no param for this fn
@@ -2984,7 +3110,7 @@ namespace Zero
   bool RawClassDoc::loadDoxyfile(StringParam nameToSearchFor, StringParam doxyPath,
     TiXmlDocument& doc, bool isRecursiveCall)
   {
-    //try to open the class file
+    // try to open the class file
     String fileName = FindFile(doxyPath, BuildString("class_zero_1_1"
       , GetDoxygenName(nameToSearchFor), ".xml"));
 
@@ -2993,7 +3119,16 @@ namespace Zero
     if (loadOkay)
       return loadDoxyFileReturnHelper(doxyPath, fileName);
 
-    //if loading the class file  failed, search for a struct file
+    // try to open a zilch version of the class file name
+    fileName = FindFile(doxyPath, BuildString("class_zilch_1_1"
+        , GetDoxygenName(nameToSearchFor), ".xml"));
+
+    loadOkay = doc.LoadFile(fileName.c_str());
+
+    if (loadOkay)
+      return loadDoxyFileReturnHelper(doxyPath, fileName);
+
+    // if loading the class file  failed, search for a struct file
     fileName = FindFile(doxyPath, BuildString("struct_zero_1_1"
       , GetDoxygenName(nameToSearchFor).c_str(), ".xml"));
 

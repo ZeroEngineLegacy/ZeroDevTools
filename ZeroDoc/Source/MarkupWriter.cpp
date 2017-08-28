@@ -19,6 +19,7 @@ String gBaseZilchTypesLink = BuildString(gBaseLink, "Zilch_Base_Types/");
 String gBaseEnumTypesLink = BuildString(gBaseLink, "Enum_Reference/#");
 String gBaseFlagsTypesLink = BuildString(gBaseLink, "Flags_Reference/#");
 
+
 void WriteTagIndices(String outputDir, DocToTags& tagged, DocumentationLibrary &docLib)
 {
   String fileName = FilePath::Combine(outputDir, "CodeIndex.rst");
@@ -152,9 +153,8 @@ static const char *gMonoSpaced("##");
 static const char *gDeleted("~~");
 static const char *gUnderlined("__");
 static const char *gHighlighted("!!");
-static const char *gBullet("* ");
+static const char *gBullet("- ");
 static const char *gNumbered("# ");
-
 
 ////////////////////////////////////////////////////////////////////////
 // BaseMarkupWriter
@@ -196,8 +196,7 @@ void BaseMarkupWriter::InsertNewUnderline(uint length, uint headerLevel)
 
 void BaseMarkupWriter::InsertNewSectionHeader(StringParam sectionName)
 {
-  mOutput << sectionName << "\n";
-  InsertNewUnderline(sectionName.SizeInBytes());
+  mOutput << "= " << sectionName << "\n";
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -760,7 +759,7 @@ void ReMarkupClassMarkupWriter::WriteClass(StringParam outputFile,
 
   if (!classDoc->mBaseClass.Empty())
   {
-    writer.mOutput << "== BaseClass: ";
+    writer.mOutput << "= BaseClass: ";
     writer.InsertTypeLink(classDoc->mBaseClass);
     writer.mOutput << "\n";
     writer.InsertDivider();
@@ -907,52 +906,6 @@ void ReMarkupClassMarkupWriter::InsertProperty(PropertyDoc &propDoc)
   InsertDivider();
 }
 
-void ReMarkupClassMarkupWriter::WriteMethodTable(void)
-{
-  mOutput << "|Name|Description|\n|---|---|\n";
-
-  forRange(MethodDoc *method, mClassDoc->mMethods.All())
-  {
-    mOutput << "|";
-    InsertHeaderLink(method->mName);
-    mOutput<< "|";
-
-    if (method->mDescription.Empty())
-    {
-      mOutput << " ";
-    }
-    else
-    {
-      mOutput << method->mDescription;
-    }
-
-    mOutput << "|\n";
-  }
-  mOutput << mEndLine;
-}
-
-void ReMarkupClassMarkupWriter::WritePropertyTable(void)
-{
-  mOutput << "|Name|Description|" << mEndLine << "|---|---|" << mEndLine;
-
-  forRange(PropertyDoc *prop, mClassDoc->mProperties.All())
-  {
-    mOutput << "|";
-    InsertHeaderLink(prop->mName);
-    mOutput<< "|";
-
-    if (prop->mDescription.Empty())
-    {
-      mOutput << " ";
-    }
-    else
-    {
-      mOutput << prop->mDescription;
-    }
-    mOutput << "|" << mEndLine;
-  }
-}
-
 void ReMarkupClassMarkupWriter::InsertJumpTable(void)
 {
   // if we don't have stuff to jump to, don't make a jump table
@@ -997,7 +950,7 @@ void ReMarkupClassMarkupWriter::InsertJumpTable(void)
         continue;
 
       mOutput << "|";
-      InsertHeaderLink(mClassDoc->mMethods[i]->mName);
+      InsertMethodLink(mClassDoc->mMethods[i]);
       mOutput << "| |\n";
 
       prevMethod = mClassDoc->mMethods[i]->mName;
@@ -1008,7 +961,7 @@ void ReMarkupClassMarkupWriter::InsertJumpTable(void)
     for (uint i = propsIter; i < mClassDoc->mProperties.Size(); ++i)
     {
       mOutput << "| |";
-      InsertHeaderLink(mClassDoc->mProperties[i]->mName);
+      InsertPropertyLink(mClassDoc->mProperties[i]);
       mOutput << "|\n";
     }
   }
@@ -1301,6 +1254,7 @@ ReMarkupCommandRefWriter::ReMarkupCommandRefWriter(StringParam name, StringParam
 
 }
 
+
 void ReMarkupCommandRefWriter::WriteCommandRef(StringParam commandListFilepath, StringParam outputPath)
 {
   // load the file
@@ -1339,7 +1293,32 @@ void ReMarkupCommandRefWriter::WriteCommandRef(StringParam commandListFilepath, 
 
 void ReMarkupCommandRefWriter::WriteCommandEntry(const CommandDoc &cmdDoc)
 {
+  static const char *validMenuLocations[] =
+  { "Project", "Edit", "Create", "Select", "Resources", "Windows", "Help" };
+  static const unsigned int validMenuItemCount = 7;
+
   InsertNewSectionHeader(cmdDoc.mName);
+
+  if (!cmdDoc.mTags.Empty())
+  {
+    // check if this is a valid menu item
+    bool isValidMenuItem = false;
+    for (uint i = 0; i < validMenuItemCount; ++i)
+    {
+      if (cmdDoc.mTags[0] == validMenuLocations[i])
+      {
+        isValidMenuItem = true;
+        break;
+      }
+    }
+
+    if (isValidMenuItem)
+    {
+      // the first tag is always the menu the option lives in
+      mOutput << "{nav name=" << cmdDoc.mTags[0] << ", icon=university > "
+        << cmdDoc.mName << "}" << mEndLine;
+    }
+  }
 
   if (!cmdDoc.mDescription.Empty())
     mOutput << cmdDoc.mDescription << mEndLine << mEndLine;

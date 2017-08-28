@@ -152,6 +152,11 @@ void RunDocumentationGenerator(DocGeneratorConfig &config)
 
     library->Build();
     library->FillOverloadDescriptions();
+
+    if (!config.mShortcutsOutputFile.Empty())
+    {
+      library->mShortcutsLibrary.SaveToFile(config.mShortcutsOutputFile);
+    }
   }
   // if we were passed in already existing raw documentation
   else if (!config.mRawDocDirectory.Empty())

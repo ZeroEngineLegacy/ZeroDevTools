@@ -331,6 +331,21 @@ namespace Zero
     String mType;
   };
 
+  typedef Array<ShortcutEntry> ClassShortcuts;
+
+  class RawShortcutLibrary
+  {
+  public:
+    bool SaveToFile(StringParam filePath);
+
+    void InsertClassShortcuts(StringParam className, ClassShortcuts* shortcuts);
+
+    ClassShortcuts* GetShortcutsForClass(StringParam className);
+
+  private:
+    ArrayMap<String, ClassShortcuts*> mShortcutSets;
+  };
+
   // Enum has no additional information so we are just going to have an xml helper and call it good
   void LoadEnumFromDoxy(EnumDoc& enumDoc, TiXmlElement* element, TiXmlNode* enumDef);
 
@@ -416,6 +431,9 @@ namespace Zero
     void FillErrorInformation(StringParam fnTokenName, StringParam fnName, TypeTokens &tokens);
 
     void AddIfNewException(StringParam fnName, ExceptionDoc *errorDoc);
+
+    // used to load additional info stored in xml in class comment (currently just )
+    void LoadToolXmlInClassDescIfItExists(void);
 
     ///// PUBLIC DATA ///// 
 
@@ -538,6 +556,8 @@ namespace Zero
     RawClassDoc *GetClassByName(StringParam name, Array<String> &namespaces);
 
     ///// PUBLIC DATA ///// 
+    RawShortcutLibrary mShortcutsLibrary;
+
     HashMap<String, RawClassDoc*> mClassMap;
 
     HashMap<String, EnumDoc *> mEnumAndFlagMap;

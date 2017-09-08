@@ -779,13 +779,13 @@ namespace ZeroCrashHandler
 	public class Options
 	{
 		// Required options
-		[Option("Guid", Required = true, HelpText = "The guid of the program")]
+		[Option("Guid", Required = false, HelpText = "The guid of the program")]
 		public string ProgramGuid { get; set; }
 
-		[Option("Name", Required = true, HelpText = "The name of the program")]
+		[Option("Name", Required = false, HelpText = "The name of the program")]
 		public string ProgramName { get; set; }
 
-		[Option("Revision", Required = true, HelpText = "The revision of the program. This needs to be some ever increasing number, but should be tied to source control.")]
+		[Option("Revision", Required = false, HelpText = "The revision of the program. This needs to be some ever increasing number, but should be tied to source control.")]
 		public string Revision { get; set; }
 
 		// Optional options

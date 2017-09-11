@@ -1993,7 +1993,55 @@ namespace Zero
         ++paramIndex;
       }
 
-      mMethods.PushBack(newMethod);
+      // now that we have properly formatted this, we can make sure it wasn't redundant
+
+      bool alreadyExists = false;
+      bool existingMethodHadAny = false;
+      bool newMethodHadAny = false;
+      RawMethodDoc* oldMethod = nullptr;
+
+      if (mMethodMap.ContainsKey(newMethod->mName))
+      {
+        forRange(RawMethodDoc*methodDoc, mMethodMap[newMethod->mName].All())
+        {
+          if (methodDoc->MethodHasSameSignature(*newMethod, &existingMethodHadAny, &newMethodHadAny))
+          {
+            alreadyExists = true;
+
+            oldMethod = methodDoc;
+
+            break;
+          }
+        }
+      }
+      if (!alreadyExists)
+      {
+        mMethods.PushBack(newMethod);
+        mMethodMap[newMethod->mName].PushBack(newMethod);
+      }
+      else if (newMethodHadAny)
+      {
+        delete oldMethod;
+
+        mMethods.PopBack();
+
+        mMethods.PushBack(newMethod);
+
+        mMethodMap.Clear();
+
+        // rebuild method map
+        forRange(RawMethodDoc* methodDoc, mMethods.All())
+        {
+          mMethodMap[methodDoc->mName].PushBack(methodDoc);
+        }
+
+      }
+      else
+      {
+        delete newMethod;
+      }
+
+      
     }
 
     Build();

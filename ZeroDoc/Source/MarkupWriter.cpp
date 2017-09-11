@@ -1291,7 +1291,7 @@ void ReMarkupCommandRefWriter::WriteCommandRef(StringParam commandListFilepath, 
 }
 
 
-void ReMarkupCommandRefWriter::WriteCommandEntry(const CommandDoc &cmdDoc)
+void ReMarkupCommandRefWriter::WriteCommandEntry(CommandDoc &cmdDoc)
 {
   static const char *validMenuLocations[] =
   { "Project", "Edit", "Create", "Select", "Resources", "Windows", "Help" };
@@ -1299,10 +1299,16 @@ void ReMarkupCommandRefWriter::WriteCommandEntry(const CommandDoc &cmdDoc)
 
   InsertNewSectionHeader(cmdDoc.mName);
 
+  if (cmdDoc.mName.Contains("Create"))
+  {
+    cmdDoc.mTags.PushBack("Create");
+  }
+
+  bool isValidMenuItem = false;
+
   if (!cmdDoc.mTags.Empty())
   {
     // check if this is a valid menu item
-    bool isValidMenuItem = false;
     for (uint i = 0; i < validMenuItemCount; ++i)
     {
       if (cmdDoc.mTags[0] == validMenuLocations[i])
@@ -1311,19 +1317,12 @@ void ReMarkupCommandRefWriter::WriteCommandEntry(const CommandDoc &cmdDoc)
         break;
       }
     }
-
-    if (isValidMenuItem)
-    {
-      // the first tag is always the menu the option lives in
-      mOutput << "{nav name=" << cmdDoc.mTags[0] << ", icon=university > "
-        << cmdDoc.mName << "}" << mEndLine;
-    }
   }
 
   if (!cmdDoc.mDescription.Empty())
-    mOutput << cmdDoc.mDescription << mEndLine << mEndLine;
+    mOutput << cmdDoc.mDescription << mEndLine;
 
-  mOutput << "|Tags|Shortcut|\n" << "|---|---|\n";
+  mOutput << "|Tags|Shortcut|Menu Selection|\n" << "|---|---|---|\n";
 
   mOutput << "|";
 
@@ -1339,20 +1338,24 @@ void ReMarkupCommandRefWriter::WriteCommandEntry(const CommandDoc &cmdDoc)
 
   if (cmdDoc.mShortcut.Empty())
   {
-    mOutput << "No Keyboard Shortcut |\n";
+    mOutput << "No Keyboard Shortcut | ";
   }
   else
   {
     String shortcut = cmdDoc.mShortcut.Replace("+", " ");
-    mOutput << "{key " << shortcut << "}" << " |\n";
+    mOutput << "{key " << shortcut << "}" << " | ";
   }
 
-  for (uint i = 1; i < cmdDoc.mTags.Size(); ++i)
+  if (isValidMenuItem)
   {
-    mOutput << cmdDoc.mTags[i] << " | |\n";
+    // the first tag is always the menu the option lives in
+    mOutput << "{nav name=" << cmdDoc.mTags[0] << ", icon=university > "
+      << cmdDoc.mName << "}" << " |"<<  mEndLine;
   }
-
-  mOutput << mEndLine;
+  else
+  {
+    mOutput << " |" << mEndLine;
+  }
 
   //mOutput << ".. include:: CommandPageExtensions/" << cmdDoc.mName << ".rst\n\n";
   InsertDivider();

@@ -272,6 +272,9 @@ namespace Zero
     /// replaces types with the typedefs 
     void NormalizeAllTypes(RawTypedefLibrary* defLib, RawNamespaceDoc& classNamespace);
 
+    bool MethodHasSameSignature(const RawMethodDoc& methodToCompare
+      , bool* retThisHadAnyType = nullptr, bool* retOtherHadAnyType = nullptr);
+
     TypeTokens* mReturnTokens;
     Array<Parameter*> mParsedParameters;
     Array<ExceptionDoc *> mPossibleExceptionThrows;

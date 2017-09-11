@@ -3410,11 +3410,16 @@ namespace Zero
 
   RawMethodDoc::RawMethodDoc(RawMethodDoc *copy)
   {
-    mReturnTokens = new TypeTokens;
+    forRange(Parameter *oldParam, mParsedParameters.All())
+    {
+      delete oldParam;
+    }
+
+    mReturnTokens = new TypeTokens();
 
     *mReturnTokens = *(copy->mReturnTokens);
 
-    forRange(Parameter* param, mParsedParameters.All())
+    forRange(Parameter* param, copy->mParsedParameters.All())
     {
       Parameter* paramCopy = new Parameter;
 
@@ -3424,6 +3429,8 @@ namespace Zero
 
       paramCopy->mName = param->mName;
       paramCopy->mDescription = param->mDescription;
+
+      mParsedParameters.PushBack(paramCopy);
     }
 
     mName = copy->mName;
@@ -3636,6 +3643,72 @@ namespace Zero
     {
       NormalizeTokensFromTypedefs(*arg->mTokens, defLib, classNamespace);
     }    
+  }
+
+  bool RawMethodDoc::MethodHasSameSignature(const RawMethodDoc& methodToCompare,
+    bool* retThisHadAnyType, bool* retOtherHadAnyType)
+  {
+    static const char* anyType = "any";
+
+    // compare param count
+    if (mParsedParameters.Size() != methodToCompare.mParsedParameters.Size())
+      return false;
+
+    // compare return type (any should match every type)
+    if (*mReturnTokens != *methodToCompare.mReturnTokens)
+    {
+      bool thisHadAnyType  = true;
+      bool otherHadAnyType = true;
+
+      if ((*mReturnTokens)[0].mText != anyType)
+        thisHadAnyType = false;
+
+      if ((*methodToCompare.mReturnTokens)[0].mText != anyType)
+        otherHadAnyType = false;
+
+      if (!thisHadAnyType && !otherHadAnyType)
+            return false;
+
+      if (retThisHadAnyType)
+        *retThisHadAnyType = thisHadAnyType;
+
+      if (retOtherHadAnyType)
+        *retOtherHadAnyType = otherHadAnyType;
+    }
+
+    // compare param types (any should match every type)
+    for (uint i = 0; i < mParsedParameters.Size(); ++i)
+    {
+      const Parameter* ourParam = mParsedParameters[i];
+      const Parameter* compareParam = mParsedParameters[i];
+
+      if (*ourParam->mTokens != *compareParam->mTokens)
+      {
+        bool thisHadAnyType = true;
+        bool otherHadAnyType = true;
+
+        // was our param type 'any'
+        if ((*mReturnTokens)[0].mText != anyType)
+          thisHadAnyType = false;
+
+        // was other type 'any'
+        if ((*methodToCompare.mReturnTokens)[0].mText != anyType)
+          otherHadAnyType = false;
+
+        // if neither were, these methods are not the same, return false
+        if (!thisHadAnyType && !otherHadAnyType)
+          return false;
+
+        // return information about any, if we were passed bools to store that in
+        if (retThisHadAnyType)
+          *retThisHadAnyType = thisHadAnyType;
+
+        if (retOtherHadAnyType)
+          *retOtherHadAnyType = otherHadAnyType;
+      }
+    }
+
+    return true;
   }
 
   ////////////////////////////////////////////////////////////////////////

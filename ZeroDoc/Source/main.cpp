@@ -116,20 +116,17 @@ void RunDocumentationGenerator(DocGeneratorConfig &config)
       }
     }
 
-    //library->mIgnoreList.SortList();
-
     if (config.mZeroEventsFile.SizeInBytes())
     {
       library->LoadEventsList(config.mZeroEventsFile);
       library->mEvents.BuildMap();
     }
 
-    // if zerodocfile then get list of classes from it
+    // if zerodocfile then get list of classes from it that we should fill
     if (config.mZeroDocFile.SizeInBytes() > 0)
     {
       Zero::DocumentationLibrary *doc = new Zero::DocumentationLibrary();
 
-      //!Zero::LoadFromDataFile(doc, config.mZeroDocFile))
       if (!Zero::LoadDocumentationSkeleton(*doc, config.mZeroDocFile))
       {
         Error("Unable to load doc file at: %s", config.mZeroDocFile.c_str());

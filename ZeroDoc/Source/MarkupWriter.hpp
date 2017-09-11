@@ -185,7 +185,7 @@ namespace Zero
 
     static void WriteCommandRef(StringParam commandListFilepath, StringParam outputPath);
 
-    void WriteCommandEntry(const CommandDoc &cmdDoc);
+    void WriteCommandEntry(CommandDoc &cmdDoc);
   };
 
 

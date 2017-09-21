@@ -1349,7 +1349,7 @@ void ReMarkupCommandRefWriter::WriteCommandEntry(CommandDoc &cmdDoc)
   if (isValidMenuItem)
   {
     // the first tag is always the menu the option lives in
-    mOutput << "{nav name=" << cmdDoc.mTags[0] << ", icon=university > "
+    mOutput << "{nav name=" << cmdDoc.mTags[0] << "> "
       << cmdDoc.mName << "}" << " |"<<  mEndLine;
   }
   else

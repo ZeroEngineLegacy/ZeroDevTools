@@ -113,6 +113,8 @@ namespace Zero
 
     static const String mQuoteLine;
 
+    static const String mNoteLine;
+
     String mDocURI;
   };
 
@@ -125,6 +127,8 @@ namespace Zero
     ReMarkupClassMarkupWriter(StringParam name, ClassDoc* classDoc, StringParam outputFile);
 
   protected:
+    void BuildDerivedList(DocumentationLibrary& lib);
+
     void InsertClassHeader(void);
 
     void InsertMethod(MethodDoc &method);
@@ -138,6 +142,8 @@ namespace Zero
     void InsertPropertyLink(PropertyDoc* propToLink);
 
     Array<String> mBases;
+
+    Array<String> mDerivedClasses;
 
     ClassDoc *mClassDoc;
   };

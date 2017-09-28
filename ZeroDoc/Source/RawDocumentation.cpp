@@ -1531,7 +1531,6 @@ namespace Zero
       newClassDoc->LoadToolXmlInClassDescIfItExists();
     }
 
-
     if (mClasses.Size() != 0)
     {
       printf("\n...Done Loading Classes from Doxygen Class XML Files\n\n");

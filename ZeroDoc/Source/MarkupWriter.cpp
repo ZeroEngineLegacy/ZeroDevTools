@@ -12,6 +12,7 @@
 
 namespace Zero
 {
+  UnsortedMap<String, Array<String>> gDerivedClasses;
 UnsortedMap<String, String> gLinkMap;
 String gBaseLink = "zero_engine_documentation/code_reference/";
 String gBaseClassLink = BuildString(gBaseLink, "Class_Reference/");
@@ -535,8 +536,8 @@ void WriteOutAllReMarkupFiles(Zero::DocGeneratorConfig& config)
 
     DocumentationLibrary doc;
     LoadDocumentationSkeleton(doc, config.mTrimmedOutput);
-    //LoadFromDataFile(doc, config.mTrimmedOutput);
     doc.FinalizeDocumentation();
+
 
     DocToTags tagged;
 
@@ -663,6 +664,7 @@ void ReMarkupWriter::InsertHeaderLink(StringParam header)
 ////////////////////////////////////////////////////////////////////////
 const String ReMarkupWriter::mEndLine("\n\n");
 const String ReMarkupWriter::mQuoteLine("> ");
+const String ReMarkupWriter::mNoteLine("(NOTE) ");
 
 ReMarkupWriter::ReMarkupWriter(StringParam name, StringParam uri)
   : BaseMarkupWriter(name), mDocURI(uri)
@@ -750,20 +752,17 @@ void ReMarkupClassMarkupWriter::WriteClass(StringParam outputFile,
 
   if (!classDoc->mDescription.Empty())
   {
-    writer.InsertHeaderAtCurrentHeaderLevel("Description");
-    writer.InsertDivider();
-    writer.mOutput << mQuoteLine << classDoc->mDescription << mEndLine;
+    writer.mOutput << mNoteLine << classDoc->mDescription << mEndLine;
   }
 
-  writer.InsertJumpTable();
+  writer.BuildDerivedList(lib);
 
   if (!classDoc->mBaseClass.Empty())
   {
-    writer.mOutput << "= BaseClass: ";
-    writer.InsertTypeLink(classDoc->mBaseClass);
-    writer.mOutput << "\n";
-    writer.InsertDivider();
+    writer.mBases.PushBack(classDoc->mBaseClass);
   }
+
+  writer.InsertJumpTable();
 
   writer.InsertHeaderAtCurrentHeaderLevel("Properties");
   writer.InsertDivider();
@@ -772,9 +771,6 @@ void ReMarkupClassMarkupWriter::WriteClass(StringParam outputFile,
   {
     writer.InsertProperty(*prop);
   }
-
-  // Methods
-  //writer.mOutput << ".. _Reference" << writer.mName << "Methods:\n\n";
 
   writer.InsertHeaderAtCurrentHeaderLevel("Methods");
   writer.InsertDivider();
@@ -792,6 +788,19 @@ ReMarkupClassMarkupWriter::ReMarkupClassMarkupWriter(StringParam name, ClassDoc*
   : ReMarkupWriter(name, uri), mClassDoc(classDoc)
 {
 
+}
+
+void ReMarkupClassMarkupWriter::BuildDerivedList(DocumentationLibrary& lib)
+{
+  forRange(ClassDoc* derivedClass, lib.mClasses.All())
+  {
+    String &baseClassName = derivedClass->mBaseClass;
+
+    if (baseClassName != mClassDoc->mName)
+      continue;
+
+    mDerivedClasses.PushBack(derivedClass->mName);
+  }
 }
 
 void ReMarkupClassMarkupWriter::InsertClassHeader(void)
@@ -912,58 +921,60 @@ void ReMarkupClassMarkupWriter::InsertJumpTable(void)
   if (mClassDoc->mMethods.Empty() && mClassDoc->mProperties.Empty())
     return;
 
-  InsertNewSectionHeader("Member Table");
-
-  InsertDivider();
-
   // print the top of the table
-  mOutput << "|Methods|Properties|\n|---|---|\n";
+  mOutput << "|Methods|Properties|Base Classes|Derived Classes|\n|---|---|---|---|\n";
   uint methodsSize = mClassDoc->mMethods.Size();
   uint propsSize = mClassDoc->mProperties.Size();
-  uint methodIter= 0;
-  uint propsIter = 0;
-  String prevMethod = "";
+  uint basesSize = mBases.Size();
+  uint derivedSize = mDerivedClasses.Size();
 
-  for (; methodIter < methodsSize && propsIter < propsSize; ++methodIter, ++propsIter)
+  // we are going to use one iterator for all types in table so get the largest one
+  uint iterLimit = Math::Max(Math::Max(methodsSize, propsSize), Math::Max(basesSize,derivedSize));
+
+  // print entries into table, skipping lists that our now out of range of iterator
+  for (uint i = 0; i < iterLimit; ++i)
   {
-    // skip overloads (when we see duplicates, don't link to them by iterating method but not prop)
-    if (mClassDoc->mMethods[methodIter]->mName == prevMethod)
-    {
-      --propsIter;
-      continue;
-    }
-
     mOutput << "|";
-    InsertMethodLink(mClassDoc->mMethods[methodIter]);
-    mOutput << "|";
-    InsertPropertyLink(mClassDoc->mProperties[propsIter]);
-    mOutput<< "|\n";
-
-    prevMethod = mClassDoc->mMethods[methodIter]->mName;
-  }
-  // print the rest of the methods if we had more methods then properties
-  if (methodIter < methodsSize)
-  {
-    for (uint i = methodIter; i < mClassDoc->mMethods.Size(); ++i)
+    if (i < methodsSize)
     {
-      if (mClassDoc->mMethods[i]->mName == prevMethod)
-        continue;
-
-      mOutput << "|";
       InsertMethodLink(mClassDoc->mMethods[i]);
-      mOutput << "| |\n";
-
-      prevMethod = mClassDoc->mMethods[i]->mName;
     }
-  }
-  else
-  {
-    for (uint i = propsIter; i < mClassDoc->mProperties.Size(); ++i)
+    else
     {
-      mOutput << "| |";
-      InsertPropertyLink(mClassDoc->mProperties[i]);
-      mOutput << "|\n";
+      mOutput << " ";
     }
+    mOutput << "|";
+
+    if (i < propsSize)
+    {
+      InsertPropertyLink(mClassDoc->mProperties[i]);
+    }
+    else
+    {
+      mOutput << " ";
+    }
+    mOutput << "|";
+
+    if (i < basesSize)
+    {
+      InsertTypeLink(mBases[i]);
+    }
+    else
+    {
+      mOutput << " ";
+    }
+    mOutput << "|";
+
+    if (i < derivedSize)
+    {
+      InsertTypeLink(mDerivedClasses[i]);
+    }
+    else
+    {
+      mOutput << " ";
+    }
+
+    mOutput << "|\n";
   }
   mOutput << mEndLine;
 }

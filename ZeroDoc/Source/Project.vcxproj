@@ -49,7 +49,7 @@
       <SubSystem>Console</SubSystem>
       <TargetMachine>MachineX86</TargetMachine>
       <AdditionalLibraryDirectories>$(ZERO_SOURCE)\ZeroLibraries\AudioEngine;$(ZERO_SOURCE)\External\Freetype\lib;$(ZERO_SOURCE)\External\GLEW\lib;$(ZERO_SOURCE)\External\CEF\lib;$(ZERO_SOURCE)\External\libpng\lib;$(ZERO_SOURCE)\External\Curl\lib;$(ZERO_SOURCE)\External\zlib\lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>libcef.lib;zlib.lib;Winmm.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Avrt.lib;libcef.lib;zlib.lib;Winmm.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>COPY $(TargetPath) "$(ZERO_SOURCE)\DevTools" /Y</Command>

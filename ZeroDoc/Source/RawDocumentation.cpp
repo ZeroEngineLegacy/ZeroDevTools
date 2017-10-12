@@ -2013,16 +2013,21 @@ namespace Zero
           }
         }
       }
-      if (!alreadyExists)
+      // if the method name does not exist and this new method does not have any
+      if (!alreadyExists || !newMethodHadAny)
       {
         mMethods.PushBack(newMethod);
         mMethodMap[newMethod->mName].PushBack(newMethod);
       }
-      else if (newMethodHadAny)
+      // new method had any and the method name already existed
+      else
       {
-        delete oldMethod;
+        forRange(RawMethodDoc* savedMethods, mMethods.All())
+        {
+          delete savedMethods;
+        }
 
-        mMethods.PopBack();
+        mMethods.Clear();
 
         mMethods.PushBack(newMethod);
 
@@ -2035,12 +2040,6 @@ namespace Zero
         }
 
       }
-      else
-      {
-        delete newMethod;
-      }
-
-      
     }
 
     Build();

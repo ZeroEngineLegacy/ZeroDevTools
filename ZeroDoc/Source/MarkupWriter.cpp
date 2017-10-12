@@ -823,6 +823,11 @@ void ReMarkupClassMarkupWriter::InsertMethod(MethodDoc &method)
   {
     mOutput << " {key static}";
   }
+
+  if (method.mName == mName)
+  {
+    mOutput << " {key constructor}";
+  }
   mOutput << mEndLine;
 
   //Note: every line is going to have a '>' prepended to it to make it in a quote box

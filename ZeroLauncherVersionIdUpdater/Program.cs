@@ -89,13 +89,13 @@ namespace ZeroLauncherVersionIdUpdater
       Directory.CreateDirectory(outDir);
 
       //currently we only need these files from the tools directory, don't copy more as it bloats the package size
-      string[] files = {"ImageProcessor.exe", "nvtt.dll", 
-                         "ZeroCrashHandler.exe", "CommandLine.dll", "Newtonsoft.Json.dll"};
+      string[] files = {"ZeroCrashHandler.exe", "CommandLine.dll", "Newtonsoft.Json.dll"};
 
       foreach (var file in files)
         File.Copy(Path.Combine(toolsDir, file), Path.Combine(outDir, file));
 
       CopyDirectory(Path.Combine(toolsDir, "GeometryProcessor"), Path.Combine(outDir, "GeometryProcessor"));
+      CopyDirectory(Path.Combine(toolsDir, "ImageProcessor"), Path.Combine(outDir, "ImageProcessor"));
     }
 
     static void CreatePackage(String sourceDir, String zeroOutDir, String outDir, String packageOutDir)

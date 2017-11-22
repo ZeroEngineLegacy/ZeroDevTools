@@ -93,6 +93,7 @@ void WriteOutAllReStructuredTextFiles(Zero::DocGeneratorConfig& config)
 
     StringBuilder fileList;
 
+    // TODO: WE NEED TO SPECIAL CASE THE MATH PAGE
     //Upload the class' page to the wiki, making sure to perform the link replacements
     forRange(ClassDoc* classDoc, doc.mClasses.All())
     {
@@ -920,6 +921,7 @@ void ReMarkupClassMarkupWriter::InsertProperty(PropertyDoc &propDoc)
   InsertDivider();
 }
 
+
 void ReMarkupClassMarkupWriter::InsertJumpTable(void)
 {
   // if we don't have stuff to jump to, don't make a jump table
@@ -1224,6 +1226,8 @@ void ReMarkupEventListWriter::WriteEventEntry(EventDoc* eventDoc, StringParam ty
   InsertTypeLink(type);
   mOutput << mEndLine;
 
+  // removing senders output since "sends" is used too many places to be useful atm
+  /*
   if (!eventDoc->mSenders.Empty())
   {
     mOutput << gBold << "Senders :" << gBold << mEndLine;
@@ -1241,7 +1245,7 @@ void ReMarkupEventListWriter::WriteEventEntry(EventDoc* eventDoc, StringParam ty
     EndIndentSection((*this));
     mOutput << mEndLine;
   }
-
+  */
   InsertDivider();
 }
 

@@ -17,7 +17,7 @@ UnsortedMap<String, String> gLinkMap;
 String gBaseLink = "zero_engine_documentation/code_reference/";
 String gBaseClassLink = BuildString(gBaseLink, "Class_Reference/");
 String gBaseZilchTypesLink = BuildString(gBaseLink, "Zilch_Base_Types/");
-String gBaseEnumTypesLink = BuildString(gBaseLink, "Enum_Reference/#");
+String gBaseEnumTypesLink = BuildString(gBaseLink, "enum_reference/#");
 String gBaseFlagsTypesLink = BuildString(gBaseLink, "Flags_Reference/#");
 
 
@@ -551,12 +551,12 @@ void WriteOutAllReMarkupFiles(Zero::DocGeneratorConfig& config)
     // Add all flags to the linkMap
     forRange(auto& flagDoc, doc.mFlags.All())
     {
-      gLinkMap[flagDoc->mName] = BuildString(gBaseFlagsTypesLink, flagDoc->mName, "|", flagDoc->mName);
+      gLinkMap[flagDoc->mName] = BuildString(gBaseFlagsTypesLink, flagDoc->mName.ToLower(), "|", flagDoc->mName);
     }
     // Add all enums to the linkMap
     forRange(auto& enumDoc, doc.mEnums.All())
     {
-      gLinkMap[enumDoc->mName] = BuildString(gBaseEnumTypesLink, enumDoc->mName, "|", enumDoc->mName);
+      gLinkMap[enumDoc->mName] = BuildString(gBaseEnumTypesLink, enumDoc->mName.ToLower(), "|", enumDoc->mName);
     }
     // Add all classes to the linkMap
     forRange(ClassDoc* classDoc, doc.mClasses.All())
@@ -564,7 +564,7 @@ void WriteOutAllReMarkupFiles(Zero::DocGeneratorConfig& config)
       // check for core library types assuming those are just zilch
       if (classDoc->mLibrary == "Core")
       {
-        gLinkMap[classDoc->mName] = BuildString(gBaseZilchTypesLink, classDoc->mName, "/");
+        gLinkMap[classDoc->mName] = BuildString(gBaseZilchTypesLink, classDoc->mName.ToLower(), "/");
 
         if (classDoc->mName.Contains("["))
         {
@@ -575,7 +575,7 @@ void WriteOutAllReMarkupFiles(Zero::DocGeneratorConfig& config)
       }
       else
       {
-        gLinkMap[classDoc->mName] = BuildString(gBaseClassLink, classDoc->mName, "/");
+        gLinkMap[classDoc->mName] = BuildString(gBaseClassLink, classDoc->mName.ToLower(), "/");
 
         if (classDoc->mName.Contains("["))
         {
@@ -585,7 +585,6 @@ void WriteOutAllReMarkupFiles(Zero::DocGeneratorConfig& config)
         }
       }
     }
-        // add a version that does not have the extra type information
     //Upload the class' page to the wiki, making sure to perform the link replacements
     forRange(ClassDoc* classDoc, doc.mClasses.All())
     {
@@ -928,9 +927,21 @@ void ReMarkupClassMarkupWriter::InsertJumpTable(void)
   if (mClassDoc->mMethods.Empty() && mClassDoc->mProperties.Empty())
     return;
 
+  Array<MethodDoc *> noOverloadedMethods;
+
+  String prevMethodName = "";
+  forRange(MethodDoc* doc, mClassDoc->mMethods.All())
+  {
+    if (doc->mName == prevMethodName)
+      continue;
+
+    noOverloadedMethods.PushBack(doc);
+    prevMethodName = doc->mName;
+  }
+
   // print the top of the table
   mOutput << "|Methods|Properties|Base Classes|Derived Classes|\n|---|---|---|---|\n";
-  uint methodsSize = mClassDoc->mMethods.Size();
+  uint methodsSize = noOverloadedMethods.Size();
   uint propsSize = mClassDoc->mProperties.Size();
   uint basesSize = mBases.Size();
   uint derivedSize = mDerivedClasses.Size();
@@ -944,7 +955,7 @@ void ReMarkupClassMarkupWriter::InsertJumpTable(void)
     mOutput << "|";
     if (i < methodsSize)
     {
-      InsertMethodLink(mClassDoc->mMethods[i]);
+      InsertMethodLink(noOverloadedMethods[i]);
     }
     else
     {

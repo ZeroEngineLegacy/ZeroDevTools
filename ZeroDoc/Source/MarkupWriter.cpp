@@ -656,7 +656,24 @@ void WriteOutAllReMarkupFiles(Zero::DocGeneratorConfig& config)
 
 void ReMarkupWriter::InsertHeaderLink(StringParam header)
 {
-  mOutput << "[[" << mDocURI << "#" << header.ToLower() << " | " << header << "]]";
+  String headerLink = CutLinkToMaxSize(header);
+
+  mOutput << "[[" << mDocURI << "#" << headerLink.ToLower() << " | " << header << "]]";
+}
+
+String Zero::ReMarkupWriter::CutLinkToMaxSize(StringParam link)
+{
+  String retLink = link;
+  if (retLink.SizeInBytes() > 24)
+  {
+    retLink = retLink.SubStringFromByteIndices(0, 24);
+
+    if (retLink.EndsWith("-"))
+    {
+      retLink = retLink.SubString(retLink.Begin(), retLink.End() - 1);
+    }
+  }
+  return retLink;
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -819,12 +836,19 @@ void ReMarkupClassMarkupWriter::InsertMethod(MethodDoc &method)
   mOutput << method.mName <<  " : ";
   InsertTypeLink(method.mReturnType);
 
-  if (method.mStatic)
+  bool isConstructor = method.mName == mName;
+
+  if (method.mStatic || isConstructor)
   {
-    mOutput << " {key static}";
+    mOutput << mEndLine;
   }
 
-  if (method.mName == mName)
+  if (method.mStatic)
+  {
+    mOutput <<" {key static}";
+  }
+
+  if (isConstructor)
   {
     mOutput << " {key constructor}";
   }
@@ -1015,21 +1039,16 @@ void ReMarkupClassMarkupWriter::InsertMethodLink(MethodDoc* methodToLink)
     headerLinkBuilder << "-k";
   }
 
-
   String headerLink = headerLinkBuilder.ToString();
 
-  if (headerLink.SizeInBytes() > 24)
-  {
-    headerLink = headerLink.SubStringFromByteIndices(0, 24);
+  headerLink = headerLink.Replace("[", "-");
+  headerLink = headerLink.Replace("]", "");
 
-    if (headerLink.EndsWith("-"))
-    {
-      headerLink = headerLink.SubString(headerLink.Begin(), headerLink.End() - 1);
-    }
-  }
-  
+  headerLink = CutLinkToMaxSize(headerLink);
 
-  mOutput << "[[" << mDocURI << "#" << headerLink.ToLower() << " | " << methodToLink->mName << "]]";
+  String name = methodToLink->mName.CompareTo(mClassDoc->mName) == 0 ? "Constructor" : methodToLink->mName;
+
+  mOutput << "[[" << mDocURI << "#" << headerLink.ToLower() << " | " << name << "]]";
 }
 
 void ReMarkupClassMarkupWriter::InsertPropertyLink(PropertyDoc* propToLink)

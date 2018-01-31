@@ -78,7 +78,6 @@ bool ValidateConfig(DocGeneratorConfig &config)
   return true;
 }
 
-// wow lets see if we can somehow come up with a worse name
 void RunDocumentationGenerator(DocGeneratorConfig &config)
 {
   if (config.mVerbose)

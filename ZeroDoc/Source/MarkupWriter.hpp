@@ -109,6 +109,8 @@ namespace Zero
 
     void InsertHeaderLink(StringParam header);
 
+    String CutLinkToMaxSize(StringParam Link);
+
     static const String mEndLine;
 
     static const String mQuoteLine;

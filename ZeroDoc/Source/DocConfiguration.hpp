@@ -25,6 +25,10 @@ struct DocGeneratorConfig
   /// where to output our log of warnings/errors
   String mLogFile;
   /// this is the events file zero outputs
+  String mZeroUserAttributesFile;
+  /// this is the events file zero outputs
+  String mAttributesOutputLocation;
+  /// this is the events file zero outputs
   String mZeroEventsFile;
   /// this is one that we generate
   String mEventsOutputLocation;
@@ -115,6 +119,14 @@ inline DocGeneratorConfig LoadConfigurations(StringMap& params)
 
   config.mLogFile = GetStringValue<String>(params, "logFile", "");
   config.mLogFile = FilePath::Normalize(config.mLogFile);
+
+  // location to load list of attributes users can use
+  config.mZeroUserAttributesFile = GetStringValue<String>(params, "zeroUserAttributesFile", "");
+  config.mZeroUserAttributesFile = FilePath::Normalize(config.mZeroUserAttributesFile);
+
+  // location to output full documentation file for the engine to load
+  config.mAttributesOutputLocation = GetStringValue<String>(params, "attributesOutputLocation", "");
+  config.mAttributesOutputLocation = FilePath::Normalize(config.mAttributesOutputLocation);
 
   config.mZeroEventsFile = GetStringValue<String>(params, "eventsFile", "");
   config.mZeroEventsFile = FilePath::Normalize(config.mZeroEventsFile);

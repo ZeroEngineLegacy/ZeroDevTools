@@ -226,6 +226,23 @@ namespace Zero
     bool mVerbose;
   };
 
+  class AttributeLoader
+  {
+  public:
+    ~AttributeLoader() { delete mAttributes; };
+    bool LoadUserAttributeFile(StringParam fileLocation);
+    bool LoadAttributeListsFromDoxygen(StringParam doxyPath);
+    void FinalizeAttributeFile(void);
+    bool SaveAttributeFile(StringParam outputFile);
+    AttributeDocList *GetAttributeList(void);
+
+  private:
+    bool loadArrayOfAttributes(Array<AttributeDoc*>&attribList, 
+      HashMap<String, AttributeDoc *>& attribMap, StringParam doxyFile);
+
+    AttributeDocList *mAttributes;
+  };
+
   class RawNamespaceDoc
   {
   public:

@@ -247,6 +247,25 @@ void RunDocumentationGenerator(DocGeneratorConfig &config)
   SaveTrimDocToDataFile(trimLib, config.mTrimmedOutput);
   //trimLib->La
 
+  // if we have the doxy path, input attrib file, and output attrib file, create attrib documentation
+  if (!config.mZeroUserAttributesFile.Empty() 
+    && !config.mAttributesOutputLocation.Empty()
+    && !config.mDoxygenPath.Empty())
+  {
+    AttributeLoader loader;
+
+    // load list of attributes users can use from zilch
+    loader.LoadUserAttributeFile(config.mZeroUserAttributesFile);
+
+    // get descriptions for attributes from the xml generated from the namespace they are declared
+    loader.LoadAttributeListsFromDoxygen(config.mDoxygenPath);
+
+    // finalize the documentation
+    loader.FinalizeAttributeFile();
+
+    // save the attribute list to file
+    loader.SaveAttributeFile(config.mAttributesOutputLocation);
+  }
   if (config.mVerbose || config.mWarnOnUndocumentedBoundData)
   {
     OutputListOfObjectsWithoutDesc(trimLib, &library->mIgnoreList);

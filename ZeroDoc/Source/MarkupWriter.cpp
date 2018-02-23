@@ -15,8 +15,8 @@ namespace Zero
   UnsortedMap<String, Array<String>> gDerivedClasses;
 UnsortedMap<String, String> gLinkMap;
 String gBaseLink = "zero_engine_documentation/code_reference/";
-String gBaseClassLink = BuildString(gBaseLink, "Class_Reference/");
-String gBaseZilchTypesLink = BuildString(gBaseLink, "Zilch_Base_Types/");
+String gBaseClassLink = BuildString(gBaseLink, "class_reference/");
+String gBaseZilchTypesLink = BuildString(gBaseLink, "zilch_base_types/");
 String gBaseEnumTypesLink = BuildString(gBaseLink, "enum_reference/#");
 String gBaseFlagsTypesLink = BuildString(gBaseLink, "Flags_Reference/#");
 
@@ -519,9 +519,9 @@ String GetLinkName(StringParam name)
 
 void WriteOutAllReMarkupFiles(Zero::DocGeneratorConfig& config)
 {
-  String baseFromMarkupDirectory = "zero_engine_documentation\\zero_editor_documentation\\code_reference";
-  String baseClassDirectory = FilePath::Combine(baseFromMarkupDirectory, "Class_Reference");
-  String baseZilchTypesDirectory = FilePath::Combine(baseFromMarkupDirectory, "Zilch_Base_Types");
+  String baseFromMarkupDirectory = "zero_engine_documentation\\code_reference";
+  String baseClassDirectory = FilePath::Combine(baseFromMarkupDirectory, "class_reference");
+  String baseZilchTypesDirectory = FilePath::Combine(baseFromMarkupDirectory, "zilch_base_types");
 
   printf("Mark up: ReMarkup\n");
 
@@ -593,6 +593,9 @@ void WriteOutAllReMarkupFiles(Zero::DocGeneratorConfig& config)
 		    String className = classDoc->mName;
         String filename = BuildString(className, ".txt");
 
+        //filename = filename.Replace(" ", "_");
+        //filename = filename.ToLower();
+
         String fullPath = FilePath::Combine(directory, baseZilchTypesDirectory);
 
         CreateDirectoryAndParents(fullPath);
@@ -621,18 +624,18 @@ void WriteOutAllReMarkupFiles(Zero::DocGeneratorConfig& config)
       }
     }
 
-    WriteStringRangeToFile(FilePath::Combine(directory, baseFromMarkupDirectory,"Class Reference.txt"), codeRefIndex.ToString());
-    WriteStringRangeToFile(FilePath::Combine(directory, baseFromMarkupDirectory,"Zilch Base Types.txt"), zilchCoreIndex.ToString());
+    WriteStringRangeToFile(FilePath::Combine(directory, baseFromMarkupDirectory,"class_reference.txt"), codeRefIndex.ToString());
+    WriteStringRangeToFile(FilePath::Combine(directory, baseFromMarkupDirectory,"zilch_base_types.txt"), zilchCoreIndex.ToString());
 
     WriteTagIndices(directory, tagged, doc);
 
     // Output separate enum list
-    String enumOutput = FilePath::Combine(directory, baseFromMarkupDirectory, "Enum Reference.txt");
+    String enumOutput = FilePath::Combine(directory, baseFromMarkupDirectory, "enum_reference.txt");
     enumOutput = FilePath::Normalize(enumOutput);
     ReMarkupEnumReferenceWriter::WriteEnumReference(enumOutput, doc);
 
     // output separate flags list
-    String flagsOutput = FilePath::Combine(directory, baseFromMarkupDirectory, "Flags Reference.txt");
+    String flagsOutput = FilePath::Combine(directory, baseFromMarkupDirectory, "flags_reference.txt");
     flagsOutput = FilePath::Normalize(flagsOutput);
     ReMarkupFlagsReferenceWriter::WriteFlagsReference(flagsOutput, doc);
   }
@@ -640,7 +643,7 @@ void WriteOutAllReMarkupFiles(Zero::DocGeneratorConfig& config)
   // check if we outputting commands
   if (!config.mCommandListFile.Empty())
   {
-    String output = FilePath::Combine(config.mMarkupDirectory, baseFromMarkupDirectory, "Command Reference.txt");
+    String output = FilePath::Combine(config.mMarkupDirectory, baseFromMarkupDirectory, "command_reference.txt");
     output = FilePath::Normalize(output);
     ReMarkupCommandRefWriter::WriteCommandRef(config.mCommandListFile, output);
   }
@@ -648,9 +651,16 @@ void WriteOutAllReMarkupFiles(Zero::DocGeneratorConfig& config)
   // check if we are outputting events
   if (!config.mEventsOutputLocation.Empty())
   {
-    String output = FilePath::Combine(config.mMarkupDirectory, baseFromMarkupDirectory, "Event Reference.txt");
+    String output = FilePath::Combine(config.mMarkupDirectory, baseFromMarkupDirectory, "event_reference.txt");
     output = FilePath::Normalize(output);
     ReMarkupEventListWriter::WriteEventList(config.mEventsOutputLocation, output);
+  }
+
+  if (!config.mAttributesOutputLocation.Empty())
+  {
+    String output = FilePath::Combine(config.mMarkupDirectory, baseFromMarkupDirectory);
+    output = FilePath::Normalize(output);
+    ReMarkupAttributeRefWriter::WriteAttributeRef(config.mAttributesOutputLocation, output);
   }
 }
 
@@ -903,7 +913,7 @@ void ReMarkupClassMarkupWriter::InsertMethod(MethodDoc &method)
   if (!method.mReturnType.Empty() && method.mReturnType != "Void")
     mOutput << " : " << method.mReturnType;
 
-  mOutput << ";\n> ``` " << mEndLine;
+  mOutput << "\n> ``` " << mEndLine;
 
   InsertDivider();
 }
@@ -919,6 +929,11 @@ void ReMarkupClassMarkupWriter::InsertProperty(PropertyDoc &propDoc)
 
   mOutput << propDoc.mName << " : ";
   InsertTypeLink(propDoc.mType);
+
+  if (propDoc.mReadOnly || propDoc.mStatic)
+  {
+    mOutput << mEndLine;
+  }
 
   if (propDoc.mReadOnly)
   {
@@ -939,7 +954,7 @@ void ReMarkupClassMarkupWriter::InsertProperty(PropertyDoc &propDoc)
   //print the zilch codeblock
   InsertStartOfCodeBlock("Zilch");
   //IndentToCurrentLevel();
-  mOutput << mQuoteLine << "var " << propDoc.mName << " : " << propDoc.mType << ";" << mEndLine;
+  mOutput << mQuoteLine << "var " << propDoc.mName << " : " << propDoc.mType << mEndLine;
 
   InsertDivider();
 }
@@ -1420,6 +1435,165 @@ void ReMarkupCommandRefWriter::WriteCommandEntry(CommandDoc &cmdDoc)
 
   //mOutput << ".. include:: CommandPageExtensions/" << cmdDoc.mName << ".rst\n\n";
   InsertDivider();
+}
+
+////////////////////////////////////////////////////////////////////////
+// ReMarkupAttributeRefWriter
+////////////////////////////////////////////////////////////////////////
+ReMarkupAttributeRefWriter::ReMarkupAttributeRefWriter(StringParam name, StringParam uri)
+  : ReMarkupWriter(name, uri)
+{
+}
+/*
+I have 3 different tables, one for ObjectAttributes, one for functionAttributes, 
+one for PropertyAttributes, each one then having a column for user and developer attributes
+*/
+void ReMarkupAttributeRefWriter::WriteAttributeRef(StringParam listFilepath, StringParam outputPath)
+{
+  
+  // setup all the data we need before we can write the file
+  AttributeLoader loader;
+
+  loader.LoadUserAttributeFile(listFilepath);
+  loader.FinalizeAttributeFile();
+
+  AttributeDocList* docList = loader.GetAttributeList();
+
+  // object
+  Array<AttributeDoc *> mZilchObjectAttributes;
+  Array<AttributeDoc *> mCppObjectAttributes;
+  // property
+  Array<AttributeDoc *> mZilchPropertyAttributes;
+  Array<AttributeDoc *> mCppPropertyAttributes;
+  // function
+  Array<AttributeDoc *> mZilchFunctionAttributes;
+  Array<AttributeDoc *> mCppFunctionAttributes;
+
+  forRange(AttributeDoc* attrib, docList->mObjectAttributes.All())
+  {
+    if (attrib->mDeveloperAttribute)
+      mCppObjectAttributes.PushBack(attrib);
+    else
+      mZilchObjectAttributes.PushBack(attrib);
+  }
+  forRange(AttributeDoc* attrib, docList->mPropertyAttributes.All())
+  {
+    if (attrib->mDeveloperAttribute)
+      mCppPropertyAttributes.PushBack(attrib);
+    else
+      mZilchPropertyAttributes.PushBack(attrib);
+  }
+  forRange(AttributeDoc* attrib, docList->mFunctionAttributes.All())
+  {
+    if (attrib->mDeveloperAttribute)
+      mCppFunctionAttributes.PushBack(attrib);
+    else
+      mZilchFunctionAttributes.PushBack(attrib);
+  }
+
+  // object
+  WriteChildAttributeRef(mZilchObjectAttributes, mCppObjectAttributes, docList->mObjectAttributes,
+    "Object", FilePath::Combine(outputPath, "attribute_reference","object_attribute_reference.txt"));
+
+  // function
+  WriteChildAttributeRef(mZilchFunctionAttributes, mCppFunctionAttributes, docList->mFunctionAttributes,
+    "Function", FilePath::Combine(outputPath, "attribute_reference", "function_attribute_reference.txt"));
+
+  // property
+  WriteChildAttributeRef(mZilchPropertyAttributes, mCppPropertyAttributes, docList->mPropertyAttributes,
+    "Property", FilePath::Combine(outputPath, "attribute_reference", "property_attribute_reference.txt"));
+}
+
+void ReMarkupAttributeRefWriter::WriteChildAttributeRef(Array<AttributeDoc *>& zilchAttrib,
+  Array<AttributeDoc *>& cppAttrib, Array<AttributeDoc *>& allAttrib, StringParam attribType, StringParam outputFile)
+{
+  ReMarkupAttributeRefWriter writer(BuildString(attribType," Attribute Reference")
+    , BuildString(gBaseLink, "attribute_reference/", attribType.ToLower(), "_attribute_reference/"));
+  
+  writer.WriteAttributeTable(cppAttrib, zilchAttrib);
+
+  writer.InsertDivider();
+  forRange(AttributeDoc* attrib, allAttrib.All())
+  {
+    writer.InsertAttributeEntry(attrib);
+  }
+
+  writer.WriteOutputToFile(outputFile);
+}
+
+
+void ReMarkupAttributeRefWriter::InsertAttributeEntry(AttributeDoc* attribToAdd)
+{
+  InsertHeaderAtCurrentHeaderLevel();
+
+  mOutput << attribToAdd->mName << mEndLine;
+
+  if (attribToAdd->mDeveloperAttribute)
+  {
+    mOutput << " {key cpp-attribute}";
+  }
+  else
+  {
+    mOutput << " {key zilch-attribute}";
+  }
+
+  if (attribToAdd->mAllowMultiple)
+  {
+    mOutput << " {key allow-multiple}";
+  }
+
+  if (attribToAdd->mAllowStatic)
+  {
+    mOutput << " {key allow-static}";
+  }
+
+  mOutput << mEndLine;
+
+  // print the description directly under the header
+  if (!attribToAdd->mDescription.Empty())
+    mOutput << mQuoteLine << attribToAdd->mDescription << "\n";
+
+  InsertDivider();
+}
+
+void ReMarkupAttributeRefWriter::WriteAttributeTable(Array<AttributeDoc*>& cppAttrib, Array<AttributeDoc*>& zilchAttrib)
+{
+  // print the top of the table
+  mOutput << "|Zilch Attributes|C++ Attributes|\n|---|---|\n";
+
+  uint cppSize = cppAttrib.Size();
+  uint zilchSize = zilchAttrib.Size();
+  
+
+  // we are going to use one iterator for all types in table so get the largest one
+  uint iterLimit = Math::Max(cppSize, zilchSize);
+
+  // print entries into table, skipping lists that our now out of range of iterator
+  for (uint i = 0; i < iterLimit; ++i)
+  {
+    mOutput << "|";
+    if (i < zilchSize)
+    {
+      InsertHeaderLink(zilchAttrib[i]->mName);
+    }
+    else
+    {
+      mOutput << " ";
+    }
+    mOutput << "|";
+
+    if (i < cppSize)
+    {
+      InsertHeaderLink(cppAttrib[i]->mName);
+    }
+    else
+    {
+      mOutput << " ";
+    }
+
+    mOutput << "|\n";
+  }
+  mOutput << mEndLine;
 }
 
 }

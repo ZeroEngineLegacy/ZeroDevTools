@@ -124,7 +124,7 @@ namespace Zero
   {
   public:
     static void WriteClass( StringParam outputFile, ClassDoc* classDoc,
-      DocumentationLibrary &lib, DocToTags& tagged);
+      DocumentationLibrary& lib, DocToTags& tagged);
 
     ReMarkupClassMarkupWriter(StringParam name, ClassDoc* classDoc, StringParam outputFile);
 
@@ -133,9 +133,9 @@ namespace Zero
 
     void InsertClassHeader(void);
 
-    void InsertMethod(MethodDoc &method);
+    void InsertMethod(MethodDoc& method);
 
-    void InsertProperty(PropertyDoc &propDoc);
+    void InsertProperty(PropertyDoc& propDoc);
 
     void InsertJumpTable(void);
 
@@ -196,5 +196,21 @@ namespace Zero
     void WriteCommandEntry(CommandDoc &cmdDoc);
   };
 
+  class ReMarkupAttributeRefWriter : public ReMarkupWriter
+  {
+  public:
+    ReMarkupAttributeRefWriter(StringParam name, StringParam uri);
+
+    static void WriteAttributeRef(StringParam attributeListFilepath, StringParam outputPath);
+
+    static void WriteChildAttributeRef(Array<AttributeDoc *>& zilchAttrib,
+      Array<AttributeDoc *>& cppAttrib, Array<AttributeDoc *>& allAttrib,
+      StringParam attribType, StringParam outputFile);
+
+
+    void InsertAttributeEntry(AttributeDoc* attribToAdd);
+
+    void WriteAttributeTable(Array<AttributeDoc*>& cppAttrib, Array<AttributeDoc*>& zilchAttrib);
+  };
 
 }

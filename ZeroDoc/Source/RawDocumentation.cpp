@@ -92,7 +92,7 @@ namespace Zero
 
     loader.Close();
 
-    printf("...successfully loaded doc skeleton from file...\n");
+    printf("...successfully loaded event list from file...\n");
     return true;
   }
 
@@ -986,6 +986,158 @@ namespace Zero
     static DocLogger logger;
 
     return &logger;
+  }
+
+  ////////////////////////////////////////////////////////////////////////
+  // DocLogger
+  ////////////////////////////////////////////////////////////////////////
+  bool AttributeLoader::LoadUserAttributeFile(StringParam fileLocation)
+  {
+    Status status;
+    DataTreeLoader loader;
+
+    if (!loader.OpenFile(status, fileLocation))
+    {
+      Error("Unable to load user attributes file: %s\n", fileLocation.c_str());
+      return false;
+    }
+
+    mAttributes = new AttributeDocList();
+
+    //PolymorphicNode docNode;
+    //loader.GetPolymorphic(docNode);
+
+    PolymorphicNode attribListObject;
+    loader.GetPolymorphic(attribListObject);
+
+    loader.SerializeField("ObjectAttributes", mAttributes->mObjectAttributes);
+    loader.SerializeField("FunctionAttributes", mAttributes->mFunctionAttributes);
+    loader.SerializeField("PropertyAttributes", mAttributes->mPropertyAttributes);
+
+    loader.Close();
+
+    printf("...successfully loaded user attributes file from file...\n");
+    return true;
+  }
+
+  bool AttributeLoader::loadArrayOfAttributes(Array<AttributeDoc*>&attribList, HashMap<String, AttributeDoc *>& attribMap, StringParam doxyFile)
+  {
+    TiXmlDocument doc;
+
+    if (!doc.LoadFile(doxyFile.c_str()))
+    {
+      return false;
+    }
+
+    // grab the class
+    TiXmlElement* namespaceDef = doc.FirstChildElement(gElementTags[eDOXYGEN])
+      ->FirstChildElement(gElementTags[eCOMPOUNDDEF])->FirstChildElement(gElementTags[eSECTIONDEF]);
+
+    // first child compound def is the actual namespace: ObjectAttributes, 
+
+    // get first attribute
+    TiXmlElement *attributeElement = namespaceDef->FirstChildElement(gElementTags[eMEMBERDEF]);
+
+    // iterate over every attribute
+    for(; attributeElement != nullptr; attributeElement = attributeElement->NextSiblingElement())
+    {
+      String name = attributeElement->FirstChildElement(gElementTags[eNAME])->GetText();
+
+      name = name.SubString(name.FindFirstOf("c").End(), name.End());
+
+      // get the description of the attribute
+      String description = DoxyToString(attributeElement, gElementTags[eBRIEFDESCRIPTION]).Trim();
+
+      if (attribMap.ContainsKey(name))
+      {
+        attribMap[name]->mDescription = description;
+      }
+      else
+      {
+        // create a new attrib doc. Note, no way to know static or multiple with developer stuff
+        AttributeDoc* newAttrib = new AttributeDoc();
+
+        newAttrib->mName = name;
+        newAttrib->mDescription = description;
+        newAttrib->mDeveloperAttribute = true;
+
+        attribList.PushBack(newAttrib);
+      }
+    }
+    return true;
+  }
+
+  bool AttributeLoader::LoadAttributeListsFromDoxygen(StringParam doxyPath)
+  {
+    FinalizeAttributeFile();
+    // if loading the class file  failed, search for a struct file
+    String fileName = FindFile(doxyPath, "namespace_zero_1_1_object_attributes.xml");
+
+    if (!fileName.Empty())
+    {
+      if(!loadArrayOfAttributes(mAttributes->mObjectAttributes,
+        mAttributes->mObjectAttributesMap, fileName))
+      {
+        WriteLog("Unable to load doxygen file to load object attributes.");
+        return false;
+      }
+    }
+    else
+    {
+      WriteLog("Unable to find doxygen file to load object attributes.");
+      return false;
+    }
+
+    fileName = FindFile(doxyPath, "namespace_zero_1_1_function_attributes.xml");
+
+    if (!fileName.Empty())
+    {
+      if(!loadArrayOfAttributes(mAttributes->mFunctionAttributes,
+        mAttributes->mFunctionAttributesMap, fileName))
+      {
+        WriteLog("Unable to load doxygen file to load function attributes.");
+        return false;
+      }
+    }
+    else
+    {
+      WriteLog("Unable to find doxygen file to load function attributes.");
+      return false;
+    }
+
+    fileName = FindFile(doxyPath, "namespace_zero_1_1_property_attributes.xml");
+
+    if (!fileName.Empty())
+    {
+      if(!loadArrayOfAttributes(mAttributes->mPropertyAttributes,
+        mAttributes->mPropertyAttributesMap, fileName))
+      {
+        WriteLog("Unable to load doxygen file to load property attributes.");
+        return false;
+      }
+    }
+    else
+    {
+      WriteLog("Unable to find doxygen file to load property attributes.");
+      return false;
+    }
+    return true;
+  }
+
+  void AttributeLoader::FinalizeAttributeFile(void)
+  {
+    mAttributes->Sort();
+    mAttributes->CreateAttributeMap();
+  }
+
+  bool AttributeLoader::SaveAttributeFile(StringParam outputFile)
+  {
+    return mAttributes->SaveToFile(outputFile);
+  }
+
+  AttributeDocList *AttributeLoader::GetAttributeList(void)
+  {
+    return mAttributes;
   }
 
   ////////////////////////////////////////////////////////////////////////

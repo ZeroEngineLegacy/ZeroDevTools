@@ -74,68 +74,6 @@ void WriteTagIndices(String outputDir, DocToTags& tagged, DocumentationLibrary &
   WriteStringRangeToFile(fileName, text);
 }
 
-void WriteOutAllReStructuredTextFiles(Zero::DocGeneratorConfig& config)
-{
-  printf("Mark up: ReStructuredText\n");
-
-  // check if we are outputting class markup
-  if (FileExists(config.mTrimmedOutput.c_str()))
-  {
-    String& directory = config.mMarkupDirectory;
-
-    CreateDirectoryAndParents(directory);
-
-    DocumentationLibrary doc;
-    LoadDocumentationSkeleton(doc, config.mTrimmedOutput);
-    doc.FinalizeDocumentation();
-
-    DocToTags tagged;
-
-    StringBuilder fileList;
-
-    // TODO: WE NEED TO SPECIAL CASE THE MATH PAGE
-    //Upload the class' page to the wiki, making sure to perform the link replacements
-    forRange(ClassDoc* classDoc, doc.mClasses.All())
-    {
-      String filename = BuildString(classDoc->mName, ".rst");
-
-      String fullPath = FilePath::Combine(directory, "Reference");
-
-      CreateDirectoryAndParents(fullPath);
-
-      fullPath = FilePath::Combine(fullPath, filename);
-
-      fullPath = FilePath::Normalize(fullPath);
-
-      RstClassMarkupWriter::WriteClass(fullPath, classDoc, doc, tagged);
-
-      fileList << classDoc->mName << '\t' << FilePath::Combine(".", "Reference", filename) << '\n';
-    }
-
-    WriteStringRangeToFile(FilePath::Combine(directory, "classList.txt"), fileList.ToString());
-
-    WriteTagIndices(directory, tagged, doc);
-  }
-
-
-  // check if we outputting commands
-  if (!config.mCommandListFile.Empty())
-  {
-    String output = FilePath::Combine(config.mMarkupDirectory, "CommandRef.rst");
-    output = FilePath::Normalize(output);
-    RstCommandRefWriter::WriteCommandRef(config.mCommandListFile, output);
-  }
-
-  // check if we are outputing events
-  if (!config.mEventsOutputLocation.Empty())
-  {
-    String output = FilePath::Combine(config.mMarkupDirectory, "EventList.rst");
-    output = FilePath::Normalize(output);
-    RstEventListWriter::WriteEventList(config.mEventsOutputLocation, output);
-  }
-}
-
-
 ////////////////////////////////////////////////////////////////////////
 // Macro and static global Toolbox
 ////////////////////////////////////////////////////////////////////////
@@ -202,282 +140,6 @@ void BaseMarkupWriter::InsertNewSectionHeader(StringParam sectionName)
 }
 
 ////////////////////////////////////////////////////////////////////////
-// RstClassMarkupWriter
-////////////////////////////////////////////////////////////////////////
-void RstClassMarkupWriter::WriteClass(
-  StringParam outputFile,
-  ClassDoc* classDoc,
-  DocumentationLibrary &lib,
-  DocToTags& tagged)
-{
-  // first things first, set up the tags for this class
-  forRange(String& tag, classDoc->mTags.All())
-  {
-    tagged[tag].PushBack(classDoc);
-  }
-
-  // do the magic for getting directory and file
-  RstClassMarkupWriter writer(classDoc->mName, classDoc);
-
-  // top of the file
-  writer.InsertClassRstHeader();
-  StartHeaderSection(writer);
-
-  // Properties
-  writer.mOutput << ".. _Reference" << writer.mName << "Properties:\n\n";
-
-  writer.InsertNewSectionHeader("Properties");
-
-  forRange(PropertyDoc *prop, classDoc->mProperties.All())
-  {
-    writer.InsertProperty(*prop);
-  }
-
-  // Methods
-  writer.mOutput << ".. _Reference" << writer.mName << "Methods:\n\n";
-
-  writer.InsertNewSectionHeader("Methods");
-
-  forRange(MethodDoc *method, classDoc->mMethods.All())
-  {
-    writer.InsertMethod(*method);
-  }
-
-  // bottom of the file
-  EndHeaderSection(writer);
-  writer.InsertClassRstFooter();
-
-  writer.WriteOutputToFile(outputFile);
-}
-
-RstClassMarkupWriter::RstClassMarkupWriter(StringParam name, ClassDoc* classDoc) 
-  : BaseMarkupWriter(name), mClassDoc(classDoc)
-{
-}
-
-void RstClassMarkupWriter::InsertClassRstHeader(void)
-{
-  mOutput << ".. _Reference" << mName << ":\n\n" << ".. rst-class:: searchtitle\n\n";
-
-  InsertNewSectionHeader(mName);
-
-  mOutput << ".. rst-class:: searchdescripton\n\n"
-    << mClassDoc->mDescription << "\n\n"
-    << ".. include:: Description/Action.rst\n\n"
-    << ".. cpp:class:: " << mName;
-
-  if (mBases.Size() > 0)
-  {
-    mOutput << " : public " << mBases[0];
-
-    for (uint i = 1; i < mBases.Size(); ++i)
-    {
-      mOutput << ", " << mBases[i];
-    }
-  }
-
-  mOutput << "\n\n";
-}
-
-void RstClassMarkupWriter::InsertClassRstFooter(void)
-{
-  mOutput << ".. include:: Remarks/" << mName << ".rst\n";
-}
-
-void RstClassMarkupWriter::InsertMethod(MethodDoc &method)
-{
-  InsertCollapsibleSection();
-  StartIndentSection((*this));
-
-  IndentToCurrentLevel();
-
-  mOutput << ".. cpp:function:: " << method.mReturnType << " " 
-     << method.mName << method.mParameters << "\n\n";
-
-  if (!method.mDescription.Empty())
-  {
-    IndentToCurrentLevel();
-
-    mOutput << "\t" << method.mDescription << "\n\n";
-  }
-
-  EndIndentSection((*this));
-}
-
-void RstClassMarkupWriter::InsertProperty(PropertyDoc &propDoc)
-{
-  //TODO: we need to figure out why so many things are not properly getting type
-  if (propDoc.mType.Empty())
-    return;
-
-  InsertCollapsibleSection();
-  StartIndentSection((*this));
-
-  IndentToCurrentLevel();
-
-  mOutput << ".. cpp:member:: " <<  propDoc.mType << " "  << propDoc.mName << "\n\n";
-
-  if (!propDoc.mDescription.Empty())
-  {
-    IndentToCurrentLevel();
-
-    mOutput << "\t" << propDoc.mDescription << "\n\n";
-  }
-
-  EndIndentSection((*this));
-}
-
-
-void RstClassMarkupWriter::InsertCollapsibleSection()
-{
-  // all functions that output anything besides headers will probably do this
-  mOutput << ".. rst-class:: collapsible\n\n";
-}
-
-
-////////////////////////////////////////////////////////////////////////
-// RstEventListWriter
-////////////////////////////////////////////////////////////////////////
-void RstEventListWriter::WriteEventList(StringParam eventListFilepath, StringParam outputPath)
-{
-  // load the file if we can
-
-  // get outta here with that nonexistent file
-  if (!FileExists(eventListFilepath))
-  {
-    printf("%s does not exist.", eventListFilepath.c_str());
-    return;
-  }
-
-  // actually load event list now. (If this fails it probably means the file is mis-formatted)
-  EventDocList eventListDoc;
-  LoadEventList(eventListDoc, eventListFilepath);
-
-  Array<EventDoc *> &eventArray = eventListDoc.mEvents;
-
-  // create the eventList
-  RstEventListWriter writer("Event List");
-
-  writer.InsertNewSectionHeader("Event List");
-
-  // create top of file
-  StartHeaderSection(writer);
-
-  // iterate over all events and insert them
-  forRange(EventDoc *eventDoc, eventArray.All())
-  {
-    writer.WriteEventEntry(eventDoc->mName, eventDoc->mType);
-  }
-
-  EndHeaderSection(writer);
-
-  writer.WriteOutputToFile(outputPath);
-}
-
-RstEventListWriter::RstEventListWriter(StringParam name) : BaseMarkupWriter(name)
-{
-}
-
-/*
-// The tilde are there so we create a shortened link to the class DO NOT REMOVE
-classMarkup << "\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n"
-<< "Properties From: :cpp:type:`" << IterClass->mName
-<< "`\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
-*/
-
-void RstEventListWriter::WriteEventEntry(StringParam eventEntry, StringParam type)
-{
-  InsertNewSectionHeader(eventEntry);
-
-  // #ticks matter around links
-  mOutput << ".. include:: EventListDescriptions/" << eventEntry << ".rst\n\n"
-    << ":cpp:type:`" << type <<"`\n\n";
-  //
-}
-
-////////////////////////////////////////////////////////////////////////
-// RstCommandRefWriter
-////////////////////////////////////////////////////////////////////////
-void RstCommandRefWriter::WriteCommandRef(StringParam commandListFilepath, StringParam outputPath)
-{
-  // load the file
-  // get outta here with that nonexistent file
-  if (!FileExists(commandListFilepath))
-  {
-    printf("%s does not exist.", commandListFilepath.c_str());
-    return;
-  }
-
-  // actually load event list now. (If this fails it probably means the file is mis-formatted)
-  CommandDocList cmdListDoc;
-  LoadCommandList(cmdListDoc, commandListFilepath);
-
-  Array<CommandDoc *> &cmdArray = cmdListDoc.mCommands;
-
-  // create the command writer
-  RstCommandRefWriter writer("Zero Commands");
-
-  // create top of file
-  writer.InsertNewSectionHeader("Zero Commands");
-
-  StartHeaderSection(writer);
-
-  // iterate over all commands and insert them
-  forRange(CommandDoc *cmdDoc, cmdArray.All())
-  {
-    writer.WriteCommandEntry(*cmdDoc);
-  }
-
-  EndHeaderSection(writer);
-
-  writer.WriteOutputToFile(outputPath);
-}
-
-RstCommandRefWriter::RstCommandRefWriter(StringParam name) : BaseMarkupWriter(name)
-{
-}
-
-void RstCommandRefWriter::WriteCommandEntry(const CommandDoc &cmdDoc)
-{
-  InsertNewSectionHeader(cmdDoc.mName);
-
-  if (!cmdDoc.mDescription.Empty())
-    mOutput << cmdDoc.mDescription << "\n\n";
-
-  StartHeaderSection((*this));
-  InsertNewSectionHeader("Tags");
-
-  if (cmdDoc.mTags.Empty())
-  {
-    mOutput << "**No Tags**\n\n";
-  }
-  else
-  {
-    // actually list tags
-    forRange(String& tag, cmdDoc.mTags.All())
-    {
-      mOutput << "*\t" << tag << "\n\n";
-    }
-  }
-
-  InsertNewSectionHeader("Shortcut");
-
-  if (cmdDoc.mShortcut.Empty())
-  {
-    mOutput << "**No Keyboard Shortcut**\n\n";
-  }
-  else
-  {
-    mOutput << "*\t" << cmdDoc.mShortcut << "\n\n";
-  }
-
-  mOutput << ".. include:: CommandPageExtensions/" << cmdDoc.mName << ".rst\n\n";
-
-  EndHeaderSection((*this));
-}
-
-
-////////////////////////////////////////////////////////////////////////
 // ReMarkup
 ////////////////////////////////////////////////////////////////////////
 
@@ -542,8 +204,13 @@ void WriteOutAllReMarkupFiles(Zero::DocGeneratorConfig& config)
 
     DocToTags tagged;
 
+    ArraySet<String> sortedTags;
+
     // create the base wikipage for the codeRef
     StringBuilder codeRefIndex;
+
+    // create a sibling to the base page with categories for tags
+    StringBuilder tagsCodeRefIndex;
 
     // create the base wikipage for zilch core types
     StringBuilder zilchCoreIndex;
@@ -604,7 +271,7 @@ void WriteOutAllReMarkupFiles(Zero::DocGeneratorConfig& config)
 
         fullPath = FilePath::Normalize(fullPath);
 
-        ReMarkupClassMarkupWriter::WriteClass(fullPath, classDoc, doc, tagged);
+        ReMarkupClassMarkupWriter::WriteClass(fullPath, classDoc, doc, tagged, sortedTags);
 
         // [[wiki page | name]]
         zilchCoreIndex << gBullet << "[[" << gLinkMap[classDoc->mName] << "]] \n";
@@ -617,14 +284,32 @@ void WriteOutAllReMarkupFiles(Zero::DocGeneratorConfig& config)
 
         fullPath = FilePath::CombineWithExtension(fullPath, classDoc->mName, ".txt");
 
-        ReMarkupClassMarkupWriter::WriteClass(fullPath, classDoc, doc, tagged);
+        ReMarkupClassMarkupWriter::WriteClass(fullPath, classDoc, doc, tagged, sortedTags);
 
         // [[wiki page | name]]
         codeRefIndex << gBullet << "[[" << gLinkMap[classDoc->mName] << "]] \n";
       }
     }
 
+    // create the sorted file
+    forRange(String& tag, sortedTags.All())
+    {
+      // section header for the tag
+      tagsCodeRefIndex << "= " << tag;
+      // divider
+      tagsCodeRefIndex << "\n---  \n";
+
+      Array<ClassDoc*> &classesToLink = tagged[tag];
+
+      forRange(ClassDoc *classToLink, classesToLink.All())
+      {
+        tagsCodeRefIndex << gBullet << "[[" << gLinkMap[classToLink->mName] << "]] \n";
+      }
+    }
+
     WriteStringRangeToFile(FilePath::Combine(directory, baseFromMarkupDirectory,"class_reference.txt"), codeRefIndex.ToString());
+    //gah what shuld it be named
+    WriteStringRangeToFile(FilePath::Combine(directory, baseFromMarkupDirectory, "classes_by_tag_reference.txt"), tagsCodeRefIndex.ToString());
     WriteStringRangeToFile(FilePath::Combine(directory, baseFromMarkupDirectory,"zilch_base_types.txt"), zilchCoreIndex.ToString());
 
     WriteTagIndices(directory, tagged, doc);
@@ -766,16 +451,49 @@ void ReMarkupWriter::InsertTypeLink(StringParam className)
 // ReMarkupClassMarkupWriter
 ////////////////////////////////////////////////////////////////////////
 void ReMarkupClassMarkupWriter::WriteClass(StringParam outputFile,
-  ClassDoc* classDoc, DocumentationLibrary &lib, DocToTags& tagged)
+  ClassDoc* classDoc, DocumentationLibrary &lib, DocToTags& tagged, ArraySet<String>&sortedTags)
 {
-  // first things first, set up the tags for this class
+  // do the magic for getting directory and file
+  ReMarkupClassMarkupWriter writer(classDoc->mName, classDoc, gLinkMap[classDoc->mName]);
+
+  // Set up the tags for this class and print them at the top
   forRange(String& tag, classDoc->mTags.All())
   {
     tagged[tag].PushBack(classDoc);
+
+    sortedTags.FindOrInsert(tag);
+    
+    writer.mOutput << " {key " << tag << "}";
   }
 
-  // do the magic for getting directory and file
-  ReMarkupClassMarkupWriter writer(classDoc->mName, classDoc, gLinkMap[classDoc->mName]);
+  String& libName = classDoc->mLibrary;
+  if (!libName.Empty())
+  {
+    StringRange libSubstring = libName.FindFirstOf("Library");
+
+    String shortenedName = libSubstring.Empty() ?
+      libName : libName.SubString(libName.Begin(), libSubstring.Begin());
+
+    // if we do not already have this class under the tag named same as library, add it
+    if (!tagged[shortenedName].Contains(classDoc))
+    {
+      // add our library as a tag as well
+      tagged[shortenedName].PushBack(classDoc);
+      sortedTags.FindOrInsert(shortenedName);
+      writer.mOutput << " {key " << shortenedName << "}";
+    }
+  }
+  else if (classDoc->mTags.Empty())
+  {
+    tagged["Not Tagged"].PushBack(classDoc);
+
+    sortedTags.FindOrInsert("[Not Tagged]");
+  }
+
+
+  // if we added tags to the file, add a newline
+  if (!classDoc->mTags.Empty())
+    writer.mOutput << writer.mEndLine;
 
   if (!classDoc->mDescription.Empty())
   {

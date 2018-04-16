@@ -33,56 +33,6 @@ namespace Zero
     uint mCurrentSectionHeaderLevel;
   };
 
-  ///// ReStructuredText ///// 
-  void WriteOutAllReStructuredTextFiles(Zero::DocGeneratorConfig& config);
-
-  class RstClassMarkupWriter : public BaseMarkupWriter
-  {
-  public:
-    static void WriteClass(
-      StringParam outputFile,
-      ClassDoc* classDoc,
-      DocumentationLibrary &lib,
-      DocToTags& tagged);
-
-    RstClassMarkupWriter(StringParam name, ClassDoc* classDoc);
-
-  protected:
-    void InsertClassRstHeader(void);
-
-    void InsertClassRstFooter(void);
-
-    void InsertMethod(MethodDoc &method);
-
-    void InsertProperty(PropertyDoc &propDoc);
-
-    void InsertCollapsibleSection(void);
-
-    Array<String> mBases;
-
-    ClassDoc *mClassDoc;
-  };
-
-  class RstEventListWriter : public BaseMarkupWriter
-  {
-  public:
-    static void WriteEventList(StringParam eventListFilepath, StringParam outputPath);
-
-    RstEventListWriter(StringParam name);
-
-    void WriteEventEntry(StringParam eventEntry, StringParam type);
-  };
-
-  class RstCommandRefWriter : public BaseMarkupWriter
-  {
-  public:
-    static void WriteCommandRef(StringParam commandListFilepath, StringParam outputPath);
-
-    RstCommandRefWriter(StringParam name);
-
-    void WriteCommandEntry(const CommandDoc &cmdDoc);
-  };
-
   ///// ReMarkup(Phabricator) /////
   void WriteOutAllReMarkupFiles(Zero::DocGeneratorConfig& config);
 
@@ -124,7 +74,7 @@ namespace Zero
   {
   public:
     static void WriteClass( StringParam outputFile, ClassDoc* classDoc,
-      DocumentationLibrary& lib, DocToTags& tagged);
+      DocumentationLibrary& lib, DocToTags& tagged, ArraySet<String>&sortedTags);
 
     ReMarkupClassMarkupWriter(StringParam name, ClassDoc* classDoc, StringParam outputFile);
 

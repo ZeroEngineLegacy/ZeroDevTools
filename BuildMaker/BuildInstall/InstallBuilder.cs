@@ -69,6 +69,9 @@ namespace BuildMaker
 
       innoSetupInfo.Arguments = Path.Combine(cBuildOutput, "ZeroEngineInstall.iss") + defines;
       innoSetupInfo.FileName = @"C:\Program Files (x86)\Inno Setup 5\iscc.exe";
+      innoSetupInfo.RedirectStandardError = true;
+      innoSetupInfo.RedirectStandardOutput = true;
+      innoSetupInfo.UseShellExecute = false;
       
       Process innoSetup;
       try
@@ -85,6 +88,14 @@ namespace BuildMaker
       
       }
       innoSetup.WaitForExit();
+
+      string errOut = innoSetup.StandardError.ReadToEnd();
+
+      if (errOut.Length != 0)
+      {
+        Console.WriteLine(errOut);
+        System.Environment.Exit(-1);
+      }
 
       //Rename the install executable.
       File.Copy(Path.Combine(cBuildOutput, "Output", "ZeroEngineSetup.exe"),

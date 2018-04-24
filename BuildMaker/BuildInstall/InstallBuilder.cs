@@ -87,9 +87,10 @@ namespace BuildMaker
         return null;
       
       }
-      innoSetup.WaitForExit();
-
+      string output = innoSetup.StandardOutput.ReadToEnd();
       string errOut = innoSetup.StandardError.ReadToEnd();
+
+      innoSetup.WaitForExit();
 
       if (errOut.Length != 0)
       {

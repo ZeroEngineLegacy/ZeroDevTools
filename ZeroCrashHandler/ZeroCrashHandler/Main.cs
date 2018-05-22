@@ -227,19 +227,19 @@ namespace ZeroCrashHandler
 
             UpdateShowButtonsLayout();
 
-			// Get the email that we might already have saved away
-			String email = Application.UserAppDataRegistry.GetValue("Email") as String;
+			// Get the username that we might already have saved away
+			String username = Application.UserAppDataRegistry.GetValue("Username") as String;
 
-			// If we found a saved away email...
-			if (email != null)
+      // If we found a saved away username...
+      if (username != null)
 			{
-				// Set the email field
-				Email.Text = email;
+				// Set the username field
+				Username.Text = username;
 			}
 			else
 			{
-				// Set the email field
-				Email.Text = Environment.UserName.Replace(" ", "").ToLower() + "@digipen.edu";
+        // Set the username field
+        Username.Text = "";
 			}
 
 			// Get the restart mode
@@ -363,38 +363,14 @@ namespace ZeroCrashHandler
 			AddPair(dataPairs, ":ChangeSetDate", Options.ChangeSetDate);
 			AddPair(dataPairs, ":Platform", Options.Platform);
 			AddPair(dataPairs, ":Configuration", Options.Configuration);
-			// Add the user's email
-			dataPairs.Add(new Pair(":UserEmail", Email.Text));
+      
+      // Add the username
+      dataPairs.Add(new Pair(":Username", Username.Text));
+      // Legacy: Submit this as the email since we don't currently have the username field
+      dataPairs.Add(new Pair(":UserEmail", Username.Text));
 
-
-			try { AddUserInfo(dataPairs, "RegisteredOrganization", (String)Microsoft.Win32.Registry.GetValue(@"HKEY_LOCAL_MACHINE\Software\Microsoft\Windows NT\CurrentVersion", "RegisteredOrganization", "")); }
-			catch { }
-			try { AddUserInfo(dataPairs, "RegisteredOwner", (String)Microsoft.Win32.Registry.GetValue(@"HKEY_LOCAL_MACHINE\Software\Microsoft\Windows NT\CurrentVersion", "RegisteredOwner", "")); }
-			catch { }
-			try { AddUserInfo(dataPairs, "DisplayName", UserPrincipal.Current.DisplayName); }
-			catch { }
-			try { AddUserInfo(dataPairs, "DistinguishedName", UserPrincipal.Current.DistinguishedName); }
-			catch { }
-			try { AddUserInfo(dataPairs, "DomainEmailAddress", UserPrincipal.Current.EmailAddress); }
-			catch { }
-			try { AddUserInfo(dataPairs, "EmployeeId", UserPrincipal.Current.EmployeeId); }
-			catch { }
-			try { AddUserInfo(dataPairs, "GivenName", UserPrincipal.Current.GivenName); }
-			catch { }
-			try { AddUserInfo(dataPairs, "UserPrincipalName", UserPrincipal.Current.UserPrincipalName); }
-			catch { }
-			try { AddUserInfo(dataPairs, "HostName", Dns.GetHostName()); }
-			catch { }
-			try { AddUserInfo(dataPairs, "MachineName", Environment.MachineName); }
-			catch { }
-			try { AddUserInfo(dataPairs, "UserName", Environment.UserName); }
-			catch { }
-			try { AddUserInfo(dataPairs, "UserDomainName", Environment.UserDomainName); }
-			catch { }
-
-
-			// Assume they did not fill it in
-			String whatHappened = String.Empty;
+      // Assume they did not fill it in
+      String whatHappened = String.Empty;
 
 			StringBuilder userInfo = new StringBuilder();
 			foreach (var pair in dataPairs)
@@ -426,32 +402,32 @@ namespace ZeroCrashHandler
 			dataPairs.AddRange(TextFilePairs);
 
 			// Create the bug report
-			CreateBugReport(whatHappened, Email.Text, dataPairs);
+			CreateBugReport(whatHappened, Username.Text, dataPairs);
 
 			// Exit out
 			CloseCrashHandler();
 		}
 
-		private void CreateBugReport(String whatHappened, String email, List<Pair> dataPairs)
+		private void CreateBugReport(String whatHappened, String username, List<Pair> dataPairs)
 		{
-			// Save the email that we're using now for the next time this dialog appears
-			Application.UserAppDataRegistry.SetValue("Email", email);
+      // Save the username that we're using now for the next time this dialog appears
+      Application.UserAppDataRegistry.SetValue("Username", username);
 
 			// Depending on the mode...
 			if (Mode == BugReportMode.Email)
 			{
 				// Create the bug report
-				CreateEmailReport(whatHappened, Email.Text);
+				CreateEmailReport(whatHappened, Username.Text);
 			}
 			else if (Mode == BugReportMode.Php)
 			{
 				// Create the bug report
-				CreatePhpReport(whatHappened, Email.Text);
+				CreatePhpReport(whatHappened, Username.Text);
 			}
 			else if (Mode == BugReportMode.JsonPhp)
 			{
 				// Create the json data to send to php
-				CreateJsonPhpReport(whatHappened, Email.Text, dataPairs);
+				CreateJsonPhpReport(whatHappened, Username.Text, dataPairs);
 			}
 		}
 
@@ -519,7 +495,7 @@ namespace ZeroCrashHandler
 			HttpUploadFile(PhpRedirectUrl, zipFile, PhpFileId, "application/octet-stream", collection);
 		}
 
-		private void CreateJsonPhpReport(String whatHappened, String email, List<Pair> dataPairs)
+		private void CreateJsonPhpReport(String whatHappened, String username, List<Pair> dataPairs)
 		{
 			// Create a stream and a writer to that stream so we can write it out to json
 			MemoryStream stream = new MemoryStream();
@@ -561,7 +537,6 @@ namespace ZeroCrashHandler
 			// Then add the json data and the email to the php data and send it
 			var collection = new NameValueCollection();
 			collection.Add(PhpBodyId, jsonData);
-			collection.Add(PhpEmailId, email);
 			collection.Add(PhpVersionId, String.Format("{1} {2} {3} {4} {5} {6}", Options.ProgramName, Options.Version, Options.Revision, Options.ChangeSet, Options.ChangeSetDate, Options.Configuration, Options.Platform));
 
             try { HttpUploadFile(PhpRedirectUrl, zipFile, PhpFileId, "application/octet-stream", collection); }
@@ -773,10 +748,25 @@ namespace ZeroCrashHandler
                 }
             }
         }
-	}
+    
 
-	// The command line options that we parse
-	public class Options
+    private void mAcceptCheckBox_CheckedChanged(object sender, EventArgs e)
+    {
+      this.Send.Enabled = this.mAcceptCheckBox.Checked;
+    }
+
+    private void linkLabel1_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+    {
+      var privacyForm = new PrivacyDisplay();
+      privacyForm.StartPosition = FormStartPosition.Manual;
+      privacyForm.Location = this.Location;
+      //privacyForm.MdiParent = this;
+      privacyForm.ShowDialog(this);
+    }
+  }
+
+  // The command line options that we parse
+  public class Options
 	{
 		// Required options
 		[Option("Guid", Required = false, HelpText = "The guid of the program")]

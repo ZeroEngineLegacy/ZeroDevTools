@@ -43,7 +43,6 @@
       this.ShowLog = new System.Windows.Forms.Button();
       this.ShowScripts = new System.Windows.Forms.Button();
       this.ShowFilesPanel = new System.Windows.Forms.Panel();
-      this.mAcceptCheckBox = new System.Windows.Forms.CheckBox();
       this.linkLabel1 = new System.Windows.Forms.LinkLabel();
       ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
       this.ShowFilesPanel.SuspendLayout();
@@ -72,10 +71,9 @@
       // 
       // Send
       // 
-      this.Send.Enabled = false;
-      this.Send.Location = new System.Drawing.Point(261, 253);
+      this.Send.Location = new System.Drawing.Point(185, 235);
       this.Send.Name = "Send";
-      this.Send.Size = new System.Drawing.Size(159, 28);
+      this.Send.Size = new System.Drawing.Size(235, 28);
       this.Send.TabIndex = 2;
       this.Send.Text = "Send and Close";
       this.Send.UseVisualStyleBackColor = true;
@@ -190,21 +188,10 @@
       this.ShowFilesPanel.Size = new System.Drawing.Size(239, 29);
       this.ShowFilesPanel.TabIndex = 15;
       // 
-      // mAcceptCheckBox
-      // 
-      this.mAcceptCheckBox.AutoSize = true;
-      this.mAcceptCheckBox.Location = new System.Drawing.Point(11, 253);
-      this.mAcceptCheckBox.Name = "mAcceptCheckBox";
-      this.mAcceptCheckBox.Size = new System.Drawing.Size(203, 17);
-      this.mAcceptCheckBox.TabIndex = 16;
-      this.mAcceptCheckBox.Text = "I consent to having my data collected";
-      this.mAcceptCheckBox.UseVisualStyleBackColor = true;
-      this.mAcceptCheckBox.CheckedChanged += new System.EventHandler(this.mAcceptCheckBox_CheckedChanged);
-      // 
       // linkLabel1
       // 
       this.linkLabel1.AutoSize = true;
-      this.linkLabel1.Location = new System.Drawing.Point(8, 273);
+      this.linkLabel1.Location = new System.Drawing.Point(10, 245);
       this.linkLabel1.Name = "linkLabel1";
       this.linkLabel1.Size = new System.Drawing.Size(127, 13);
       this.linkLabel1.TabIndex = 17;
@@ -216,9 +203,8 @@
       // 
       this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
       this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-      this.ClientSize = new System.Drawing.Size(429, 296);
+      this.ClientSize = new System.Drawing.Size(429, 266);
       this.Controls.Add(this.linkLabel1);
-      this.Controls.Add(this.mAcceptCheckBox);
       this.Controls.Add(this.ShowFilesPanel);
       this.Controls.Add(this.WhatHappened);
       this.Controls.Add(this.DoNotRestart);
@@ -264,7 +250,6 @@
         private System.Windows.Forms.Button ShowLog;
         private System.Windows.Forms.Button ShowScripts;
         private System.Windows.Forms.Panel ShowFilesPanel;
-    private System.Windows.Forms.CheckBox mAcceptCheckBox;
     private System.Windows.Forms.LinkLabel linkLabel1;
   }
 }

@@ -748,12 +748,6 @@ namespace ZeroCrashHandler
                 }
             }
         }
-    
-
-    private void mAcceptCheckBox_CheckedChanged(object sender, EventArgs e)
-    {
-      this.Send.Enabled = this.mAcceptCheckBox.Checked;
-    }
 
     private void linkLabel1_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
     {

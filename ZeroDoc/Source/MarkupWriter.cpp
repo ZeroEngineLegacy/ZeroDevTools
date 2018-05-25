@@ -495,6 +495,8 @@ void ReMarkupClassMarkupWriter::WriteClass(StringParam outputFile,
   if (!classDoc->mTags.Empty())
     writer.mOutput << writer.mEndLine;
 
+  writer.mOutput << mEndLine;
+
   if (!classDoc->mDescription.Empty())
   {
     writer.mOutput << mNoteLine << classDoc->mDescription << mEndLine;

@@ -1033,11 +1033,6 @@ void ReMarkupClassMarkupWriter::InsertMethodLink(MethodDoc* methodToLink)
   {
     headerLinkBuilder << "-zero-engine-documentation";
   }
-  if (methodToLink->mStatic)
-  {
-    // we use a key in markup to display tags, so in links they become '-k'
-    headerLinkBuilder << "-k";
-  }
 
   String headerLink = headerLinkBuilder.ToString();
 
@@ -1053,9 +1048,24 @@ void ReMarkupClassMarkupWriter::InsertMethodLink(MethodDoc* methodToLink)
 
 void ReMarkupClassMarkupWriter::InsertPropertyLink(PropertyDoc* propToLink)
 {
-  String headerLink = BuildString(propToLink->mName, "-zero-engine-documentation");
+  StringBuilder headerLinkBuilder;
 
-  headerLink = headerLink.SubStringFromByteIndices(0, 24);
+  headerLinkBuilder.Append(propToLink->mName);
+
+  // if the type is a link, add the link fluff to the name, otherwise add the type
+  if (gLinkMap.ContainsKey(propToLink->mType))
+  {
+     headerLinkBuilder.Append("-zero-engine-documentation");
+  }
+  else
+  {
+    headerLinkBuilder << "-" << propToLink->mType;
+  }
+
+  String headerLink = headerLinkBuilder.ToString();
+  
+  if (headerLink.SizeInBytes() > 24)
+    headerLink = headerLink.SubStringFromByteIndices(0, 24);
 
   if (headerLink.EndsWith("-"))
   {
@@ -1111,7 +1121,8 @@ void ReMarkupEnumReferenceWriter::InsertEnumEntry(EnumDoc* enumDoc)
 
   forRange(auto &enumDescPair, enumDoc->mEnumValues.All())
   {
-    mOutput << "|" << enumDescPair.first << "|" << enumDescPair.second << "|\n";
+    // insert table values, making them literals to avoid creating accidental links
+    mOutput << "|" << "%%%" << enumDescPair.first << "%%%" << "|" << "%%%" << enumDescPair.second << "%%%" << "|\n";
   }
   EndIndentSection((*this));
   InsertDivider();

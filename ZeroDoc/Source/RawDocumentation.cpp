@@ -3450,8 +3450,6 @@ namespace Zero
 
   void RawClassDoc::FillExistingMethodFromDoxygen(StringParam name, TiXmlElement* memberElement, TiXmlNode* memberDef)
   {
-    if (name == "Connect")
-      printf("found it!");
     // we don't want to actually save this, just use it to copy data from doxygen
     RawMethodDoc* tempLoadedMethodDoc = new RawMethodDoc(memberElement, memberDef);
 

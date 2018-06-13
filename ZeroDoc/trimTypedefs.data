@@ -703,5 +703,34 @@ RawTypedefLibrary
         }
       }
     }
+    Object
+    {
+      var Type = "Delegate"
+      var Definition = Array
+      {
+        Object
+        {
+          var Text = "delegate"
+          var Type = "Identifier"
+        }
+        Object
+        {
+          var Text = "("
+          var Type = "OpenParen"
+        }
+        Object
+        {
+          var Text = ")"
+          var Type = "CloseParen"
+        }
+      }
+      var Namespace = Object
+      {
+        var Names = Array
+        {
+        }
+      }
+    }
   }
 }
+

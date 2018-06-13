@@ -19,5 +19,13 @@ ZilchTypeToCppClassList
 				"GraphicsStatics"
 			}
 		}
+		Object
+		{
+			var key = "Zero"
+			var value = Array
+			{
+				"ZeroStatic"
+			}
+		}
 	}
 }

@@ -18,7 +18,7 @@ String gBaseLink = "zero_engine_documentation/code_reference/";
 String gBaseClassLink = BuildString(gBaseLink, "class_reference/");
 String gBaseZilchTypesLink = BuildString(gBaseLink, "zilch_base_types/");
 String gBaseEnumTypesLink = BuildString(gBaseLink, "enum_reference/#");
-String gBaseFlagsTypesLink = BuildString(gBaseLink, "Flags_Reference/#");
+String gBaseFlagsTypesLink = BuildString(gBaseLink, "flags_reference/#");
 
 
 void WriteTagIndices(String outputDir, DocToTags& tagged, DocumentationLibrary &docLib)

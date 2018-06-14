@@ -731,6 +731,45 @@ RawTypedefLibrary
         }
       }
     }
+    Object
+    {
+      var Type = "<"
+      var Definition = Array
+      {
+      }
+      var Namespace = Object
+      {
+        var Names = Array
+        {
+        }
+      }
+    }
+    Object
+    {
+      var Type = ">"
+      var Definition = Array
+      {
+      }
+      var Namespace = Object
+      {
+        var Names = Array
+        {
+        }
+      }
+    }
+    Object
+    {
+      var Type = "HandleOf"
+      var Definition = Array
+      {
+      }
+      var Namespace = Object
+      {
+        var Names = Array
+        {
+        }
+      }
+    }
   }
 }
 

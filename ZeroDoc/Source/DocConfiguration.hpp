@@ -38,6 +38,8 @@ struct DocGeneratorConfig
   String mZilchTypesToCppFileList;
   /// what file to output the list of all shortcuts
   String mShortcutsOutputFile;
+  /// contains a list of types that should not be loaded by documentation
+  String mTypeBlacklistFile;
 
   ///// Trimmed Strings /////
   /// defaults to trimdoc.data in the output directory
@@ -144,6 +146,10 @@ inline DocGeneratorConfig LoadConfigurations(StringMap& params)
   ///mShortcutsOutputFile
   config.mShortcutsOutputFile = GetStringValue<String>(params, "shortcutsOutputFile", "");
   config.mShortcutsOutputFile = FilePath::Normalize(config.mShortcutsOutputFile);
+
+  ///mTypeBlacklistFile
+  config.mTypeBlacklistFile = GetStringValue<String>(params, "typeBlacklistFile", "");
+  config.mTypeBlacklistFile = FilePath::Normalize(config.mTypeBlacklistFile);
 
   ///// Load Trim Options /////
   config.mCreateTrimmed = GetStringValue<bool>(params, "createTrimmed", false);

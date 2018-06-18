@@ -11,6 +11,7 @@
 #include "MarkupWriter.hpp"
 #include "MacroDatabase.hpp"
 #include "MacroDocTests.hpp"
+#include "TypeBlacklist.hpp"
 
 namespace Zero
 {
@@ -95,10 +96,21 @@ void RunDocumentationGenerator(DocGeneratorConfig &config)
   if (config.mLoadTypedefs)
     tdLibrary->LoadFromFile(config.mTrimmedTypedefFile);
 
+  TypeBlacklist blacklist;
+  if (!config.mTypeBlacklistFile.Empty())
+  {
+    if (!blacklist.LoadFromFile(config.mTypeBlacklistFile))
+    {
+      Error("Unable to load blacklist file at: %s", config.mTypeBlacklistFile);
+    }
+  }
+
   // if we are going to parse doxygen
   if (config.mDoxygenPath.SizeInBytes() != 0)
   {
     library = new RawDocumentationLibrary;
+
+    library->mBlacklist = blacklist;
 
     if (!config.mZilchTypesToCppFileList.Empty())
     {
@@ -289,7 +301,6 @@ int main(int argc, char* argv[])
 
   Zero::Environment environment;
   environment.ParseCommandArgs(commandLine);
-
 
   forRange(auto& entry, environment.mParsedCommandLineArguments.All())
   {

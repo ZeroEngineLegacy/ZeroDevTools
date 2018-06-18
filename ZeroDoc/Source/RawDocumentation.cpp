@@ -1667,12 +1667,15 @@ namespace Zero
     // first add all the classes by name to the library
     forRange(ClassDoc* classDoc, library.mClasses.All())
     {
+      String& name = classDoc->mName;
       // if we have already documented this, skip it
-      if (mClassMap.ContainsKey(classDoc->mName) 
-        || mIgnoreList.NameIsOnIgnoreList(classDoc->mName))
+      if (mClassMap.ContainsKey(name)
+        || mIgnoreList.NameIsOnIgnoreList(name)
+        || mBlacklist.isOnBlacklist(name)
+        || mBlacklist.isOnBlacklist(classDoc->mBaseClass))
         continue;
 
-      RawClassDoc *newClassDoc = AddNewClass(classDoc->mName);
+      RawClassDoc *newClassDoc = AddNewClass(name);
 
       newClassDoc->LoadFromSkeleton(*classDoc);
 
@@ -4114,11 +4117,6 @@ namespace Zero
 
   bool RawTypedefLibrary::LoadFromFile(StringParam filepath)
   {    
-    //if (!LoadFromDataFile(*this, filepath, DataFileFormat::Text, true))
-    //{
-    //  return false;
-    //}
-
     Status status;
 
     DataTreeLoader loader;

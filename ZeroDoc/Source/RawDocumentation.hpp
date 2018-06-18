@@ -16,6 +16,7 @@
 #include "Engine/Documentation.hpp"
 #include "../TinyXml/tinyxml.h"
 #include "DocTypeTokens.hpp"
+#include "TypeBlacklist.hpp"
 
 
 #define WriteLog(...) DocLogger::Get()->Write(__VA_ARGS__)
@@ -605,6 +606,8 @@ namespace Zero
     IgnoreList mIgnoreList;
 
     EventDocList mEvents;
+
+    TypeBlacklist mBlacklist;
   };
 
 

@@ -43,6 +43,9 @@
     <ClInclude Include="MacroDocTests.hpp">
       <Filter>Source</Filter>
     </ClInclude>
+    <ClInclude Include="TypeBlacklist.hpp">
+      <Filter>Source</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -76,6 +79,9 @@
       <Filter>Source</Filter>
     </ClCompile>
     <ClCompile Include="MacroDocTests.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="TypeBlacklist.cpp">
       <Filter>Source</Filter>
     </ClCompile>
   </ItemGroup>

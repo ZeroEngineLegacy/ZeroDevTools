@@ -682,10 +682,6 @@ void ReMarkupClassMarkupWriter::InsertProperty(PropertyDoc &propDoc)
 
 void ReMarkupClassMarkupWriter::InsertJumpTable(void)
 {
-  // if we don't have stuff to jump to, don't make a jump table
-  if (mClassDoc->mMethods.Empty() && mClassDoc->mProperties.Empty())
-    return;
-
   Array<MethodDoc *> noOverloadedMethods;
 
   String prevMethodName = "";
@@ -707,6 +703,10 @@ void ReMarkupClassMarkupWriter::InsertJumpTable(void)
 
   // we are going to use one iterator for all types in table so get the largest one
   uint iterLimit = Math::Max(Math::Max(methodsSize, propsSize), Math::Max(basesSize,derivedSize));
+
+  // if we don't have stuff to jump to, don't make a jump table
+  if (iterLimit == 0)
+    return;
 
   // print entries into table, skipping lists that our now out of range of iterator
   for (uint i = 0; i < iterLimit; ++i)

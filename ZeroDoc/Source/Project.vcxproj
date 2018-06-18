@@ -80,6 +80,7 @@
     <ClInclude Include="Logging.hpp" />
     <ClInclude Include="Precompiled.hpp" />
     <ClInclude Include="TinyXmlHelpers.hpp" />
+    <ClInclude Include="TypeBlacklist.hpp" />
     <ClInclude Include="WikiOperations.hpp" />
   </ItemGroup>
   <ItemGroup>
@@ -95,6 +96,7 @@
       <PrecompiledHeader Condition="'$(Platform)'=='Win32'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="TinyXmlHelpers.cpp" />
+    <ClCompile Include="TypeBlacklist.cpp" />
     <ClCompile Include="WikiOperations.cpp" />
   </ItemGroup>
   <ItemGroup>

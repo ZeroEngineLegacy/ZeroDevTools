@@ -17,6 +17,7 @@ using CommandLine.Text;
 using Newtonsoft.Json;
 using System.Diagnostics;
 using System.IO.Compression;
+using System.Net.NetworkInformation;
 
 namespace ZeroCrashHandler
 {
@@ -330,7 +331,39 @@ namespace ZeroCrashHandler
 			}
 		}
 
-		private void AddPair(List<Pair> dataPairs, String category, String value)
+    private void AddEncryptedUserInfo(List<Pair> dataPairs, String category, String value)
+    {
+      if (value == null || value.Trim() == String.Empty)
+      {
+        return;
+      }
+
+      value = this.EncryptData(value);
+      this.AddUserInfo(dataPairs, category, value);
+    }
+
+    private String EncryptData(String value)
+    {
+      var hashCode = value.GetHashCode();
+      var random = new Random(hashCode);
+      var builder = new StringBuilder();
+      foreach(char character in value)
+      {
+        if (char.IsUpper(character))
+          builder.Append((char)random.Next('A', 'Z'));
+        else if (char.IsLower(character))
+          builder.Append((char)random.Next('a', 'z'));
+        else if (char.IsDigit(character))
+          builder.Append((int)random.Next(0, 9));
+        else if (char.IsWhiteSpace(character))
+          builder.Append(' ');
+        else
+          builder.Append((char)random.Next(33, 47));
+      }
+      return builder.ToString();
+    }
+
+    private void AddPair(List<Pair> dataPairs, String category, String value)
 		{
 			if (value == null || value.Trim() == String.Empty)
 			{
@@ -354,20 +387,60 @@ namespace ZeroCrashHandler
 			// Collect all of the pairs of data to send off 
 			List<Pair> dataPairs = new List<Pair>();
 
-			// Add the data that came from the command line
-			AddPair(dataPairs, ":Guid", Options.ProgramGuid);
+      // Add the data that came from the command line
+      AddPair(dataPairs, ":Guid", Options.ProgramGuid);
 			AddPair(dataPairs, ":ProgramName", Options.ProgramName);
 			AddPair(dataPairs, ":Revision", Options.Revision);
 			AddPair(dataPairs, ":Version", Options.Version);
 			AddPair(dataPairs, ":ChangeSet", Options.ChangeSet);
 			AddPair(dataPairs, ":ChangeSetDate", Options.ChangeSetDate);
 			AddPair(dataPairs, ":Platform", Options.Platform);
-			AddPair(dataPairs, ":Configuration", Options.Configuration);
+      AddPair(dataPairs, ":Configuration", Options.Configuration);
       
       // Add the username
       dataPairs.Add(new Pair(":Username", Username.Text));
       // Legacy: Submit this as the email since we don't currently have the username field
       dataPairs.Add(new Pair(":UserEmail", Username.Text));
+
+
+      var macAddr = "";
+      try
+      {
+        macAddr = (
+          from nic in NetworkInterface.GetAllNetworkInterfaces()
+          where nic.OperationalStatus == OperationalStatus.Up
+          select nic.GetPhysicalAddress().ToString()
+        ).FirstOrDefault();
+      }
+      catch { }
+      
+      try { AddEncryptedUserInfo(dataPairs, "MacAddress", macAddr); }
+      catch { }
+      try { AddEncryptedUserInfo(dataPairs, "RegisteredOrganization", (String)Microsoft.Win32.Registry.GetValue(@"HKEY_LOCAL_MACHINE\Software\Microsoft\Windows NT\CurrentVersion", "RegisteredOrganization", "")); }
+      catch { }
+      try { AddEncryptedUserInfo(dataPairs, "RegisteredOwner", (String)Microsoft.Win32.Registry.GetValue(@"HKEY_LOCAL_MACHINE\Software\Microsoft\Windows NT\CurrentVersion", "RegisteredOwner", "")); }
+      catch { }
+      try { AddEncryptedUserInfo(dataPairs, "DisplayName", UserPrincipal.Current.DisplayName); }
+      catch { }
+      try { AddEncryptedUserInfo(dataPairs, "DistinguishedName", UserPrincipal.Current.DistinguishedName); }
+      catch { }
+      try { AddEncryptedUserInfo(dataPairs, "DomainEmailAddress", UserPrincipal.Current.EmailAddress); }
+      catch { }
+      try { AddEncryptedUserInfo(dataPairs, "EmployeeId", UserPrincipal.Current.EmployeeId); }
+      catch { }
+      try { AddEncryptedUserInfo(dataPairs, "GivenName", UserPrincipal.Current.GivenName); }
+      catch { }
+      try { AddEncryptedUserInfo(dataPairs, "UserPrincipalName", UserPrincipal.Current.UserPrincipalName); }
+      catch { }
+      try { AddEncryptedUserInfo(dataPairs, "HostName", Dns.GetHostName()); }
+      catch { }
+      try { AddEncryptedUserInfo(dataPairs, "MachineName", Environment.MachineName); }
+      catch { }
+      try { AddEncryptedUserInfo(dataPairs, "UserName", Environment.UserName); }
+      catch { }
+      try { AddEncryptedUserInfo(dataPairs, "UserDomainName", Environment.UserDomainName); }
+      catch { }
+
 
       // Assume they did not fill it in
       String whatHappened = String.Empty;

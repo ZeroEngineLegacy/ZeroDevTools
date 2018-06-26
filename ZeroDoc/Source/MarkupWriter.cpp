@@ -857,7 +857,7 @@ void ReMarkupEnumReferenceWriter::InsertEnumEntry(EnumDoc* enumDoc)
   forRange(auto &enumDescPair, enumDoc->mEnumValues.All())
   {
     // insert table values, making them literals to avoid creating accidental links
-    mOutput << "|" << "%%%" << enumDescPair.first << "%%%" << "|" << "%%%" << enumDescPair.second << "%%%" << "|\n";
+    mOutput << "|" << enumDescPair.first << "|" << enumDescPair.second << "|\n";
   }
   EndIndentSection((*this));
   InsertDivider();

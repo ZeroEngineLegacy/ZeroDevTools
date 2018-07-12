@@ -1590,9 +1590,10 @@ namespace Zero
                 descIterNode != nullptr && strcmp(descIterNode->Value(),"parameterlist") != 0;
                 descIterNode = descIterNode->NextSibling())
               {
-                if (descIterNode->Value() == "ref")
+                String nodeVal = descIterNode->Value();
+                if (nodeVal == "ref")
                 {
-                  descriptionBuilder << descIterNode->FirstChild()->Value();
+                  descriptionBuilder << " " << descIterNode->FirstChild()->Value() << " ";
                 }
                 else
                 {
@@ -1634,8 +1635,9 @@ namespace Zero
 
                 if (enumDocToFill->mEnumValues.Contains(value))
                 {
+                  String valDescription = GetTextFromAllChildrenNodesRecursively(node->FirstChild()->NextSibling()->FirstChild());
                   //accessing paramnamelist->paramdescript->para->text
-                  String valDescription = node->FirstChild()->NextSibling()->FirstChild()->FirstChild()->Value();
+                  //String valDescription = node->FirstChild()->NextSibling()->FirstChild()->FirstChild()->Value();
                   enumDocToFill->mEnumValues.InsertOrAssign(value, valDescription);
                 }
               }

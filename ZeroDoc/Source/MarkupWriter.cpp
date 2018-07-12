@@ -1211,9 +1211,12 @@ void ReMarkupAttributeRefWriter::WriteAttributeRef(StringParam listFilepath, Str
       mZilchFunctionAttributes.PushBack(attrib);
   }
 
+  String attribRefPath = FilePath::Combine(outputPath, "attribute_reference");
+  CreateDirectoryAndParents(attribRefPath);
+
   // object
   WriteChildAttributeRef(mZilchObjectAttributes, mCppObjectAttributes, docList->mObjectAttributes,
-    "Object", FilePath::Combine(outputPath, "attribute_reference","object_attribute_reference.txt"));
+    "Object", FilePath::Combine(attribRefPath,"object_attribute_reference.txt"));
 
   // function
   WriteChildAttributeRef(mZilchFunctionAttributes, mCppFunctionAttributes, docList->mFunctionAttributes,

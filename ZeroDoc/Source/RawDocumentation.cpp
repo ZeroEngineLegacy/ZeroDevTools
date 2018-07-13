@@ -1606,7 +1606,7 @@ namespace Zero
               if (description.Empty() || description == "para")
                 continue;
 
-              enumDocToFill->mDescription = description;
+              enumDocToFill->mDescription = description.Trim();
 
               const String paramNameList = "paramnamelist";
               const String parameterDescription = "parameterdescription";
@@ -1635,9 +1635,8 @@ namespace Zero
 
                 if (enumDocToFill->mEnumValues.Contains(value))
                 {
-                  String valDescription = GetTextFromAllChildrenNodesRecursively(node->FirstChild()->NextSibling()->FirstChild());
+                  String valDescription = GetTextFromAllChildrenNodesRecursively(node->FirstChild()->NextSibling()->FirstChild()).Trim();
                   //accessing paramnamelist->paramdescript->para->text
-                  //String valDescription = node->FirstChild()->NextSibling()->FirstChild()->FirstChild()->Value();
                   enumDocToFill->mEnumValues.InsertOrAssign(value, valDescription);
                 }
               }
